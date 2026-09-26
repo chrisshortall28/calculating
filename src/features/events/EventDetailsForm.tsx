@@ -8,7 +8,7 @@ export type EventDetails = Pick<CompEvent, 'name' | 'entryType' | 'compulsoryDan
 /** How many compulsory dances an event of each entry type usually has, for the field's hint. */
 const TYPICAL_DANCES: Record<EntryType, string> = {
   solo: 'Usually 1 or 2 for solo events. ',
-  duo: '',
+  duo: 'Usually 1 or 2 for duo events. ',
   team: 'Usually 3 or 4 for team events. ',
 };
 
@@ -51,7 +51,7 @@ export function EventDetailsForm({
           required
           {...form.getInputProps('name')}
         />
-        <Input.Wrapper label="Entry type">
+        <Input.Wrapper label="Entry type" description="Team is for team, superteam, quartet and show events">
           <SegmentedControl
             display="flex"
             w="fit-content"
