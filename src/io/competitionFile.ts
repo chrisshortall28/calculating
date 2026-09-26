@@ -21,6 +21,7 @@ const fileSchema = z.object({
     venue: z.string(),
     primaryColor: hexColor.optional(),
     secondaryColor: hexColor.optional(),
+    welcome: z.string().optional(),
     createdAt: z.number(),
     updatedAt: z.number(),
   }),

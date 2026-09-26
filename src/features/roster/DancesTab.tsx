@@ -19,7 +19,7 @@ export function DancesTab() {
   return (
     <NameListTab
       noun="dance"
-      intro="Compulsory dances available to this competition’s events."
+      intro="The compulsory dances for this competition are managed here, and each event’s dances are chosen from this list in its Setup tab. If a dance you need isn’t listed, add it here (including any custom dance) and it can then be selected for events."
       items={dances}
       usage={usage}
       usageLabel="Events"

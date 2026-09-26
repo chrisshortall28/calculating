@@ -8,6 +8,8 @@ export interface Competition {
   /** Club colours (hex, e.g. "#0b1d3a") for the competition's card and title band; unset = defaults. */
   primaryColor?: string;
   secondaryColor?: string;
+  /** The programme's welcome message (blank lines separate paragraphs); unset = a standard welcome. */
+  welcome?: string;
   createdAt: number;
   updatedAt: number;
 }

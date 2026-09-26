@@ -1,8 +1,10 @@
+import { db } from '../db/db';
 import type { Id } from '../domain/types';
 import { fileNameFor } from '../io/competitionFile';
 import { judgeSheetsDocument, resultsDocument, type ResultsStyle } from './documents';
 import { loadCompetitionEvents, loadEventData, type EventData } from './loadEvent';
 import { openPdf } from './pdfmake';
+import { programmeDocument } from './programme';
 
 type Target = { eventId: Id } | { competitionId: Id };
 
@@ -29,4 +31,12 @@ export async function printResults(target: Target, name: string, style: ResultsS
   );
   const loaded = await events;
   return { complete: loaded.filter((e) => e.result.complete).length, total: loaded.length };
+}
+
+/** The spectators' programme for a whole competition. Call directly from a click handler. */
+export function printProgramme(competitionId: Id, name: string) {
+  const doc = Promise.all([db.competitions.get(competitionId), loadCompetitionEvents(competitionId)]).then(
+    ([competition, events]) => programmeDocument(competition!, events),
+  );
+  return openPdf(doc, fileNameFor(`${name} programme`, 'pdf'));
 }
