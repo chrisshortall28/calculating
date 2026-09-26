@@ -1,0 +1,48 @@
+# Podium
+
+Offline web app for running roller skating competitions. **Calculators** set up events,
+skaters, dances and judges, then enter judges' marks on the day. Podium ranks each event
+using majority-of-placings rules (White / CIPA system) and produces judge sheets and
+results as PDFs.
+
+- Runs entirely in the browser (installable PWA). Data lives in IndexedDB on the device,
+  and there is no server.
+- **Export file** (on each competition) saves a `.podium.json` backup, and **Import** restores it.
+
+## Development
+
+```bash
+npm install
+npm run dev        # http://localhost:5173
+npm test           # scoring engine, mark parser, grid navigation, import/export
+npm run typecheck
+npm run build      # production build + service worker in dist/
+```
+
+## Layout
+
+| Path | What |
+| --- | --- |
+| `src/scoring/` | **Pure scoring engine**, with no React or DB code. `calculateEvent()` turns marks into placings and explanations. |
+| `src/marks/` | Mark parsing (`57` → 5.7) and the keyboard-driven mark-entry grid. |
+| `src/domain/` | Types, segments (compulsory dances and the free dance's A/B marks), entry display helpers. |
+| `src/db/` | Dexie schema and repository functions, which cascade deletes of marks. |
+| `src/io/` | Competition file export/import (versioned, validated with zod). |
+| `src/pdf/` | Judge sheets and results PDFs (pdfmake, lazy-loaded). |
+| `src/features/` | Screens: competitions, events, rosters, scoring, results. |
+
+## Scoring rules (initial approximation, to be checked against the CIPA rulebook)
+
+1. **Judge ordinals**: for each dance, each judge's marks are ranked (1 = best). The free
+   dance uses A+B, and a tie is split by the B mark. Any remaining tie shares the better ordinal.
+2. **Majority**: for place *n*, find the entries that a majority of judges (⌊judges/2⌋+1)
+   placed *n*th or better, widening the column until at least one qualifies.
+3. **Tie-breaks**, applied in order when several qualify together (`src/scoring/tieBreaks.ts`):
+   greater majority → lower sum of the majority places → higher total points. If entries are
+   still tied, they share the place.
+4. **Combining dances**: lowest sum of dance places wins. Ties go to the better free dance place,
+   then higher total points.
+
+Rules are data plus pure functions (`ScoringConfig`), so they can be reordered or replaced
+without touching the UI. Add worked examples from the rulebook to
+`src/scoring/scoring.test.ts`.
