@@ -16,10 +16,10 @@ import {
 } from '@mantine/core';
 import { useLocalStorage } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
-import { IconCheck, IconLock, IconLockOpen } from '@tabler/icons-react';
+import { IconCheck, IconEraser, IconLock, IconLockOpen } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 import { useJudges, useSkaters } from '../../app/data';
-import { setEventStatus, setMark } from '../../db/repo';
+import { clearMarks, setEventStatus, setMark } from '../../db/repo';
 import { byId, entryClub, entryName } from '../../domain/entryName';
 import type { CompEvent } from '../../domain/types';
 import type { Direction } from '../../marks/gridNav';
@@ -105,6 +105,20 @@ export function ScoringTab({ event }: { event: CompEvent }) {
     });
   };
 
+  const confirmClear = () =>
+    modals.openConfirmModal({
+      title: 'Clear all marks',
+      children: (
+        <Text size="sm">
+          Delete all {entered} marks entered for this event, in every dance and from every judge? This can’t
+          be undone.
+        </Text>
+      ),
+      labels: { confirm: 'Clear marks', cancel: 'Cancel' },
+      confirmProps: { color: 'red' },
+      onConfirm: () => clearMarks(event.id),
+    });
+
   return (
     <Stack>
       <Group justify="space-between" align="flex-end">
@@ -155,6 +169,15 @@ export function ScoringTab({ event }: { event: CompEvent }) {
             checked={autoAdvance}
             onChange={(e) => setAutoAdvance(e.currentTarget.checked)}
           />
+          <Button
+            variant="default"
+            color="red"
+            leftSection={<IconEraser size={16} />}
+            disabled={locked || entered === 0}
+            onClick={confirmClear}
+          >
+            Clear marks
+          </Button>
           <Button
             variant={locked ? 'light' : 'filled'}
             color={locked ? 'gray' : 'green'}

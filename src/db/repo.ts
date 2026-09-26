@@ -264,6 +264,12 @@ export async function setMark(
   else await db.marks.put({ ...pk, tenths } satisfies Mark);
 }
 
+/** Deletes every mark in the event, for all dances and judges. */
+export async function clearMarks(eventId: Id) {
+  await db.marks.where({ eventId }).delete();
+  await competitionOfEvent(eventId);
+}
+
 export const entryTypeLabel: Record<EntryType, string> = {
   solo: 'Solo',
   duo: 'Duo',
