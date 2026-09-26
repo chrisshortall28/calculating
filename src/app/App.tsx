@@ -14,26 +14,30 @@ import { Layout } from './Layout';
 import { theme } from './theme';
 import { usePersistentStorage } from './usePersistentStorage';
 
-const router = createBrowserRouter([
-  {
-    element: <Layout />,
-    children: [
-      { index: true, element: <CompetitionsPage /> },
-      {
-        path: 'c/:compId',
-        element: <CompetitionLayout />,
-        children: [
-          { index: true, element: <EventsTab /> },
-          { path: 'skaters', element: <SkatersTab /> },
-          { path: 'judges', element: <JudgesTab /> },
-          { path: 'dances', element: <DancesTab /> },
-          { path: 'settings', element: <CompetitionSettingsTab /> },
-        ],
-      },
-      { path: 'c/:compId/e/:eventId/:tab?', element: <EventPage /> },
-    ],
-  },
-]);
+const router = createBrowserRouter(
+  [
+    {
+      element: <Layout />,
+      children: [
+        { index: true, element: <CompetitionsPage /> },
+        {
+          path: 'c/:compId',
+          element: <CompetitionLayout />,
+          children: [
+            { index: true, element: <EventsTab /> },
+            { path: 'skaters', element: <SkatersTab /> },
+            { path: 'judges', element: <JudgesTab /> },
+            { path: 'dances', element: <DancesTab /> },
+            { path: 'settings', element: <CompetitionSettingsTab /> },
+          ],
+        },
+        { path: 'c/:compId/e/:eventId/:tab?', element: <EventPage /> },
+      ],
+    },
+  ],
+  // Served from a sub-path on GitHub Pages (e.g. /calculating/).
+  { basename: import.meta.env.BASE_URL.replace(/\/$/, '') || '/' },
+);
 
 export function App() {
   usePersistentStorage();
