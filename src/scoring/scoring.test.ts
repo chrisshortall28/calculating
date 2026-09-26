@@ -274,6 +274,78 @@ describe('ties on majority victories (rules 6–8)', () => {
     ]);
     expect(explainStep(r.steps[2]!, name)).toEqual([]);
   });
+
+  it('13 skaters, 3 judges, with tied judge ordinals: 3rd shared (8), 11th/12th by 6B', () => {
+    // Each judge's ordinals per skater (1 = best; tied ordinals averaged), entered as marks of
+    // 14 − ordinal so every judge ranks the skaters as given.
+    const ordinals = [
+      [10, 12, 12.5],
+      [2, 3, 1],
+      [1, 1, 2],
+      [3, 4, 4],
+      [6, 8, 7],
+      [11, 13, 10.5],
+      [5, 2, 4],
+      [4, 5, 6],
+      [7, 7, 9],
+      [12, 11, 10.5],
+      [8.5, 6, 8],
+      [13, 10, 12.5],
+      [8.5, 9, 4],
+    ];
+    const skaters = ordinals.map((_, i) => `s${i + 1}`);
+    const r = calculateEvent(
+      bySums(
+        skaters,
+        [0, 1, 2].map((j) => ordinals.map((o) => 14 - o[j]!)),
+      ),
+    );
+    expect(placed(r)).toEqual({
+      s3: '1:5',
+      s2: '2:5',
+      s4: '3:8',
+      s7: '3:8',
+      s8: '5:5',
+      s5: '6:5',
+      s11: '7:5',
+      s9: '8:5',
+      s13: '9:5',
+      s10: '10:5',
+      s1: '11:6B',
+      s6: '12:6B',
+      s12: '13:5',
+    });
+    const mv = (id: string) => [row(r, id).majorityVictories, row(r, id).totalVictories];
+    expect(skaters.map(mv)).toEqual([
+      [1.5, 4.5],
+      [11, 33],
+      [12, 35],
+      [9.5, 28],
+      [7, 18],
+      [1.5, 4.5],
+      [9.5, 28],
+      [8, 24],
+      [5, 16],
+      [2.5, 5.5],
+      [5.5, 16.5],
+      [0.5, 3.5],
+      [4.5, 17.5],
+    ]);
+    // Equal ordinals from one judge are half a victory each (no free dance B mark to split them).
+    expect(r.judgeTies).toHaveLength(6);
+    expect(r.judgeTies.every((t) => t.winner === undefined)).toBe(true);
+
+    const step = (place: number) => r.steps.find((s) => s.place === place)!;
+    expect(explainStep(step(3), (id) => id)).toEqual([
+      '6B (S.M.V.) Separate victories: s4 1½, s7 1½ — still tied.',
+      '7C Total victories: s4 28, s7 28 — still tied.',
+      '7A Total sums: s4 31.0, s7 31.0 — still tied.',
+      '8 Still equal after every rule: the entries share the place, and the places below are used up.',
+    ]);
+    expect(explainStep(step(11), (id) => id)).toEqual([
+      '6B (S.M.V.) Separate victories: s1 2, s6 1 — s1 takes 11th.',
+    ]);
+  });
 });
 
 describe('completeness', () => {
