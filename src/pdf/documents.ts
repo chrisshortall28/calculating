@@ -301,7 +301,14 @@ export function resultsPages(events: EventData[], style: ResultsStyle): Content[
       resultsTable(d, style === 'guest'),
       ...(style === 'withMarks' ? detailTables(d) : []),
     ]);
-  return withPageBreaks(pages);
+  if (style === 'withMarks') return withPageBreaks(pages);
+  // Shorter results share pages: events follow on in order, each kept whole (moved to the next page
+  // rather than split). An event taller than a whole page still has to break.
+  return pages.map((content, i) => ({
+    stack: content,
+    unbreakable: true,
+    ...(i > 0 ? { margin: [0, 24, 0, 0] as [number, number, number, number] } : {}),
+  }));
 }
 
 function withPageBreaks(pages: Content[][]): Content[] {

@@ -50,6 +50,17 @@ describe('resultsPages', () => {
     );
   });
 
+  it('standard and guest results share pages but keep each event whole; with-marks gets a page each', () => {
+    const events = [sampleEvent(), sampleEvent()];
+    for (const style of ['standard', 'guest'] as const) {
+      for (const block of resultsPages(events, style)) {
+        expect(block).toMatchObject({ unbreakable: true });
+        expect(block).not.toHaveProperty('pageBreak');
+      }
+    }
+    expect(resultsPages(events, 'withMarks')[1]).toMatchObject({ pageBreak: 'before' });
+  });
+
   it('guest-judge results show placings and officials only', () => {
     const t = texts(resultsPages([sampleEvent()], 'guest'));
     expect(t).toEqual(expect.arrayContaining(['Place', 'Entry', 'Club', 'Amy', 'Judges', 'Referee', 'Kate']));
