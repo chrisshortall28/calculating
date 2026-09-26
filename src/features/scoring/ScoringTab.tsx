@@ -4,7 +4,7 @@ import {
   Box,
   Button,
   Card,
-  Grid,
+  Flex,
   Group,
   Kbd,
   Progress,
@@ -210,8 +210,9 @@ export function ScoringTab({ event }: { event: CompEvent }) {
         )}
       </Group>
 
-      <Grid gap="lg">
-        <Grid.Col span={{ base: 12, lg: 8 }}>
+      {/* The mark grid takes all the width the side panel leaves; the panel stacks below on small screens. */}
+      <Flex gap="lg" direction={{ base: 'column', lg: 'row' }} align={{ base: 'stretch', lg: 'flex-start' }}>
+        <Box flex={1} miw={0}>
           <Card withBorder p="sm">
             <MarkGrid
               focusKey={`${event.id}:${segment.id}`}
@@ -234,11 +235,11 @@ export function ScoringTab({ event }: { event: CompEvent }) {
               edit · empty + <Kbd>Enter</Kbd> keeps the value; delete the text to clear a mark.
             </Text>
           </Card>
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, lg: 4 }}>
+        </Box>
+        <Box w={{ base: '100%', lg: 380 }} style={{ flexShrink: 0 }}>
           <ProvisionalPanel result={result} standing={standing} standingAfter={standingAfter} rows={rows} />
-        </Grid.Col>
-      </Grid>
+        </Box>
+      </Flex>
     </Stack>
   );
 }

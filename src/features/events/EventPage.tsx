@@ -77,7 +77,8 @@ export function EventPage() {
           onChange={(v) => navigate(`/c/${compId}/e/${eventId}/${v}`, { replace: true })}
         />
       </PageHero>
-      <Container size="xl" key={event.id}>
+      {/* Scoring can use the whole window, so a large judge panel fits without scrolling. */}
+      <Container size="xl" fluid={tab === 'scoring'} key={event.id}>
         {panel(event, competition)}
       </Container>
     </>
