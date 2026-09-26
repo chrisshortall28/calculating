@@ -2,6 +2,7 @@
   "name": "podium",
   "version": "1.0.0",
   "description": "",
+  "license": "0BSD",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

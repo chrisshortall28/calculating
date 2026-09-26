@@ -60,3 +60,9 @@ online; nothing changes unless the Calculator clicks Reload.
 Rules are data plus pure functions (`ScoringConfig`), so they can be reordered or replaced
 without touching the UI. Add worked examples from the rulebook to
 `src/scoring/scoring.test.ts`.
+
+## Licence
+
+Podium is free to use, copy, modify and share for any purpose, under the [BSD Zero Clause
+License](LICENSE). The open-source packages it is built on keep their own (permissive) licences;
+see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
