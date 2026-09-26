@@ -34,21 +34,17 @@ interface Official {
   name: string; // blank = name to be written in
 }
 
-/** Landscape sheet: each compulsory dance gets a wide Comments column and a Mark column; the free
- * dance gets A and B; Total points and Place sit on the far right. */
+/** Landscape sheet: each dance gets a wide Comments column followed by its mark column(s) — Mark
+ * for a compulsory dance, A and B for the free dance; Total points and Place sit on the far right. */
 function judgeSheetPage(d: EventData, { role, label, name }: Official): Content[] {
   const MARK_WIDTH = 38;
-  const columns = d.segments.map((s) =>
-    s.kind === 'compulsory'
-      ? {
-          name: s.name,
-          subs: [
-            { label: 'Comments', width: '*' as const },
-            { label: 'Mark', width: MARK_WIDTH },
-          ],
-        }
-      : { name: s.name, subs: s.markKeys.map((k) => ({ label: markKeyLabel(k), width: MARK_WIDTH })) },
-  );
+  const columns = d.segments.map((s) => ({
+    name: s.name,
+    subs: [
+      { label: 'Comments', width: '*' as const },
+      ...s.markKeys.map((k) => ({ label: markKeyLabel(k) || 'Mark', width: MARK_WIDTH })),
+    ],
+  }));
   const subCols = columns.flatMap((c) => c.subs);
 
   const headRow1: TableCell[] = [
@@ -122,14 +118,8 @@ function judgeSheetPage(d: EventData, { role, label, name }: Official): Content[
       table: {
         headerRows: 3,
         dontBreakRows: true,
-        // Comments columns share the spare width; with no compulsory dances, the Entry column takes it.
-        widths: [
-          18,
-          subCols.some((s) => s.width === '*') ? 130 : '*',
-          ...subCols.map((s) => s.width),
-          44,
-          34,
-        ],
+        // The Comments columns share the spare width.
+        widths: [18, 130, ...subCols.map((s) => s.width), 44, 34],
         body,
       },
       // The caption row's top edge comes from the table layout, not the cell borders.
