@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import classes from './MarkGrid.module.css';
 import { formatTenths, isCompleteMark, MARK_CHARS, parseMark } from './parseMark';
 
@@ -26,18 +26,32 @@ export function MarkCell({
   onFocus,
 }: Props) {
   // draft: text being typed (null = show stored value)
-  const [draft, setDraft] = useState<string | null>(null);
+  const [draft, setDraftState] = useState<string | null>(null);
   // committed value awaiting the database round trip, so the old value doesn't flash back
   const [pending, setPending] = useState<{ tenths: number | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => setPending(null), [value]);
+  // Mirrors of draft/shown that update synchronously. Committing moves focus to the next cell,
+  // which fires this cell's blur handler *before* React re-renders; reading state there would
+  // see the stale draft (e.g. "5" of "57") and commit it over the value just saved.
+  const draftRef = useRef<string | null>(null);
+  const shownRef = useRef<number | null | undefined>(value);
+  const setDraft = (v: string | null) => {
+    draftRef.current = v;
+    setDraftState(v);
+  };
+
+  useEffect(() => {
+    setPending(null);
+    shownRef.current = value;
+  }, [value]);
 
   const shown = pending ? pending.tenths : value;
   const display = draft ?? formatTenths(shown);
 
-  /** Returns false (and shows an error) if the draft isn't a valid mark. */
-  const commit = (raw: string | null): boolean => {
+  /** Commits the current draft, if any. Returns false (and shows an error) if it isn't a valid mark. */
+  const commit = (): boolean => {
+    const raw = draftRef.current;
     if (raw === null) return true;
     const r = parseMark(raw);
     if (!r.ok) {
@@ -46,7 +60,8 @@ export function MarkCell({
     }
     setDraft(null);
     setError(null);
-    if (r.tenths !== (shown ?? null)) {
+    if (r.tenths !== (shownRef.current ?? null)) {
+      shownRef.current = r.tenths;
       setPending({ tenths: r.tenths });
       onCommit(r.tenths);
     }
@@ -56,7 +71,7 @@ export function MarkCell({
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === 'Tab') {
       e.preventDefault();
-      if (commit(draft)) onNavigate(e.shiftKey ? 'prev' : 'next');
+      if (commit()) onNavigate(e.shiftKey ? 'prev' : 'next');
     } else if (
       e.key === 'ArrowUp' ||
       e.key === 'ArrowDown' ||
@@ -64,7 +79,7 @@ export function MarkCell({
       e.key === 'ArrowRight'
     ) {
       e.preventDefault();
-      if (commit(draft)) onNavigate(e.key);
+      if (commit()) onNavigate(e.key);
     } else if (e.key === 'Escape') {
       const input = e.currentTarget;
       setDraft(null);
@@ -79,7 +94,7 @@ export function MarkCell({
     if (!MARK_CHARS.test(v)) return;
     setDraft(v);
     setError(null);
-    if (autoAdvance && isCompleteMark(v) && commit(v)) onNavigate('next');
+    if (autoAdvance && isCompleteMark(v) && commit()) onNavigate('next');
   };
 
   const className = [
@@ -104,7 +119,16 @@ export function MarkCell({
         e.currentTarget.select();
         onFocus();
       }}
-      onBlur={() => commit(draft)}
+      // Clicking a cell would place the caret where clicked (undoing the select-all), so the next
+      // digits get appended to the old value. Select the whole value instead — unless the user is
+      // mid-edit, when a click should position the caret as usual.
+      onMouseDown={(e) => {
+        if (draftRef.current !== null) return;
+        e.preventDefault();
+        e.currentTarget.focus();
+        e.currentTarget.select();
+      }}
+      onBlur={() => commit()}
       onKeyDown={onKeyDown}
       onChange={readOnly ? undefined : onChange}
     />
