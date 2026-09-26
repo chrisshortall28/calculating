@@ -35,6 +35,7 @@ const fileSchema = z.object({
       compulsoryDanceIds: z.array(z.string()).max(3),
       hasFreeDance: z.boolean(),
       judgeIds: z.array(z.string()),
+      refereeId: z.string().optional(),
       status: z.enum(['setup', 'scoring', 'final']),
     }),
   ),
@@ -129,6 +130,7 @@ export async function importCompetition(file: CompetitionFile, mode: 'copy' | 'r
         competitionId: compId,
         compulsoryDanceIds: e.compulsoryDanceIds.map(id),
         judgeIds: e.judgeIds.map(id),
+        refereeId: e.refereeId && id(e.refereeId),
       })),
     );
     await db.entries.bulkPut(

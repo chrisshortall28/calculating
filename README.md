@@ -17,7 +17,21 @@ npm run dev        # http://localhost:5173
 npm test           # scoring engine, mark parser, grid navigation, import/export
 npm run typecheck
 npm run build      # production build + service worker in dist/
+npm run build:pages && npm run preview:pages   # the GitHub Pages build, at http://localhost:4173/calculating/
+npm run generate-icons                         # regenerate PNG icons after changing public/favicon.svg
 ```
+
+## Deployment and installing
+
+Every push to `main` runs the tests and deploys to GitHub Pages
+(`.github/workflows/deploy.yml`): **https://chrisshortall28.github.io/calculating/**
+
+One-time setup: repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+
+To install on the competition laptop, open the URL while online in Chrome or Edge and use
+**Install Podium** (the install icon in the address bar). The app then works fully offline.
+When a new version is deployed, the app shows "Update available" the next time it starts
+online; nothing changes unless the Calculator clicks Reload.
 
 ## Layout
 

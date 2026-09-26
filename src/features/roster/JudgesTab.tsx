@@ -12,7 +12,11 @@ export function JudgesTab() {
     const counts = new Map<string, number>();
     await db.events
       .where({ competitionId: compId })
-      .each((e) => e.judgeIds.forEach((j) => counts.set(j, (counts.get(j) ?? 0) + 1)));
+      .each((e) =>
+        new Set([...e.judgeIds, ...(e.refereeId ? [e.refereeId] : [])]).forEach((j) =>
+          counts.set(j, (counts.get(j) ?? 0) + 1),
+        ),
+      );
     return counts;
   }, [compId]);
 
@@ -24,7 +28,7 @@ export function JudgesTab() {
       usage={usage}
       usageLabel="Events"
       deleteWarning={(j, used) =>
-        `Delete ${j.name}? They will be removed from ${used} event panels and all their marks will be deleted.`
+        `Delete ${j.name}? They will be removed from ${used} events (as judge or referee) and all their marks will be deleted.`
       }
       onAdd={(name) => addJudge(compId, name)}
       onRename={(id, name) => updateJudge(id, { name })}

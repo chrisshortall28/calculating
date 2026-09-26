@@ -236,8 +236,11 @@ export async function deleteJudge(id: Id) {
   if (!judge) return;
   await db.transaction('rw', db.judges, db.events, db.marks, async () => {
     const events = await db.events.where({ competitionId: judge.competitionId }).toArray();
-    for (const ev of events.filter((e) => e.judgeIds.includes(id))) {
-      await db.events.update(ev.id, { judgeIds: ev.judgeIds.filter((j) => j !== id) });
+    for (const ev of events.filter((e) => e.judgeIds.includes(id) || e.refereeId === id)) {
+      await db.events.update(ev.id, {
+        judgeIds: ev.judgeIds.filter((j) => j !== id),
+        ...(ev.refereeId === id ? { refereeId: undefined } : {}),
+      });
     }
     await db.marks.where({ judgeId: id }).delete();
     await db.judges.delete(id);

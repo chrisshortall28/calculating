@@ -8,6 +8,7 @@ import { markKeyLabel } from '../../domain/segments';
 import type { CompEvent, Competition } from '../../domain/types';
 import { formatTenths } from '../../marks/parseMark';
 import { printJudgeSheets, printResults } from '../../pdf/actions';
+import { officialsLine } from '../../pdf/documents';
 import { ordinalLabel, type ExplainStep } from '../../scoring';
 import { markKey, useEventResult } from '../scoring/useEventResult';
 
@@ -74,9 +75,13 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
 
       {result.complete && (
         <Card withBorder>
-          <Title order={4} mb="sm">
-            Final placings
-          </Title>
+          <Title order={4}>Final placings</Title>
+          <Text size="sm" c="dimmed" mb="sm">
+            {officialsLine({
+              judges: event.judgeIds.map((j) => judgeMap.get(j)).filter((j) => !!j),
+              referee: event.refereeId ? judgeMap.get(event.refereeId) : undefined,
+            })}
+          </Text>
           <Table striped>
             <Table.Thead>
               <Table.Tr>

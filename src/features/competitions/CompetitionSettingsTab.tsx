@@ -1,22 +1,15 @@
-import { Button, Card, Group, Stack, Text, TextInput, Title } from '@mantine/core';
-import { useForm } from '@mantine/form';
+import { Button, Card, Group, Stack, Text, Title } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
-import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useCompetition } from '../../app/data';
 import { deleteCompetition, updateCompetition } from '../../db/repo';
+import { CompetitionDetailsForm } from './CompetitionDetailsForm';
 
 export function CompetitionSettingsTab() {
   const { compId } = useParams() as { compId: string };
   const competition = useCompetition(compId);
   const navigate = useNavigate();
-  const form = useForm({ initialValues: { name: '', date: '', venue: '' } });
-
-  useEffect(() => {
-    if (competition)
-      form.setValues({ name: competition.name, date: competition.date, venue: competition.venue });
-  }, [competition?.id]);
 
   if (!competition) return null;
 
@@ -40,21 +33,19 @@ export function CompetitionSettingsTab() {
   return (
     <Stack maw={520}>
       <Card withBorder>
-        <form
-          onSubmit={form.onSubmit(async (v) => {
-            await updateCompetition(compId, v);
-            notifications.show({ color: 'green', message: 'Saved' });
-          })}
-        >
-          <Stack>
-            <TextInput label="Name" required {...form.getInputProps('name')} />
-            <TextInput label="Date" type="date" {...form.getInputProps('date')} />
-            <TextInput label="Venue" {...form.getInputProps('venue')} />
-            <Group justify="flex-end">
-              <Button type="submit">Save</Button>
-            </Group>
-          </Stack>
-        </form>
+        <Title order={5} mb="sm">
+          Competition details
+        </Title>
+        <CompetitionDetailsForm
+          // Remount when the stored details change (e.g. edited from the header) so the form shows them.
+          key={`${competition.name}|${competition.date}|${competition.venue}`}
+          initial={{ name: competition.name, date: competition.date, venue: competition.venue }}
+          submitLabel="Save"
+          onSubmit={async (values) => {
+            await updateCompetition(compId, values);
+            notifications.show({ color: 'green', message: 'Competition details saved' });
+          }}
+        />
       </Card>
       <Card withBorder>
         <Title order={5} c="red">

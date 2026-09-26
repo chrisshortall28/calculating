@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   Anchor,
   Breadcrumbs,
   Button,
@@ -6,15 +7,20 @@ import {
   Group,
   Loader,
   Menu,
+  Modal,
   Tabs,
   Text,
   Title,
+  Tooltip,
 } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { IconChevronDown, IconDownload, IconPrinter } from '@tabler/icons-react';
+import { IconChevronDown, IconDownload, IconPencil, IconPrinter } from '@tabler/icons-react';
 import { printJudgeSheets, printResults } from '../../pdf/actions';
 import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router';
 import { useCompetition } from '../../app/data';
+import { updateCompetition } from '../../db/repo';
+import { CompetitionDetailsForm } from './CompetitionDetailsForm';
 import { useExportCompetition } from './useExportCompetition';
 
 const TABS = [
@@ -31,6 +37,7 @@ export function CompetitionLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const exportCompetition = useExportCompetition();
+  const [editing, { open: openEdit, close: closeEdit }] = useDisclosure(false);
   const current = location.pathname.split('/')[3] || 'events';
 
   if (competition === undefined) return <Loader />;
@@ -56,7 +63,19 @@ export function CompetitionLayout() {
       </Breadcrumbs>
       <Group justify="space-between" mb="md">
         <div>
-          <Title order={2}>{competition.name}</Title>
+          <Group gap="xs" wrap="nowrap">
+            <Title order={2}>{competition.name}</Title>
+            <Tooltip label="Edit competition details">
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                onClick={openEdit}
+                aria-label="Edit competition details"
+              >
+                <IconPencil size={18} />
+              </ActionIcon>
+            </Tooltip>
+          </Group>
           <Text size="sm" c="dimmed">
             {[competition.date && new Date(competition.date).toLocaleDateString(), competition.venue]
               .filter(Boolean)
@@ -105,6 +124,17 @@ export function CompetitionLayout() {
         </Tabs.List>
       </Tabs>
       <Outlet />
+      <Modal opened={editing} onClose={closeEdit} title="Edit competition details">
+        <CompetitionDetailsForm
+          initial={{ name: competition.name, date: competition.date, venue: competition.venue }}
+          submitLabel="Save"
+          onSubmit={async (values) => {
+            await updateCompetition(competition.id, values);
+            closeEdit();
+            notifications.show({ color: 'green', message: 'Competition details saved' });
+          }}
+        />
+      </Modal>
     </Container>
   );
 }
