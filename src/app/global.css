@@ -11,3 +11,8 @@ body {
   letter-spacing: 0.02em;
   line-height: 1;
 }
+
+/* Keep toasts above the status bar (AppShell footer). */
+.mantine-Notifications-root[data-position^='bottom'] {
+  bottom: calc(var(--app-shell-footer-offset, 0px) + var(--mantine-spacing-md));
+}

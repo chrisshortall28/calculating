@@ -10,6 +10,8 @@ import { JudgesTab } from '../features/roster/JudgesTab';
 import { DancesTab } from '../features/roster/DancesTab';
 import { CompetitionSettingsTab } from '../features/competitions/CompetitionSettingsTab';
 import { EventPage } from '../features/events/EventPage';
+import { HomePage } from '../features/home/HomePage';
+import { GuidePage } from '../features/guide/GuidePage';
 import { Layout } from './Layout';
 import { theme } from './theme';
 import { usePersistentStorage } from './usePersistentStorage';
@@ -19,7 +21,9 @@ const router = createBrowserRouter(
     {
       element: <Layout />,
       children: [
-        { index: true, element: <CompetitionsPage /> },
+        { index: true, element: <HomePage /> },
+        { path: 'competitions', element: <CompetitionsPage /> },
+        { path: 'guide', element: <GuidePage /> },
         {
           path: 'c/:compId',
           element: <CompetitionLayout />,

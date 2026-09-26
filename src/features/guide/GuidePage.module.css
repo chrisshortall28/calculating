@@ -1,0 +1,32 @@
+.tocItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  transition: border-color 120ms ease;
+}
+
+.tocItem:hover,
+.tocItem:focus-visible {
+  border-color: var(--mantine-color-podium-5);
+}
+
+.section {
+  /* Clear the fixed header when jumped to from a #link. */
+  scroll-margin-top: calc(var(--app-shell-header-offset, 60px) + var(--mantine-spacing-md));
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  margin-bottom: var(--mantine-spacing-md);
+}
+
+.section code {
+  font-size: 0.9em;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
+}

@@ -61,7 +61,7 @@ export function CompetitionLayout() {
     <>
       <PageHero
         colors={colors}
-        crumbs={[{ label: 'Competitions', to: '/' }, { label: competition.name }]}
+        crumbs={[{ label: 'Competitions', to: '/competitions' }, { label: competition.name }]}
         title={competition.name}
         titleAddon={
           <Tooltip label="Edit competition details">

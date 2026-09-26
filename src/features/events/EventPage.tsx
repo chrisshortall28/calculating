@@ -52,7 +52,7 @@ export function EventPage() {
         colors={clubColors(competition)}
         size="xl"
         crumbs={[
-          { label: 'Competitions', to: '/' },
+          { label: 'Competitions', to: '/competitions' },
           { label: competition.name, to: `/c/${compId}` },
           { label: event.name },
         ]}

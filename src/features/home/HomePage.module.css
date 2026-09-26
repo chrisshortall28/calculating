@@ -1,0 +1,114 @@
+.hero {
+  /* Bleed to the AppShell edges, like PageHero. */
+  margin: calc(var(--mantine-spacing-lg) * -1) calc(var(--mantine-spacing-lg) * -1) var(--mantine-spacing-xl);
+  background:
+    radial-gradient(circle at 80% 10%, rgb(255 176 24 / 0.16), transparent 45%),
+    linear-gradient(100deg, #13305f 0%, var(--mantine-color-navy-9) 75%);
+  color: var(--mantine-color-white);
+  border-bottom: 3px solid var(--mantine-color-medal-5);
+  overflow: hidden;
+}
+
+.heroInner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--mantine-spacing-xl);
+  padding-top: 48px;
+  padding-bottom: 40px;
+}
+
+.eyebrow {
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mantine-color-medal-4);
+}
+
+.heroTitle {
+  margin: 8px 0 16px;
+  font-family: var(--mantine-headings-font-family);
+  font-weight: 800;
+  font-style: italic;
+  text-transform: uppercase;
+  font-size: clamp(38px, 6vw, 64px);
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+}
+
+.accent {
+  display: block;
+  color: var(--mantine-color-medal-5);
+}
+
+.intro {
+  max-width: 540px;
+  font-size: var(--mantine-font-size-lg);
+  line-height: 1.55;
+  color: rgb(255 255 255 / 0.8);
+}
+
+.heroArt {
+  width: 100%;
+  max-width: 380px;
+  justify-self: center;
+}
+
+@media (max-width: $mantine-breakpoint-sm) {
+  .heroInner {
+    grid-template-columns: 1fr;
+    padding-top: 32px;
+    padding-bottom: 24px;
+  }
+
+  .heroArt {
+    max-width: 240px;
+    grid-row: 1;
+  }
+}
+
+.emptyCard,
+.startCard {
+  display: flex;
+  flex-direction: column;
+}
+
+.emptyCard {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border-style: dashed;
+}
+
+.step {
+  position: relative;
+  overflow: hidden;
+}
+
+.stepNumber {
+  position: absolute;
+  top: -10px;
+  right: 10px;
+  font-family: var(--mantine-headings-font-family);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 96px;
+  line-height: 1;
+  color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
+  pointer-events: none;
+}
+
+.step > *:not(.stepNumber) {
+  position: relative;
+}
+
+.advantage {
+  display: flex;
+  gap: var(--mantine-spacing-md);
+  align-items: flex-start;
+}
+
+.advantage > :first-child {
+  flex: none;
+}
