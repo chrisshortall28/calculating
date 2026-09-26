@@ -141,7 +141,7 @@ export function EventsTab() {
                   leftSection={<IconPlayerPlayFilled size={14} />}
                   onClick={() => navigate(`/c/${compId}/e/${ev.id}/scoring`)}
                 >
-                  Score
+                  View
                 </Button>
               </div>
             );
