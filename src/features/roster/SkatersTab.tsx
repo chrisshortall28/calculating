@@ -1,13 +1,16 @@
 import { ActionIcon, Button, Card, Group, Table, Text, TextInput } from '@mantine/core';
 import { modals } from '@mantine/modals';
-import { IconTrash } from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
+import { IconClipboardList, IconTrash } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useRef, useState } from 'react';
 import { useParams } from 'react-router';
 import { useSkaters } from '../../app/data';
 import { db } from '../../db/db';
-import { addSkater, deleteSkater, updateSkater } from '../../db/repo';
+import { addSkater, addSkaters, deleteSkater, updateSkater } from '../../db/repo';
+import type { PastedRow } from '../../domain/pasteList';
 import { InlineEdit } from './InlineEdit';
+import { PasteListModal } from './PasteListModal';
 
 export function SkatersTab() {
   const { compId } = useParams() as { compId: string };
@@ -24,6 +27,25 @@ export function SkatersTab() {
   const [name, setName] = useState('');
   const [club, setClub] = useState('');
   const nameRef = useRef<HTMLInputElement>(null);
+  const [pasting, setPasting] = useState(false);
+
+  /** Same name, and the same club unless the pasted line gives none. */
+  const alreadyListed = (row: PastedRow) =>
+    skaters?.some(
+      (s) =>
+        s.name.toLowerCase() === row.names[0]!.toLowerCase() &&
+        (!row.club || s.club.toLowerCase() === row.club.toLowerCase()),
+    )
+      ? 'Already listed'
+      : undefined;
+
+  const addPasted = async (rows: PastedRow[]) => {
+    await addSkaters(
+      compId,
+      rows.map((r) => ({ name: r.names[0]!, club: r.club })),
+    );
+    notifications.show({ color: 'green', message: `Added ${rows.length} skaters` });
+  };
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +87,13 @@ export function SkatersTab() {
             style={{ flex: 1 }}
           />
           <Button type="submit">Add skater</Button>
+          <Button
+            variant="light"
+            leftSection={<IconClipboardList size={16} />}
+            onClick={() => setPasting(true)}
+          >
+            Paste list
+          </Button>
         </Group>
       </form>
       <Table striped highlightOnHover>
@@ -102,9 +131,19 @@ export function SkatersTab() {
       </Table>
       {skaters?.length === 0 && (
         <Text c="dimmed" ta="center" py="md">
-          No skaters yet. You can also add skaters directly when adding entries to an event.
+          No skaters yet. Add them one at a time, paste a whole list, or add them directly when entering an
+          event.
         </Text>
       )}
+      <PasteListModal
+        opened={pasting}
+        onClose={() => setPasting(false)}
+        title="Paste a list of skaters"
+        type="solo"
+        noun="skaters"
+        skipReason={alreadyListed}
+        onAdd={addPasted}
+      />
     </Card>
   );
 }

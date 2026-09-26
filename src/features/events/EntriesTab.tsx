@@ -1,15 +1,17 @@
-import { ActionIcon, Card, Group, Modal, Paper, Stack, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Button, Card, Group, Modal, Paper, Stack, Text, Tooltip } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
-import { IconArrowDown, IconArrowUp, IconPencil, IconTrash } from '@tabler/icons-react';
+import { IconArrowDown, IconArrowUp, IconClipboardList, IconPencil, IconTrash } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { useEntries, useSkaters } from '../../app/data';
 import { SortableList } from '../../app/SortableList';
 import { db } from '../../db/db';
-import { addEntry, deleteEntry, reorderEntries, updateEntry } from '../../db/repo';
+import { addEntry, deleteEntry, entryTypeLabel, reorderEntries, updateEntry } from '../../db/repo';
 import { byId, entryClub, entryMembers, entryName } from '../../domain/entryName';
+import type { PastedRow } from '../../domain/pasteList';
 import type { CompEvent, Entry } from '../../domain/types';
+import { PasteListModal } from '../roster/PasteListModal';
 import { draftFromEntry, draftToEntry, EntryForm } from './EntryForm';
 
 export function EntriesTab({ event }: { event: CompEvent }) {
@@ -24,6 +26,29 @@ export function EntriesTab({ event }: { event: CompEvent }) {
     return counts;
   }, [event.id]);
   const [editing, setEditing] = useState<Entry | null>(null);
+  const [pasting, setPasting] = useState(false);
+
+  // Entries are matched by team name, or by their set of skater names in any order.
+  const nameKey = (teamName: string | undefined, names: string[]) =>
+    (teamName || [...names].sort().join('|')).toLowerCase();
+  const pastedKey = (row: PastedRow) => nameKey(row.teamName, row.names);
+  const enteredKeys = new Set(
+    entries.map((e) =>
+      nameKey(
+        e.teamName,
+        e.skaterIds.map((id) => skaters.get(id)?.name ?? ''),
+      ),
+    ),
+  );
+
+  const addPasted = async (rows: PastedRow[]) => {
+    for (const row of rows) {
+      // Re-read so skaters created by earlier lines are reused, not duplicated.
+      const known = await db.skaters.where({ competitionId: event.competitionId }).toArray();
+      await addEntry(event.id, await draftToEntry(event.competitionId, event.entryType, row, known));
+    }
+    notifications.show({ color: 'green', message: `Added ${rows.length} entries` });
+  };
 
   const warnDuplicates = (skaterIds: string[], exceptEntryId?: string) => {
     const dupes = skaterIds.filter((id) =>
@@ -75,9 +100,19 @@ export function EntriesTab({ event }: { event: CompEvent }) {
         />
       </Card>
 
-      <Text size="sm" c="dimmed">
-        {entries.length} entries in start order · drag, or use the arrows, to reorder
-      </Text>
+      <Group justify="space-between">
+        <Text size="sm" c="dimmed">
+          {entries.length} entries in start order · drag, or use the arrows, to reorder
+        </Text>
+        <Button
+          variant="light"
+          size="xs"
+          leftSection={<IconClipboardList size={16} />}
+          onClick={() => setPasting(true)}
+        >
+          Paste list
+        </Button>
+      </Group>
 
       <div>
         <SortableList
@@ -143,6 +178,16 @@ export function EntriesTab({ event }: { event: CompEvent }) {
           )}
         />
       </div>
+
+      <PasteListModal
+        opened={pasting}
+        onClose={() => setPasting(false)}
+        title={`Paste ${entryTypeLabel[event.entryType].toLowerCase()} entries`}
+        type={event.entryType}
+        noun="entries"
+        skipReason={(row) => (enteredKeys.has(pastedKey(row)) ? 'Already entered' : undefined)}
+        onAdd={addPasted}
+      />
 
       <Modal opened={!!editing} onClose={() => setEditing(null)} title="Edit entry" size="xl">
         {editing && (

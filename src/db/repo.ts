@@ -172,6 +172,10 @@ export async function addSkater(competitionId: Id, data: Pick<Skater, 'name' | '
   return id;
 }
 
+export async function addSkaters(competitionId: Id, list: Pick<Skater, 'name' | 'club'>[]) {
+  await db.skaters.bulkAdd(list.map((data) => ({ id: newId(), competitionId, ...data })));
+}
+
 export const updateSkater = (id: Id, data: Partial<Pick<Skater, 'name' | 'club'>>) =>
   db.skaters.update(id, data);
 
