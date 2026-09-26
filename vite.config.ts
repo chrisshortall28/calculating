@@ -27,7 +27,8 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        // pdf: the CIPA scoring manual linked from the results, so it opens offline too.
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,pdf}'],
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
       },
     }),

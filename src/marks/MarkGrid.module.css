@@ -89,13 +89,6 @@
   min-width: 22px;
 }
 
-.place {
-  font-weight: 700;
-  font-size: var(--mantine-font-size-lg);
-  min-width: 48px;
-  border-left: 2px solid var(--mantine-color-default-border);
-}
-
 /* Single-mark grids: room for the ordinal on the right, matched on the left to keep the box centred. */
 .table td.withOrdinal {
   position: relative;

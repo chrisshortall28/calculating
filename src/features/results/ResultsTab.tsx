@@ -5,7 +5,6 @@ import {
   Button,
   Card,
   Group,
-  List,
   Stack,
   Table,
   Text,
@@ -22,8 +21,9 @@ import type { CompEvent, Competition } from '../../domain/types';
 import { formatTenths } from '../../marks/parseMark';
 import { printJudgeSheets, printResults } from '../../pdf/actions';
 import { officialsLine } from '../../pdf/documents';
-import { ordinalLabel, type ExplainStep } from '../../scoring';
+import { explainJudgeTie, formatVictories, type EventResult } from '../../scoring';
 import { markKey, useEventResult } from '../scoring/useEventResult';
+import { RuleBadge, TieExplanations } from './PlacementRule';
 
 export function ResultsTab({ event }: { event: CompEvent; competition: Competition }) {
   const { loading, segments, entries, markMap, result } = useEventResult(event);
@@ -34,7 +34,7 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
 
   const entryMap = byId(entries);
   const label = (id: string) => (entryMap.get(id) ? entryName(entryMap.get(id)!, skaters) : '?');
-  const multi = segments.length > 1;
+  const judgeLabel = (id: string) => `J${event.judgeIds.indexOf(id) + 1}`;
 
   const run = async (key: string, fn: () => Promise<unknown>) => {
     setBusy(key);
@@ -75,7 +75,7 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
         >
           Results with marks PDF
         </Button>
-        <Tooltip label="Placings only — no major victories, points or judge rankings" withArrow>
+        <Tooltip label="Placings and tie-break rules only — no victories, points or judge rankings" withArrow>
           <Button
             variant="light"
             color="grape"
@@ -113,10 +113,13 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
                 <Table.Th w={60}>Place</Table.Th>
                 <Table.Th>Entry</Table.Th>
                 <Table.Th>Club</Table.Th>
-                <Table.Th ta="center">Major victories</Table.Th>
-                <Table.Th ta="right">Total points</Table.Th>
+                <Table.Th ta="center" title="The CIPA rule that decided a tied place">
+                  Rule
+                </Table.Th>
+                <Table.Th ta="center">Majority victories</Table.Th>
+                <Table.Th ta="right">Total sums</Table.Th>
                 {event.judgeIds.map((j, ji) => (
-                  <Table.Th key={j} ta="center" title={judgeMap.get(j)?.name}>
+                  <Table.Th key={j} ta="center" title={`${judgeMap.get(j)?.name ?? ''} — ranking by sum`}>
                     J{ji + 1}
                   </Table.Th>
                 ))}
@@ -133,8 +136,11 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
                     </Table.Td>
                     <Table.Td fw={500}>{entryName(entry, skaters)}</Table.Td>
                     <Table.Td c="dimmed">{entryClub(entry, skaters)}</Table.Td>
+                    <Table.Td ta="center">
+                      <RuleBadge rule={o.rule} />
+                    </Table.Td>
                     <Table.Td ta="center" fw={600}>
-                      {o.majorVictories}
+                      {formatVictories(o.majorityVictories)}
                     </Table.Td>
                     <Table.Td ta="right">{formatTenths(o.totalTenths)}</Table.Td>
                     {o.judgeRanks.map((rank, i) => (
@@ -147,13 +153,38 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
               })}
             </Table.Tbody>
           </Table>
-          {multi && (
-            <Steps title="How the event result was decided" steps={result.overallSteps} label={label} />
+          <TieExplanations steps={result.steps} label={label} />
+          {result.judgeTies.length > 0 && (
+            <Stack gap={2} mt="md">
+              <Text size="sm" fw={600}>
+                Equal sums from one judge (rule 3)
+              </Text>
+              {result.judgeTies.map((t, i) => (
+                <Text key={i} size="xs" c="dimmed">
+                  {explainJudgeTie(t, label, judgeLabel)}
+                </Text>
+              ))}
+            </Stack>
           )}
         </Card>
       )}
 
-      <Accordion variant="separated" multiple defaultValue={segments.map((s) => s.id)}>
+      <Accordion variant="separated" multiple defaultValue={['victories', ...segments.map((s) => s.id)]}>
+        {result.complete && (
+          <Accordion.Item value="victories">
+            <Accordion.Control>
+              <Text fw={600}>Summary of scores and table of victories</Text>
+            </Accordion.Control>
+            <Accordion.Panel>
+              <VictoriesTable
+                event={event}
+                result={result}
+                entryIds={entries.map((e) => e.id)}
+                label={label}
+              />
+            </Accordion.Panel>
+          </Accordion.Item>
+        )}
         {segments.map((seg, si) => {
           const sr = result.segments[si]!;
           const multiKey = seg.markKeys.length > 1;
@@ -173,26 +204,21 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
                     <Table.Tr>
                       <Table.Th>Entry</Table.Th>
                       {event.judgeIds.map((j, ji) => (
-                        <Table.Th key={j} ta="center" colSpan={seg.markKeys.length + 1}>
+                        <Table.Th key={j} ta="center" colSpan={seg.markKeys.length}>
                           J{ji + 1} {judgeMap.get(j)?.name}
                         </Table.Th>
                       ))}
-                      <Table.Th ta="center">Place</Table.Th>
                     </Table.Tr>
                     {multiKey && (
                       <Table.Tr>
                         <Table.Th />
-                        {event.judgeIds.map((j) => [
-                          ...seg.markKeys.map((k) => (
+                        {event.judgeIds.map((j) =>
+                          seg.markKeys.map((k) => (
                             <Table.Th key={j + k} ta="center">
                               {markKeyLabel(k)}
                             </Table.Th>
                           )),
-                          <Table.Th key={j + 'pl'} ta="center" c="dimmed">
-                            pl
-                          </Table.Th>,
-                        ])}
-                        <Table.Th />
+                        )}
                       </Table.Tr>
                     )}
                   </Table.Thead>
@@ -200,30 +226,17 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
                     {entries.map((e) => (
                       <Table.Tr key={e.id}>
                         <Table.Td>{entryName(e, skaters)}</Table.Td>
-                        {event.judgeIds.map((j) => [
-                          ...seg.markKeys.map((k) => (
+                        {event.judgeIds.map((j) =>
+                          seg.markKeys.map((k) => (
                             <Table.Td key={j + k} ta="center">
                               {formatTenths(markMap.get(markKey(k, j, e.id))) || '—'}
                             </Table.Td>
                           )),
-                          <Table.Td key={j + 'pl'} ta="center" c="dimmed">
-                            {sr.complete ? sr.ordinals.get(j)?.get(e.id) : ''}
-                          </Table.Td>,
-                        ])}
-                        <Table.Td ta="center" fw={700}>
-                          {sr.places.get(e.id) ?? ''}
-                        </Table.Td>
+                        )}
                       </Table.Tr>
                     ))}
                   </Table.Tbody>
                 </Table>
-                {sr.complete && (
-                  <Steps
-                    title={`Majority needed: ${result.majority} of ${event.judgeIds.length} judges`}
-                    steps={sr.steps}
-                    label={label}
-                  />
-                )}
               </Accordion.Panel>
             </Accordion.Item>
           );
@@ -233,36 +246,99 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
   );
 }
 
-function Steps({
-  title,
-  steps,
+/**
+ * The CIPA master chart: each judge's sum per entry (summary of scores), then the judges'
+ * victories of each entry over every other (table of victories).
+ */
+function VictoriesTable({
+  event,
+  result,
+  entryIds,
   label,
 }: {
-  title: string;
-  steps: ExplainStep[];
+  event: CompEvent;
+  result: EventResult;
+  entryIds: string[];
   label: (id: string) => string;
 }) {
+  const rowOf = new Map(result.overall.map((o) => [o.entryId, o]));
+  const judgeCount = event.judgeIds.length;
   return (
-    <Stack gap={4} mt="md">
-      <Text size="sm" fw={600}>
-        {title}
+    <Stack>
+      <Text size="sm" c="dimmed">
+        A judge’s sum is the total of all their marks for an entry. Each “v” column shows how many judges gave
+        the entry a higher sum than that opponent; <b>bold</b> is a majority victory (more than half the
+        judges, {result.majority} of {judgeCount}).
       </Text>
-      <List size="sm" spacing={2}>
-        {steps.map((s, i) => (
-          <List.Item key={i}>
-            <Text span fw={600}>
-              {ordinalLabel(s.place)}
-            </Text>{' '}
-            {s.entryIds.map(label).join(', ')} —{' '}
-            <Badge size="xs" variant="light" color={s.rule === 'Tie' ? 'orange' : 'blue'}>
-              {s.rule}
-            </Badge>{' '}
-            <Text span c="dimmed">
-              {s.detail}
-            </Text>
-          </List.Item>
-        ))}
-      </List>
+      <Table.ScrollContainer minWidth={400}>
+        <Table withColumnBorders fz="sm">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th w={30}>#</Table.Th>
+              <Table.Th>Entry</Table.Th>
+              {event.judgeIds.map((j, ji) => (
+                <Table.Th key={j} ta="center">
+                  J{ji + 1}
+                </Table.Th>
+              ))}
+              <Table.Th ta="center">Total sums</Table.Th>
+              {entryIds.map((e, i) => (
+                <Table.Th key={e} ta="center" title={label(e)}>
+                  v{i + 1}
+                </Table.Th>
+              ))}
+              <Table.Th ta="center" title="Majority victories">
+                MV
+              </Table.Th>
+              <Table.Th ta="center" title="Total victories">
+                TV
+              </Table.Th>
+              <Table.Th ta="center">Place</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {entryIds.map((e, i) => {
+              const o = rowOf.get(e)!;
+              return (
+                <Table.Tr key={e}>
+                  <Table.Td c="dimmed">{i + 1}</Table.Td>
+                  <Table.Td>{label(e)}</Table.Td>
+                  {o.judgeSums.map((s, ji) => (
+                    <Table.Td key={ji} ta="center">
+                      {formatTenths(s)}
+                    </Table.Td>
+                  ))}
+                  <Table.Td ta="center" fw={600}>
+                    {formatTenths(o.totalTenths)}
+                  </Table.Td>
+                  {entryIds.map((other) => {
+                    const v = result.victories.get(e)!.get(other);
+                    const majority = v !== undefined && v * 2 > judgeCount;
+                    return (
+                      <Table.Td
+                        key={other}
+                        ta="center"
+                        fw={majority ? 700 : undefined}
+                        c={majority ? undefined : 'dimmed'}
+                      >
+                        {v === undefined ? '—' : formatVictories(v)}
+                      </Table.Td>
+                    );
+                  })}
+                  <Table.Td ta="center" fw={600}>
+                    {formatVictories(o.majorityVictories)}
+                  </Table.Td>
+                  <Table.Td ta="center">{formatVictories(o.totalVictories)}</Table.Td>
+                  <Table.Td ta="center" fw={700}>
+                    {o.place}
+                    {o.tied && '='}
+                  </Table.Td>
+                </Table.Tr>
+              );
+            })}
+          </Table.Tbody>
+        </Table>
+      </Table.ScrollContainer>
     </Stack>
   );
 }
