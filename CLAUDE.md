@@ -24,8 +24,9 @@ npm run build:pages && npm run preview:pages   # the GitHub Pages build at http:
 
 There is no linter beyond `tsc` and Prettier. Tests default to the `node` environment; component
 tests opt into jsdom with a `// @vitest-environment jsdom` first line (see `src/marks/MarkGrid.test.tsx`).
-Every push to `main` runs the tests and deploys to GitHub Pages (`.github/workflows/deploy.yml`),
-which serves the app from the `/calculating/` sub-path — build asset URLs from
+Every push to `main` type-checks, runs the tests and, if they pass, deploys to GitHub Pages
+(`.github/workflows/deploy.yml`); other branches and pull requests are only checked (`test.yml`). Pages
+serves the app from the `/calculating/` sub-path — build asset URLs from
 `import.meta.env.BASE_URL`, never a leading `/`.
 
 ## Architecture

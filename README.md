@@ -62,8 +62,10 @@ npm run generate-icons                         # regenerate PNG icons after chan
 
 ## Deployment and installing
 
-Every push to `main` runs the tests and deploys to GitHub Pages
+Every push to `main` type-checks, runs the tests and, only if they pass, deploys to GitHub Pages
 (`.github/workflows/deploy.yml`): **https://chrisshortall28.github.io/calculating/**
+Pushes to other branches and pull requests are type-checked and tested without deploying
+(`.github/workflows/test.yml`).
 
 One-time setup: repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 
