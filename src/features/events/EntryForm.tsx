@@ -109,8 +109,8 @@ export function EntryForm({
       key={i}
       ref={i === 0 ? firstRef : undefined}
       label={label}
-      data={draft.names[i]?.trim() ? names : []}
-      limit={8}
+      data={names}
+      maxDropdownHeight={280}
       value={draft.names[i] ?? ''}
       onChange={(v) => setName(i, v)}
       error={i === 0 ? error : undefined}
