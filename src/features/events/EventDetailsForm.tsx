@@ -5,6 +5,13 @@ import { MAX_COMPULSORY_DANCES, type CompEvent, type EntryType } from '../../dom
 
 export type EventDetails = Pick<CompEvent, 'name' | 'entryType' | 'compulsoryDanceIds' | 'hasFreeDance'>;
 
+/** How many compulsory dances an event of each entry type usually has, for the field's hint. */
+const TYPICAL_DANCES: Record<EntryType, string> = {
+  solo: 'Usually 1 or 2 for solo events. ',
+  duo: '',
+  team: 'Usually 3 or 4 for team events. ',
+};
+
 export function EventDetailsForm({
   competitionId,
   initial,
@@ -60,7 +67,7 @@ export function EventDetailsForm({
         </Input.Wrapper>
         <MultiSelect
           label="Compulsory dances"
-          description={`Up to ${MAX_COMPULSORY_DANCES}, in the order they are skated`}
+          description={`${TYPICAL_DANCES[form.values.entryType]}Up to ${MAX_COMPULSORY_DANCES}, in the order they are skated`}
           placeholder={
             form.values.compulsoryDanceIds.length < MAX_COMPULSORY_DANCES ? 'Choose dances' : undefined
           }

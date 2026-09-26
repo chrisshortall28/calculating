@@ -28,7 +28,7 @@ export interface CompEvent {
   name: string;
   order: number;
   entryType: EntryType;
-  /** Ordered list of compulsory dance ids (0–3). */
+  /** Ordered list of compulsory dance ids (0–10; usually 1–2 for solo, 3–4 for team). */
   compulsoryDanceIds: Id[];
   hasFreeDance: boolean;
   /** Ordered judge panel; may be empty until the day. */
@@ -78,4 +78,4 @@ export interface Mark {
   tenths: number;
 }
 
-export const MAX_COMPULSORY_DANCES = 3;
+export const MAX_COMPULSORY_DANCES = 10;

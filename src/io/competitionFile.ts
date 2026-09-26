@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { db, newId } from '../db/db';
-import type { Id, SegmentKey } from '../domain/types';
+import { MAX_COMPULSORY_DANCES, type Id, type SegmentKey } from '../domain/types';
 
 export const FORMAT_VERSION = 1;
 
@@ -36,7 +36,7 @@ const fileSchema = z.object({
       name: z.string(),
       order: z.number(),
       entryType: z.enum(['solo', 'duo', 'team']),
-      compulsoryDanceIds: z.array(z.string()).max(3),
+      compulsoryDanceIds: z.array(z.string()).max(MAX_COMPULSORY_DANCES),
       hasFreeDance: z.boolean(),
       judgeIds: z.array(z.string()),
       refereeId: z.string().optional(),

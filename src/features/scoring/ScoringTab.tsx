@@ -1,6 +1,7 @@
 import {
   Alert,
   Badge,
+  Box,
   Button,
   Card,
   Grid,
@@ -8,6 +9,7 @@ import {
   Kbd,
   Progress,
   SegmentedControl,
+  Select,
   Stack,
   Switch,
   Text,
@@ -24,6 +26,10 @@ import type { Direction } from '../../marks/gridNav';
 import { MarkGrid } from '../../marks/MarkGrid';
 import { ProvisionalPanel } from './ProvisionalPanel';
 import { markKey, useEventResult } from './useEventResult';
+
+/** More dances than this switch with a dropdown rather than side-by-side tabs. */
+const MAX_TABBED_DANCES = 5;
+const checkIcon = <IconCheck size={14} color="var(--mantine-color-green-6)" />;
 
 export function ScoringTab({ event }: { event: CompEvent }) {
   const { loading, segments, entries, markMap, result, standing, standingAfter } = useEventResult(event);
@@ -43,6 +49,7 @@ export function ScoringTab({ event }: { event: CompEvent }) {
   const activeId = segmentId ?? initialId;
   const segment = segments.find((s) => s.id === activeId) ?? segments[0];
   const segResult = result.segments.find((s) => s.segmentId === segment?.id);
+  const isComplete = (id: string) => result.segments.find((s) => s.segmentId === id)?.complete;
   const locked = event.status === 'final';
 
   const judges = event.judgeIds.map((id) => ({ id, name: judgeMap.get(id)?.name ?? '?' }));
@@ -101,22 +108,37 @@ export function ScoringTab({ event }: { event: CompEvent }) {
   return (
     <Stack>
       <Group justify="space-between" align="flex-end">
-        <SegmentedControl
-          value={segment.id}
-          onChange={setSegmentId}
-          data={segments.map((s) => {
-            const r = result.segments.find((x) => x.segmentId === s.id);
-            return {
+        {segments.length > MAX_TABBED_DANCES ? (
+          // Too many dances to sit side by side: pick from a list instead.
+          <Select
+            w={260}
+            value={segment.id}
+            onChange={(v) => v && setSegmentId(v)}
+            allowDeselect={false}
+            leftSection={isComplete(segment.id) ? checkIcon : undefined}
+            data={segments.map((s) => ({ value: s.id, label: s.name }))}
+            renderOption={({ option }) => (
+              <Group gap={6} wrap="nowrap">
+                {isComplete(option.value) ? checkIcon : <Box w={14} />}
+                {option.label}
+              </Group>
+            )}
+          />
+        ) : (
+          <SegmentedControl
+            value={segment.id}
+            onChange={setSegmentId}
+            data={segments.map((s) => ({
               value: s.id,
               label: (
                 <Group gap={6} wrap="nowrap">
-                  {r?.complete && <IconCheck size={14} color="var(--mantine-color-green-6)" />}
+                  {isComplete(s.id) && checkIcon}
                   {s.name}
                 </Group>
               ),
-            };
-          })}
-        />
+            }))}
+          />
+        )}
         <Group>
           <SegmentedControl
             size="xs"

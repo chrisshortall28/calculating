@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SegmentKey } from '../domain/types';
 import { calculateEvent } from '../scoring';
-import { resultsDocument, resultsPages } from './documents';
+import { judgeSheets, resultsDocument, resultsPages } from './documents';
 import type { EventData } from './loadEvent';
 
 function sampleEvent(): EventData {
@@ -104,5 +104,44 @@ describe('resultsPages', () => {
     expect(t).not.toContain('Points');
     expect(t).not.toContain('J1');
     expect(t).not.toContain('15.0'); // Amy's total points (3 judges × 5.0)
+  });
+});
+
+describe('judgeSheets', () => {
+  const withDances = (count: number): EventData => {
+    const segments = Array.from({ length: count }, (_, i) => ({
+      id: `cd:${i}`,
+      name: `Dance ${i + 1}`,
+      kind: 'compulsory' as const,
+      markKeys: [`cd:${i}` as SegmentKey],
+    }));
+    return { ...sampleEvent(), segments };
+  };
+
+  it('fits up to four dances on one sheet per official', () => {
+    const pages = judgeSheets([withDances(4)]);
+    expect(pages).toHaveLength(4); // 3 judges + referee
+    const t = texts(pages[0]);
+    expect(t).toEqual(expect.arrayContaining(['Dance 1', 'Dance 4', 'Total points', 'Place']));
+    expect(t).not.toContain('Judge’s sheet (1 of 2)');
+  });
+
+  it('shares more dances evenly across sheets, with the totals on the last', () => {
+    const pages = judgeSheets([withDances(5)]);
+    expect(pages).toHaveLength(8); // 2 sheets each for 3 judges + referee
+    const first = texts(pages[0]);
+    const second = texts(pages[1]);
+    expect(first).toEqual(expect.arrayContaining(['Event — Judge’s sheet (1 of 2)', 'Dance 1', 'Dance 3']));
+    expect(first).not.toContain('Dance 4');
+    expect(first).not.toContain('Total points');
+    expect(second).toEqual(
+      expect.arrayContaining([
+        'Event — Judge’s sheet (2 of 2)',
+        'Dance 4',
+        'Dance 5',
+        'Total points',
+        'Place',
+      ]),
+    );
   });
 });

@@ -72,11 +72,29 @@ interface Official {
   name: string; // blank = name to be written in
 }
 
+/** Most dances one landscape sheet can hold while leaving the Comments columns room to write in. */
+const DANCES_PER_SHEET = 4;
+
+/** Splits the dances into as few sheets as fit, sharing them out evenly (5 dances → 3 + 2). */
+function sheetParts<T>(segments: T[]): T[][] {
+  const count = Math.ceil(segments.length / DANCES_PER_SHEET);
+  const size = Math.ceil(segments.length / count);
+  return Array.from({ length: count }, (_, i) => segments.slice(i * size, (i + 1) * size));
+}
+
 /** Landscape sheet: each dance gets a wide Comments column followed by its mark column(s) — Mark
- * for a compulsory dance, A and B for the free dance; Total points and Place sit on the far right. */
-function judgeSheetPage(d: EventData, { role, label, name }: Official): Content[] {
+ * for a compulsory dance, A and B for the free dance; Total points and Place sit on the far right.
+ * An event with more dances than fit takes several sheets per official, with the totals on the last. */
+function judgeSheetPage(
+  d: EventData,
+  { role, label, name }: Official,
+  segments: EventData['segments'],
+  part: { index: number; count: number },
+): Content[] {
   const MARK_WIDTH = 38;
-  const columns = d.segments.map((s) => ({
+  const isLast = part.index === part.count - 1;
+  const partLabel = part.count > 1 ? ` (${part.index + 1} of ${part.count})` : '';
+  const columns = segments.map((s) => ({
     name: s.name,
     subs: [
       { label: 'Comments', width: '*' as const },
@@ -93,17 +111,26 @@ function judgeSheetPage(d: EventData, { role, label, name }: Official): Content[
       for (let i = 1; i < c.subs.length; i++) cells.push({});
       return cells;
     }),
-    { text: 'Total points', style: 'th', rowSpan: 2 },
-    { text: 'Place', style: 'th', rowSpan: 2 },
+    ...(isLast
+      ? [
+          { text: 'Total points', style: 'th', rowSpan: 2 },
+          { text: 'Place', style: 'th', rowSpan: 2 },
+        ]
+      : []),
   ];
-  const headRow2: TableCell[] = [{}, {}, ...subCols.map((s) => ({ text: s.label, style: 'th' })), {}, {}];
+  const headRow2: TableCell[] = [
+    {},
+    {},
+    ...subCols.map((s) => ({ text: s.label, style: 'th' })),
+    ...(isLast ? [{}, {}] : []),
+  ];
   // Repeats at the top of every page, so a continuation page still says whose sheet it is.
   const colCount = headRow2.length;
   const official = [role, label, name].filter(Boolean).join(' ');
   const noBorder: [boolean, boolean, boolean, boolean] = [false, false, false, false];
   const captionRow: TableCell[] = [
     {
-      text: `${d.event.name} · ${official}`,
+      text: `${d.event.name} · ${official}${partLabel}`,
       colSpan: colCount,
       style: 'small',
       margin: [0, 0, 0, 2],
@@ -129,13 +156,12 @@ function judgeSheetPage(d: EventData, { role, label, name }: Official): Content[
         ],
       },
       ...subCols.map(() => ({ text: '' })),
-      { text: '' },
-      { text: '' },
+      ...(isLast ? [{ text: '' }, { text: '' }] : []),
     ]),
   ];
 
   return [
-    ...header(d, `${role}’s sheet`),
+    ...header(d, `${role}’s sheet${partLabel}`),
     {
       columns: [
         {
@@ -157,7 +183,7 @@ function judgeSheetPage(d: EventData, { role, label, name }: Official): Content[
         headerRows: 3,
         dontBreakRows: true,
         // The Comments columns share the spare width.
-        widths: [18, 130, ...subCols.map((s) => s.width), 44, 34],
+        widths: [18, 130, ...subCols.map((s) => s.width), ...(isLast ? [44, 34] : [])],
         body,
       },
       // The caption row's top edge comes from the table layout, not the cell borders.
@@ -178,7 +204,11 @@ export function judgeSheets(events: EventData[], blankCount = 3): Content[] {
       ? d.judges.map((j, i) => ({ role: 'Judge', label: `J${i + 1}`, name: j.name }))
       : Array.from({ length: blankCount }, (_, i) => ({ role: 'Judge', label: `J${i + 1}`, name: '' }));
     officials.push({ role: 'Referee', label: '', name: d.referee?.name ?? '' });
-    for (const o of officials) pages.push(judgeSheetPage(d, o));
+    const parts = sheetParts(d.segments);
+    for (const o of officials)
+      parts.forEach((segments, index) =>
+        pages.push(judgeSheetPage(d, o, segments, { index, count: parts.length })),
+      );
   }
   return withPageBreaks(pages);
 }
