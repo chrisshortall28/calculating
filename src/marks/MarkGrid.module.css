@@ -95,3 +95,17 @@
   min-width: 48px;
   border-left: 2px solid var(--mantine-color-default-border);
 }
+
+/* Single-mark grids: room for the ordinal on the right, matched on the left to keep the box centred. */
+.table td.withOrdinal {
+  position: relative;
+  padding-inline: 26px;
+}
+
+.inlineOrdinal {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  text-align: center;
+}
