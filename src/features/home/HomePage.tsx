@@ -54,7 +54,7 @@ const ADVANTAGES = [
   {
     icon: <IconShieldCheck size={20} />,
     title: 'Scoring you can trust',
-    text: 'A suite of automated tests checks the calculations against the CIPA scoring system every time Podium changes.',
+    text: 'Results show the full breakdown of how the CIPA scoring system was applied, so every placing can be seen and checked.',
   },
   {
     icon: <IconFileTypePdf size={20} />,
