@@ -46,9 +46,10 @@ function compLine(d: EventData) {
   return [c.name, c.date && new Date(c.date).toLocaleDateString(), c.venue].filter(Boolean).join(' · ');
 }
 
-function header(d: EventData, subtitle?: string): Content[] {
+/** Competition line and event title; pages that share several events show the competition once, in the page header. */
+function header(d: EventData, subtitle?: string, withCompetition = true): Content[] {
   return [
-    { text: compLine(d), style: 'comp' },
+    ...(withCompetition ? [{ text: compLine(d), style: 'comp' }] : []),
     { text: d.event.name + (subtitle ? ` — ${subtitle}` : ''), style: 'title' },
   ];
 }
@@ -292,16 +293,19 @@ function detailTables(d: EventData): Content[] {
   });
 }
 
+/** Standard and guest results fit several events per page; with-marks gets a page per event. */
+const sharesPages = (style: ResultsStyle) => style !== 'withMarks';
+
 export function resultsPages(events: EventData[], style: ResultsStyle): Content[] {
   const pages = events
     .filter((d) => d.result.complete)
     .map((d): Content[] => [
-      ...header(d, 'Results'),
+      ...header(d, 'Results', !sharesPages(style)),
       officialsBlock(d),
       resultsTable(d, style === 'guest'),
       ...(style === 'withMarks' ? detailTables(d) : []),
     ]);
-  if (style === 'withMarks') return withPageBreaks(pages);
+  if (!sharesPages(style)) return withPageBreaks(pages);
   // Shorter results share pages: events follow on in order, each kept whole (moved to the next page
   // rather than split). An event taller than a whole page still has to break.
   return pages.map((content, i) => ({
@@ -318,11 +322,28 @@ function withPageBreaks(pages: Content[][]): Content[] {
   }));
 }
 
-export function document(content: Content[], landscape = false): TDocumentDefinitions {
+export function resultsDocument(events: EventData[], style: ResultsStyle): TDocumentDefinitions {
+  const first = events[0];
+  return document(
+    resultsPages(events, style),
+    false,
+    sharesPages(style) && first ? compLine(first) : undefined,
+  );
+}
+
+/** `pageHeader` is repeated at the top of every page. */
+export function document(content: Content[], landscape = false, pageHeader?: string): TDocumentDefinitions {
   return {
     pageSize: 'A4',
     pageOrientation: landscape ? 'landscape' : 'portrait',
-    pageMargins: [36, 36, 36, 40],
+    pageMargins: [36, pageHeader ? 52 : 36, 36, 40],
+    ...(pageHeader && {
+      header: {
+        text: pageHeader,
+        style: 'comp',
+        margin: [36, 24, 36, 0] as [number, number, number, number],
+      },
+    }),
     defaultStyle: { fontSize: 10 },
     styles,
     content: content.length ? content : [{ text: 'Nothing to print.' }],

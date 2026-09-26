@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SegmentKey } from '../domain/types';
 import { calculateEvent } from '../scoring';
-import { resultsPages } from './documents';
+import { resultsDocument, resultsPages } from './documents';
 import type { EventData } from './loadEvent';
 
 function sampleEvent(): EventData {
@@ -59,6 +59,16 @@ describe('resultsPages', () => {
       }
     }
     expect(resultsPages(events, 'withMarks')[1]).toMatchObject({ pageBreak: 'before' });
+  });
+
+  it('shows the competition once per page when events share pages', () => {
+    const events = [sampleEvent(), sampleEvent()];
+    const shared = resultsDocument(events, 'standard');
+    expect(texts(shared.content)).not.toContain('Comp');
+    expect(shared.header).toMatchObject({ text: 'Comp' });
+    const perEvent = resultsDocument(events, 'withMarks');
+    expect(texts(perEvent.content).filter((t) => t === 'Comp')).toHaveLength(2);
+    expect(perEvent.header).toBeUndefined();
   });
 
   it('guest-judge results show placings and officials only', () => {

@@ -1,6 +1,6 @@
 import type { Id } from '../domain/types';
 import { fileNameFor } from '../io/competitionFile';
-import { document, judgeSheets, resultsPages, type ResultsStyle } from './documents';
+import { document, judgeSheets, resultsDocument, type ResultsStyle } from './documents';
 import { loadCompetitionEvents, loadEventData, type EventData } from './loadEvent';
 import { openPdf } from './pdfmake';
 
@@ -27,7 +27,7 @@ const resultsFileSuffix: Record<ResultsStyle, string> = {
 export async function printResults(target: Target, name: string, style: ResultsStyle) {
   const events = load(target);
   await openPdf(
-    events.then((e) => document(resultsPages(e, style))),
+    events.then((e) => resultsDocument(e, style)),
     fileNameFor(`${name} ${resultsFileSuffix[style]}`, 'pdf'),
   );
   const loaded = await events;
