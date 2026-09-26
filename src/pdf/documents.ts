@@ -28,7 +28,13 @@ function header(d: EventData, subtitle?: string): Content[] {
 // Judge sheets: one page per judge with empty boxes for handwritten marks.
 // ---------------------------------------------------------------------------
 
-function judgeSheetPage(d: EventData, judgeLabel: string, judgeName: string): Content[] {
+interface Official {
+  role: 'Judge' | 'Referee';
+  label: string; // "J1"… for judges, "" for the referee
+  name: string; // blank = name to be written in
+}
+
+function judgeSheetPage(d: EventData, { role, label, name }: Official): Content[] {
   const markCols = d.segments.flatMap((s) => s.markKeys.map((k) => ({ seg: s, key: k })));
   const headRow1: TableCell[] = [
     { text: '#', style: 'th', rowSpan: 2 },
@@ -64,13 +70,13 @@ function judgeSheetPage(d: EventData, judgeLabel: string, judgeName: string): Co
   ];
 
   return [
-    ...header(d, 'Judge’s sheet'),
+    ...header(d, `${role}’s sheet`),
     {
       columns: [
         {
           text: [
-            { text: 'Judge: ', bold: true },
-            `${judgeLabel}  ${judgeName || '______________________________'}`,
+            { text: `${role}: `, bold: true },
+            [label, name || '______________________________'].filter(Boolean).join('  '),
           ],
         },
         { text: `${d.rows.length} entries`, alignment: 'right', style: 'comp' },
@@ -100,17 +106,27 @@ function judgeSheetPage(d: EventData, judgeLabel: string, judgeName: string): Co
   ];
 }
 
-/** Sheets for the event's panel, or `blankCount` unnamed sheets if no judges are assigned yet. */
+/**
+ * One sheet per judge on the panel (or `blankCount` unnamed sheets if no judges are assigned
+ * yet), followed by a sheet for the referee (unnamed if no referee is assigned yet).
+ */
 export function judgeSheets(events: EventData[], blankCount = 3): Content[] {
   const pages: Content[][] = [];
   for (const d of events) {
     if (d.segments.length === 0) continue;
-    const judges = d.judges.length
-      ? d.judges.map((j, i) => ({ label: `J${i + 1}`, name: j.name }))
-      : Array.from({ length: blankCount }, (_, i) => ({ label: `J${i + 1}`, name: '' }));
-    for (const j of judges) pages.push(judgeSheetPage(d, j.label, j.name));
+    const officials: Official[] = d.judges.length
+      ? d.judges.map((j, i) => ({ role: 'Judge', label: `J${i + 1}`, name: j.name }))
+      : Array.from({ length: blankCount }, (_, i) => ({ role: 'Judge', label: `J${i + 1}`, name: '' }));
+    officials.push({ role: 'Referee', label: '', name: d.referee?.name ?? '' });
+    for (const o of officials) pages.push(judgeSheetPage(d, o));
   }
   return withPageBreaks(pages);
+}
+
+/** "Judges: J1 A, J2 B, J3 C · Referee: D" */
+export function officialsLine(d: Pick<EventData, 'judges' | 'referee'>): string {
+  const judges = `Judges: ${d.judges.map((j, i) => `J${i + 1} ${j.name}`).join(', ') || '—'}`;
+  return d.referee ? `${judges} · Referee: ${d.referee.name}` : judges;
 }
 
 // ---------------------------------------------------------------------------
@@ -207,7 +223,7 @@ export function resultsPages(events: EventData[], withDetail: boolean): Content[
     .map((d): Content[] => [
       ...header(d, 'Results'),
       {
-        text: `Judges: ${d.judges.map((j, i) => `J${i + 1} ${j.name}`).join(', ')}`,
+        text: officialsLine(d),
         style: 'comp',
         margin: [0, 0, 0, 8],
       },

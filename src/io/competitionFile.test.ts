@@ -19,10 +19,11 @@ async function seed() {
   const e1 = await repo.addEntry(eventId, { skaterIds: [s1] });
   const e2 = await repo.addEntry(eventId, { skaterIds: [s2] });
   const j1 = await repo.addJudge(compId, 'Judge One');
-  await repo.updateEvent(eventId, { judgeIds: [j1] });
+  const ref = await repo.addJudge(compId, 'Referee Person');
+  await repo.updateEvent(eventId, { judgeIds: [j1], refereeId: ref });
   await repo.setMark({ eventId, segmentKey: `cd:${waltz.id}`, judgeId: j1, entryId: e1 }, 57);
   await repo.setMark({ eventId, segmentKey: 'fd:A', judgeId: j1, entryId: e2 }, 61);
-  return { compId, eventId, j1, e1, e2, waltz };
+  return { compId, eventId, j1, ref, e1, e2, waltz };
 }
 
 /** Structure with ids replaced by their position, for comparing copies. */
@@ -52,6 +53,7 @@ function normalise(file: Awaited<ReturnType<typeof exportCompetition>>) {
       competitionId: n(e.competitionId),
       compulsoryDanceIds: e.compulsoryDanceIds.map(n),
       judgeIds: e.judgeIds.map(n),
+      refereeId: e.refereeId && n(e.refereeId),
     })),
     entries: file.entries.map((e) => ({
       ...e,
@@ -110,6 +112,29 @@ describe('competition file round trip', () => {
     expect(await repo.marksAffectedByEventChange(eventId, { judgeIds: [] })).toBe(2);
     await repo.updateEvent(eventId, { judgeIds: [] });
     expect(await db.marks.count()).toBe(0);
+  });
+
+  it('keeps the referee when importing a copy', async () => {
+    const { compId } = await seed();
+    const copyId = await importCompetition(await exportCompetition(compId), 'copy');
+    const [event] = await db.events.where({ competitionId: copyId }).toArray();
+    const referee = await db.judges.get(event!.refereeId!);
+    expect(referee).toMatchObject({ competitionId: copyId, name: 'Referee Person' });
+  });
+
+  it('deleting a judge clears them as referee', async () => {
+    const { eventId, ref } = await seed();
+    await repo.deleteJudge(ref);
+    expect((await db.events.get(eventId))!.refereeId).toBeUndefined();
+  });
+
+  it('a judge can also be the referee; deleting them clears both roles', async () => {
+    const { eventId, j1 } = await seed();
+    await repo.updateEvent(eventId, { refereeId: j1 });
+    await repo.deleteJudge(j1);
+    const ev = (await db.events.get(eventId))!;
+    expect(ev.judgeIds).toEqual([]);
+    expect(ev.refereeId).toBeUndefined();
   });
 
   it('removing the free dance removes only its marks', async () => {

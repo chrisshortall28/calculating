@@ -30,6 +30,8 @@ export interface CompEvent {
   hasFreeDance: boolean;
   /** Ordered judge panel; may be empty until the day. */
   judgeIds: Id[];
+  /** The event's referee (a person from the judges roster; may also sit on the panel). Gives no marks. */
+  refereeId?: Id;
   status: EventStatus;
 }
 

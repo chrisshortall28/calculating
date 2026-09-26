@@ -18,6 +18,7 @@ export interface EventData {
   segments: Segment[];
   rows: EventRow[];
   judges: Judge[];
+  referee?: Judge;
   mark: (key: SegmentKey, judgeId: Id, entryId: Id) => number | undefined;
   result: EventResult;
 }
@@ -55,6 +56,7 @@ export async function loadEventData(eventId: Id): Promise<EventData> {
       members: event.entryType === 'team' ? entryMembers(e, skaters) : '',
     })),
     judges: event.judgeIds.map((id) => judgeMap.get(id)!).filter(Boolean),
+    referee: event.refereeId ? judgeMap.get(event.refereeId) : undefined,
     mark,
     result,
   };
