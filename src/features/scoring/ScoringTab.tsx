@@ -26,7 +26,7 @@ import { ProvisionalPanel } from './ProvisionalPanel';
 import { markKey, useEventResult } from './useEventResult';
 
 export function ScoringTab({ event }: { event: CompEvent }) {
-  const { loading, segments, entries, markMap, result } = useEventResult(event);
+  const { loading, segments, entries, markMap, result, standing, standingAfter } = useEventResult(event);
   const skaters = byId(useSkaters(event.competitionId));
   const judgeMap = byId(useJudges(event.competitionId));
   const [direction, setDirection] = useLocalStorage<Direction>({
@@ -179,7 +179,6 @@ export function ScoringTab({ event }: { event: CompEvent }) {
                 if (event.status === 'setup') void setEventStatus(event.id, 'scoring');
               }}
               ordinals={ordinals}
-              places={segResult?.complete ? segResult.places : undefined}
               direction={direction}
               autoAdvance={autoAdvance}
               readOnly={locked}
@@ -192,7 +191,7 @@ export function ScoringTab({ event }: { event: CompEvent }) {
           </Card>
         </Grid.Col>
         <Grid.Col span={{ base: 12, lg: 4 }}>
-          <ProvisionalPanel result={result} rows={rows} activeSegmentId={segment.id} />
+          <ProvisionalPanel result={result} standing={standing} standingAfter={standingAfter} rows={rows} />
         </Grid.Col>
       </Grid>
     </Stack>

@@ -17,38 +17,47 @@ export interface ScoringInput {
   mark: MarkLookup;
 }
 
-/** Per-entry data a tie-break rule can use when ranking a segment. */
-export interface Candidate {
-  entryId: Id;
-  /** ordinal given by each judge (same order as judgeIds) */
-  ordinals: number[];
-  /** total tenths awarded by each judge (A+B for free dance) */
-  judgeTotals: number[];
-}
-
-export interface TieBreakContext {
-  /** the place column being examined ("kth place or better") */
-  column: number;
-  majority: number;
-  entryCount: number;
-}
-
 /**
- * A tie-break rule scores each candidate; lower score ranks higher.
- * Candidates with equal scores remain tied and go to the next rule.
+ * CIPA placement rules, numbered as in the CIPA scoring manual:
+ *  - `5`  most majority victories (no tie)
+ *  - `6A` / `6B` separate victories between the tied entries (3 or more tied / 2 tied)
+ *  - `7B` total free dance B (artistic impression) marks
+ *  - `7C` total victories
+ *  - `7A` total sums
+ *  - `8`  still equal: the place is shared
  */
-export interface TieBreakRule {
-  id: string;
-  label: string;
-  score: (c: Candidate, ctx: TieBreakContext) => number | number[];
-  describe: (c: Candidate, ctx: TieBreakContext) => string;
+export type PlacementRule = '5' | '6A' | '6B' | '7B' | '7C' | '7A' | '8';
+
+/** One tie-break rule applied to the entries still in contention for a place. */
+export interface RuleApplication {
+  rule: Exclude<PlacementRule, '5' | '8'>;
+  /** Each contender's value under the rule; the highest value stays in contention. */
+  values: { entryId: Id; value: number }[];
 }
 
-export interface ExplainStep {
+/** How one place (or a shared place) was awarded. */
+export interface PlacementStep {
   place: number;
+  /** Entries awarded this place (more than one only under rule 8). */
   entryIds: Id[];
-  rule: string;
-  detail: string;
+  /** The rule that decided the place. */
+  rule: PlacementRule;
+  /** Majority victories the entries were tied on (tie steps only). */
+  tiedOn?: number;
+  /** Entries tied for this place when the tie-break started (tie steps only). */
+  contenders: Id[];
+  /** The tie-break rules applied, in order (tie steps only). */
+  trail: RuleApplication[];
+}
+
+/** A judge who gave two entries the same sum (rule 3). */
+export interface JudgeTie {
+  judgeId: Id;
+  entryIds: [Id, Id];
+  sum: number;
+  /** Winner on the free dance B mark, or undefined for a half victory each. */
+  winner?: Id;
+  bMarks?: [number, number];
 }
 
 export interface SegmentResult {
@@ -56,27 +65,29 @@ export interface SegmentResult {
   name: string;
   complete: boolean;
   missingMarks: number;
-  /** judgeId -> entryId -> ordinal */
+  /** judgeId -> entryId -> that judge's ranking for this dance (shown while scoring) */
   ordinals: Map<Id, Map<Id, number>>;
-  /** judgeId -> entryId -> total tenths */
+  /** judgeId -> entryId -> total tenths for this dance */
   judgeTotals: Map<Id, Map<Id, number>>;
-  /** entryId -> place (only when complete) */
-  places: Map<Id, number>;
-  steps: ExplainStep[];
 }
 
 export interface OverallRow {
   entryId: Id;
   place: number;
-  /** combined score used for ranking (e.g. sum of weighted segment places) */
-  score: number;
-  segmentPlaces: (number | undefined)[];
-  totalTenths: number;
+  /** The place is shared with another entry (rule 8). */
   tied: boolean;
-  /** Each judge's ranking of this entry for the whole event (same order as judgeIds). */
+  /** The rule that decided the place: `5` unless the entry was tied on majority victories. */
+  rule: PlacementRule;
+  /** Majority victories (halves possible). */
+  majorityVictories: number;
+  /** Total victories: every judge victory over every other entry (halves possible). */
+  totalVictories: number;
+  /** Total sums: all judges' sums, in tenths. */
+  totalTenths: number;
+  /** Each judge's sum for the event, in tenths (same order as judgeIds). */
+  judgeSums: number[];
+  /** Each judge's ranking of this entry for the event, by sum (same order as judgeIds). */
   judgeRanks: number[];
-  /** Number of other entries that a majority of judges ranked this entry above. */
-  majorVictories: number;
 }
 
 export interface EventResult {
@@ -84,18 +95,13 @@ export interface EventResult {
   missingMarks: number;
   totalMarks: number;
   majority: number;
+  /** The event has a free dance, so its B marks break ties (rules 3 and 7B). */
+  usesFreeDanceB: boolean;
   segments: SegmentResult[];
+  /** Table of victories: entryId -> opponent entryId -> judge victories (halves possible). */
+  victories: Map<Id, Map<Id, number>>;
+  judgeTies: JudgeTie[];
+  /** Placings in order (empty until every mark is in). */
   overall: OverallRow[];
-  overallSteps: ExplainStep[];
-}
-
-export type JudgeTieRule = 'share' | 'freeDanceB' | 'freeDanceA';
-
-export interface ScoringConfig {
-  /** How to split equal totals from one judge when forming ordinals. */
-  judgeTieRules: JudgeTieRule[];
-  /** Ordered tie-break rules applied when several entries reach a majority together. */
-  tieBreaks: TieBreakRule[];
-  /** Factor applied to each segment place when combining (default 1). */
-  segmentFactor: (segment: ScoringSegment) => number;
+  steps: PlacementStep[];
 }

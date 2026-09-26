@@ -1,93 +1,74 @@
-import { Badge, Card, Group, Stack, Table, Text, Title } from '@mantine/core';
+import { Badge, Card, Group, Table, Text, Title } from '@mantine/core';
 import type { GridRow } from '../../marks/MarkGrid';
-import type { EventResult } from '../../scoring';
+import { formatVictories, type EventResult } from '../../scoring';
+import { RuleBadge } from '../results/PlacementRule';
 
+/**
+ * The event result once every mark is in; before that, the standing from the dances completed so
+ * far (CIPA places the whole event on each judge's sum, so there are no per-dance places).
+ */
 export function ProvisionalPanel({
   result,
+  standing,
+  standingAfter,
   rows,
-  activeSegmentId,
 }: {
   result: EventResult;
+  standing?: EventResult;
+  standingAfter: string[];
   rows: GridRow[];
-  activeSegmentId: string;
 }) {
   const label = new Map(rows.map((r) => [r.id, r.label]));
-  const seg = result.segments.find((s) => s.segmentId === activeSegmentId);
-  const multi = result.segments.length > 1;
-
-  const segRows = seg?.complete ? [...seg.places.entries()].sort((a, b) => a[1] - b[1]) : [];
+  const shown = result.complete ? result : standing;
 
   return (
-    <Stack>
-      {multi && (
-        <Card withBorder>
-          <Group justify="space-between" mb="xs">
-            <Title order={5}>{seg?.name}</Title>
-            {!seg?.complete && (
-              <Badge variant="light" color="gray">
-                Waiting for marks
-              </Badge>
-            )}
-          </Group>
-          {seg?.complete ? (
-            <Table>
-              <Table.Tbody>
-                {segRows.map(([entryId, place]) => (
-                  <Table.Tr key={entryId}>
-                    <Table.Td w={40} fw={700}>
-                      {place}
-                    </Table.Td>
-                    <Table.Td>{label.get(entryId)}</Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          ) : (
-            <Text size="sm" c="dimmed">
-              {seg?.missingMarks} marks still to enter.
-            </Text>
-          )}
-        </Card>
+    <Card withBorder>
+      <Group justify="space-between" mb="xs">
+        <Title order={5}>{result.complete ? 'Event result' : 'Standing so far'}</Title>
+        <Badge variant="light" color={result.complete ? 'green' : 'gray'}>
+          {result.complete ? 'Complete' : 'Provisional'}
+        </Badge>
+      </Group>
+      {!result.complete && standing && (
+        <Text size="xs" c="dimmed" mb="xs">
+          After {standingAfter.join(', ')}.
+        </Text>
       )}
-      <Card withBorder>
-        <Group justify="space-between" mb="xs">
-          <Title order={5}>Event result</Title>
-          <Badge variant="light" color={result.complete ? 'green' : 'gray'}>
-            {result.complete ? 'Complete' : 'Provisional'}
-          </Badge>
-        </Group>
-        {result.complete ? (
-          <Table>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th w={40}>Pl</Table.Th>
-                <Table.Th>Entry</Table.Th>
-                {multi && <Table.Th ta="right">Places</Table.Th>}
+      {shown ? (
+        <Table>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th w={40}>Pl</Table.Th>
+              <Table.Th>Entry</Table.Th>
+              <Table.Th ta="center" title="Majority victories">
+                MV
+              </Table.Th>
+              <Table.Th ta="center">Rule</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {shown.overall.map((o) => (
+              <Table.Tr key={o.entryId}>
+                <Table.Td fw={700}>
+                  {o.place}
+                  {o.tied && '='}
+                </Table.Td>
+                <Table.Td>{label.get(o.entryId)}</Table.Td>
+                <Table.Td ta="center" c="dimmed">
+                  {formatVictories(o.majorityVictories)}
+                </Table.Td>
+                <Table.Td ta="center">
+                  <RuleBadge rule={o.rule} />
+                </Table.Td>
               </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {result.overall.map((o) => (
-                <Table.Tr key={o.entryId}>
-                  <Table.Td fw={700}>
-                    {o.place}
-                    {o.tied && '='}
-                  </Table.Td>
-                  <Table.Td>{label.get(o.entryId)}</Table.Td>
-                  {multi && (
-                    <Table.Td ta="right" c="dimmed">
-                      {o.segmentPlaces.join(', ')}
-                    </Table.Td>
-                  )}
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        ) : (
-          <Text size="sm" c="dimmed">
-            The result appears once every mark has been entered ({result.missingMarks} to go).
-          </Text>
-        )}
-      </Card>
-    </Stack>
+            ))}
+          </Table.Tbody>
+        </Table>
+      ) : (
+        <Text size="sm" c="dimmed">
+          The result appears once every mark has been entered ({result.missingMarks} to go).
+        </Text>
+      )}
+    </Card>
   );
 }

@@ -2,7 +2,15 @@ import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interface
 import { clubColors, onColor } from '../app/clubColors';
 import { markKeyLabel } from '../domain/segments';
 import { formatTenths } from '../marks/parseMark';
-import { ordinalLabel } from '../scoring';
+import {
+  explainJudgeTie,
+  explainStep,
+  formatVictories,
+  ordinalLabel,
+  RULES,
+  ruleLabel,
+  type PlacementRule,
+} from '../scoring';
 import type { EventData } from './loadEvent';
 
 const styles: TDocumentDefinitions['styles'] = {
@@ -200,9 +208,10 @@ function officialsBlock(d: Officials): Content {
 // ---------------------------------------------------------------------------
 
 /**
- * - `standard`: placings with major victories, total points and each judge's ranking
- * - `withMarks`: standard plus every judge's marks and the placing explanation for each dance
- * - `guest`: for events with guest judges — placings only (place, entry, club), no scores
+ * - `standard`: placings with points (total sums), majority victories, the tie-break rule and each judge's ranking
+ * - `withMarks`: standard plus the summary of scores and table of victories, how each tie was
+ *   resolved, and every judge's marks for each dance
+ * - `guest`: for events with guest judges — placings and tie-break rules only, no scores
  */
 export type ResultsStyle = 'standard' | 'withMarks' | 'guest';
 
@@ -211,14 +220,16 @@ function resultsTable(d: EventData, placingsOnly: boolean): Content {
   const name = new Map(d.rows.map((r) => [r.id, r]));
   const center = 'center' as const;
   const { th, layout } = clubTable(d);
+  // Place, Entry, Club, then Points, Majority victories, Rule and each judge's ranking (the
+  // guest style keeps only the Rule of those).
   const body: TableCell[][] = [
     [
       th('Place'),
       th('Entry', { alignment: 'left' }),
       th('Club', { alignment: 'left' }),
-      ...(placingsOnly
-        ? []
-        : [th('Major victories'), th('Total points'), ...d.judges.map((_, i) => th(`J${i + 1}`))]),
+      ...(placingsOnly ? [] : [th('Points'), th('Majority victories')]),
+      th('Rule'),
+      ...(placingsOnly ? [] : d.judges.map((_, i) => th(`J${i + 1}`))),
     ],
     ...result.overall.map((o) => {
       const r = name.get(o.entryId)!;
@@ -231,64 +242,164 @@ function resultsTable(d: EventData, placingsOnly: boolean): Content {
         ...(placingsOnly
           ? []
           : [
-              { text: String(o.majorVictories), bold: true, alignment: center },
               { text: formatTenths(o.totalTenths), alignment: center },
-              ...o.judgeRanks.map((rank) => ({ text: String(rank), alignment: center, color: '#555' })),
+              { text: formatVictories(o.majorityVictories), bold: true, alignment: center },
             ]),
+        { text: o.rule === '5' ? '' : ruleLabel(o.rule), alignment: center, color: '#555' },
+        ...(placingsOnly
+          ? []
+          : o.judgeRanks.map((rank) => ({ text: String(rank), alignment: center, color: '#555' }))),
       ];
     }),
   ];
   return {
     table: {
       headerRows: 1,
-      widths: placingsOnly ? [34, '*', 180] : [34, '*', 110, 48, 44, ...d.judges.map(() => 24)],
+      widths: placingsOnly ? [34, '*', 160, 58] : [34, '*', 90, 44, 52, 58, ...d.judges.map(() => 22)],
       body,
     },
     layout,
   };
 }
 
+/** Key to the rule numbers used in an event's Rule column, e.g. "Tie-break rules: 6B separate victories · 8 tie". */
+function ruleKey(d: EventData): Content[] {
+  const used = [...new Set(d.result.overall.map((o) => o.rule))].filter((r) => r !== '5');
+  if (used.length === 0) return [];
+  const order: PlacementRule[] = ['6A', '6B', '7B', '7C', '7A', '8'];
+  used.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  return [
+    {
+      text: `CIPA tie-break rules: ${used.map((r) => `${ruleLabel(r)} ${RULES[r].name.toLowerCase()}`).join(' · ')}`,
+      style: 'small',
+      margin: [0, 3, 0, 0],
+    },
+  ];
+}
+
+/** CIPA master chart: judges' sums, then each entry's judge victories over every other entry. */
+function victoriesTable(d: EventData): Content[] {
+  const { result } = d;
+  const rowOf = new Map(result.overall.map((o) => [o.entryId, o]));
+  const judgeCount = d.judges.length;
+  const { th, layout } = clubTable(d);
+  const center = 'center' as const;
+  const head: TableCell[] = [
+    th('#'),
+    th('Entry', { alignment: 'left' }),
+    ...d.judges.map((_, i) => th(`J${i + 1}`)),
+    th('Total'),
+    ...d.rows.map((_, i) => th(`v${i + 1}`)),
+    th('MV'),
+    th('TV'),
+    th('Pl'),
+  ];
+  const rows: TableCell[][] = d.rows.map((r, i) => {
+    const o = rowOf.get(r.id)!;
+    return [
+      { text: String(i + 1), alignment: center, color: '#555' },
+      r.name,
+      ...o.judgeSums.map((s) => ({ text: formatTenths(s), alignment: center })),
+      { text: formatTenths(o.totalTenths), alignment: center, bold: true },
+      ...d.rows.map((other) => {
+        const v = result.victories.get(r.id)!.get(other.id);
+        return v === undefined
+          ? { text: '—', alignment: center, color: '#999' }
+          : {
+              text: formatVictories(v),
+              alignment: center,
+              bold: v * 2 > judgeCount,
+              color: v * 2 > judgeCount ? '#000' : '#777',
+            };
+      }),
+      { text: formatVictories(o.majorityVictories), alignment: center, bold: true },
+      { text: formatVictories(o.totalVictories), alignment: center },
+      { text: `${o.place}${o.tied ? '=' : ''}`, alignment: center, bold: true },
+    ];
+  });
+  return [
+    { text: 'Summary of scores and table of victories', style: 'h2' },
+    {
+      table: {
+        headerRows: 1,
+        widths: [12, '*', ...d.judges.map(() => 26), 30, ...d.rows.map(() => 16), 20, 20, 18],
+        body: [head, ...rows],
+      },
+      layout,
+      fontSize: d.rows.length > 12 ? 6.5 : 8,
+    } as Content,
+    {
+      text: `Judges’ sums, then each entry’s judge victories over every other (v1 = entry 1…). Bold: majority victory (${result.majority} of ${judgeCount} judges). MV majority victories · TV total victories.`,
+      style: 'small',
+      margin: [0, 3, 0, 0],
+    },
+  ];
+}
+
+/** How each tie on majority victories was resolved, and any equal sums from one judge (rule 3). */
+function tieNotes(d: EventData): Content[] {
+  const name = (id: string) => d.rows.find((r) => r.id === id)?.name ?? '?';
+  const judge = (id: string) => `J${d.judges.findIndex((j) => j.id === id) + 1}`;
+  const ties = d.result.steps.filter((s) => s.rule !== '5');
+  const out: Content[] = [];
+  if (ties.length)
+    out.push(
+      { text: 'How ties were resolved', style: 'h2' },
+      ...ties.map((s) => ({
+        stack: [
+          {
+            text: [
+              {
+                text: `${ordinalLabel(s.place)}${s.entryIds.length > 1 ? '=' : ''} ${s.entryIds.map(name).join(', ')}`,
+                bold: true,
+              },
+              ` — rule ${ruleLabel(s.rule)}`,
+            ],
+            fontSize: 9,
+          },
+          ...explainStep(s, name).map((line) => ({ text: line, style: 'small' })),
+        ],
+        margin: [0, 0, 0, 3] as [number, number, number, number],
+      })),
+    );
+  if (d.result.judgeTies.length)
+    out.push(
+      { text: 'Equal sums from one judge (rule 3)', style: 'h2' },
+      ...d.result.judgeTies.map((t) => ({ text: explainJudgeTie(t, name, judge), style: 'small' })),
+    );
+  return out;
+}
+
 function detailTables(d: EventData): Content[] {
-  const name = new Map(d.rows.map((r) => [r.id, r.name]));
-  return d.segments.flatMap((seg, si) => {
-    const sr = d.result.segments[si]!;
+  return d.segments.flatMap((seg) => {
     const multi = seg.markKeys.length > 1;
     const { th, layout } = clubTable(d);
     const head: TableCell[] = [
       th('Entry', { alignment: 'left' }),
-      ...d.judges.flatMap((_, ji) => [
-        ...seg.markKeys.map((k) => th(`J${ji + 1}${multi ? ` ${markKeyLabel(k)}` : ''}`)),
-        th('Pl'),
-      ]),
-      th('Place'),
+      ...d.judges.flatMap((_, ji) =>
+        seg.markKeys.map((k) => th(`J${ji + 1}${multi ? ` ${markKeyLabel(k)}` : ''}`)),
+      ),
     ];
     const rows: TableCell[][] = d.rows.map((r) => [
       r.name,
-      ...d.judges.flatMap((j) => [
-        ...seg.markKeys.map((k) => ({
+      ...d.judges.flatMap((j) =>
+        seg.markKeys.map((k) => ({
           text: formatTenths(d.mark(k, j.id, r.id)),
           alignment: 'center' as const,
         })),
-        { text: String(sr.ordinals.get(j.id)?.get(r.id) ?? ''), alignment: 'center' as const, color: '#555' },
-      ]),
-      { text: String(sr.places.get(r.id) ?? ''), bold: true, alignment: 'center' as const },
+      ),
     ]);
-    const steps = sr.steps.map((s) => ({
-      text: `${ordinalLabel(s.place)}: ${s.entryIds.map((id) => name.get(id)).join(', ')} — ${s.rule}: ${s.detail}`,
-      style: 'small',
-    }));
     return [
       { text: seg.name, style: 'h2' },
       {
         table: {
           headerRows: 1,
-          widths: ['*', ...d.judges.flatMap(() => [...seg.markKeys.map(() => 30), 18]), 34],
+          widths: ['*', ...d.judges.flatMap(() => seg.markKeys.map(() => 34))],
           body: [head, ...rows],
         },
         layout,
         fontSize: 9,
       } as Content,
-      { stack: steps, margin: [0, 4, 0, 0] },
     ];
   });
 }
@@ -303,7 +414,8 @@ export function resultsPages(events: EventData[], style: ResultsStyle): Content[
       ...header(d, 'Results', !sharesPages(style)),
       officialsBlock(d),
       resultsTable(d, style === 'guest'),
-      ...(style === 'withMarks' ? detailTables(d) : []),
+      ...ruleKey(d),
+      ...(style === 'withMarks' ? [...tieNotes(d), ...victoriesTable(d), ...detailTables(d)] : []),
     ]);
   if (!sharesPages(style)) return withPageBreaks(pages);
   // Shorter results share pages: events follow on in order, each kept whole (moved to the next page

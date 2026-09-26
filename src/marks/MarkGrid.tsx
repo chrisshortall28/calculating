@@ -25,8 +25,6 @@ interface Props {
   onCommit: (key: SegmentKey, judgeId: Id, entryId: Id, tenths: number | null) => void;
   /** judgeId -> entryId -> ordinal, shown beside each judge's marks */
   ordinals?: Map<Id, Map<Id, number>>;
-  /** entryId -> segment place */
-  places?: Map<Id, number>;
   direction: Direction;
   autoAdvance: boolean;
   readOnly: boolean;
@@ -39,19 +37,8 @@ interface Props {
  * mark key (one for a compulsory dance, A and B for the free dance).
  */
 export function MarkGrid(props: Props) {
-  const {
-    rows,
-    judges,
-    markKeys,
-    getValue,
-    onCommit,
-    ordinals,
-    places,
-    direction,
-    autoAdvance,
-    readOnly,
-    focusKey,
-  } = props;
+  const { rows, judges, markKeys, getValue, onCommit, ordinals, direction, autoAdvance, readOnly, focusKey } =
+    props;
   const cols = judges.length * markKeys.length;
   const refs = useRef(new Map<string, HTMLInputElement>());
   const [active, setActive] = useState<Cell | null>(null);
@@ -123,11 +110,6 @@ export function MarkGrid(props: Props) {
                 </Text>
               </th>
             ))}
-            {places && (
-              <th className={classes.place} rowSpan={multi ? 2 : 1}>
-                Place
-              </th>
-            )}
           </tr>
           {multi && (
             <tr>
@@ -196,7 +178,6 @@ export function MarkGrid(props: Props) {
                   {ordinalCol && <td className={classes.ordinal}>{ordinals.get(j.id)?.get(row.id) ?? ''}</td>}
                 </Fragment>
               ))}
-              {places && <td className={classes.place}>{places.get(row.id) ?? ''}</td>}
             </tr>
           ))}
         </tbody>

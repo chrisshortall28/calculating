@@ -43,11 +43,13 @@ function texts(node: unknown): string[] {
 }
 
 describe('resultsPages', () => {
-  it('standard results include major victories, points and judge rankings', () => {
+  it('standard results include points, majority victories, the rule and judge rankings, in that order', () => {
     const t = texts(resultsPages([sampleEvent()], 'standard'));
-    expect(t).toEqual(
-      expect.arrayContaining(['Major victories', 'Total points', 'J1', 'Referee', 'Kate', '15.0']),
-    );
+    expect(t).toEqual(expect.arrayContaining(['Referee', 'Kate', '15.0']));
+    const order = ['Place', 'Entry', 'Club', 'Points', 'Majority victories', 'Rule', 'J1', 'J2', 'J3'];
+    const at = order.map((h) => t.indexOf(h));
+    expect(at.every((i) => i >= 0)).toBe(true);
+    expect([...at].sort((a, b) => a - b)).toEqual(at);
   });
 
   it('standard and guest results share pages but keep each event whole; with-marks gets a page each', () => {
@@ -71,11 +73,35 @@ describe('resultsPages', () => {
     expect(perEvent.header).toBeUndefined();
   });
 
+  it('shows the rule that resolved a tie, with a key, in every style', () => {
+    const d = sampleEvent();
+    const mark = () => 50; // every mark equal: a tie that no rule splits
+    const tied = {
+      ...d,
+      mark,
+      result: calculateEvent({
+        entryIds: ['e0', 'e1'],
+        judgeIds: d.judges.map((j) => j.id),
+        segments: d.segments,
+        mark,
+      }),
+    };
+    for (const style of ['standard', 'withMarks', 'guest'] as const) {
+      const t = texts(resultsPages([tied], style));
+      expect(t).toEqual(expect.arrayContaining(['Rule', '8', '1=', 'CIPA tie-break rules: 8 tie']));
+    }
+    const detail = texts(resultsPages([tied], 'withMarks'));
+    expect(detail).toEqual(
+      expect.arrayContaining(['How ties were resolved', 'Summary of scores and table of victories']),
+    );
+    expect(texts(resultsPages([sampleEvent()], 'standard'))).not.toContain('CIPA tie-break rules: 8 tie');
+  });
+
   it('guest-judge results show placings and officials only', () => {
     const t = texts(resultsPages([sampleEvent()], 'guest'));
     expect(t).toEqual(expect.arrayContaining(['Place', 'Entry', 'Club', 'Amy', 'Judges', 'Referee', 'Kate']));
-    expect(t).not.toContain('Major victories');
-    expect(t).not.toContain('Total points');
+    expect(t).not.toContain('Majority victories');
+    expect(t).not.toContain('Points');
     expect(t).not.toContain('J1');
     expect(t).not.toContain('15.0'); // Amy's total points (3 judges × 5.0)
   });

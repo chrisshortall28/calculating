@@ -1,29 +1,22 @@
 import type { Id } from '../domain/types';
-import type { JudgeTieRule, MarkLookup, ScoringSegment } from './types';
+import type { MarkLookup, ScoringSegment } from './types';
 
 /**
- * Converts one judge's marks for a segment into ordinals (1 = best).
- * Totals are compared first (A+B for free dance); equal totals are split by the
- * configured rules, and any remaining ties share the better ordinal (1, 2, 2, 4).
+ * Ranks one judge's marks for a dance (1 = best), for display while scoring. Totals are compared
+ * first (A+B for the free dance) and equal free dance totals are split by the B mark, as in CIPA
+ * rule 3; any remaining tie shares the better ranking (1, 2, 2, 4).
  */
 export function judgeOrdinals(
   segment: ScoringSegment,
   judgeId: Id,
   entryIds: Id[],
   mark: MarkLookup,
-  tieRules: JudgeTieRule[],
 ): { ordinals: Map<Id, number>; totals: Map<Id, number> } {
   const totals = new Map<Id, number>();
   const keyOf = (entryId: Id): number[] => {
     const total = segment.markKeys.reduce((s, k) => s + (mark(k, judgeId, entryId) ?? 0), 0);
     totals.set(entryId, total);
-    const key = [-total];
-    for (const rule of tieRules) {
-      if (segment.kind !== 'free') continue;
-      if (rule === 'freeDanceB') key.push(-(mark('fd:B', judgeId, entryId) ?? 0));
-      if (rule === 'freeDanceA') key.push(-(mark('fd:A', judgeId, entryId) ?? 0));
-    }
-    return key;
+    return segment.kind === 'free' ? [-total, -(mark('fd:B', judgeId, entryId) ?? 0)] : [-total];
   };
 
   const keyed = entryIds.map((entryId) => ({ entryId, key: keyOf(entryId) }));
