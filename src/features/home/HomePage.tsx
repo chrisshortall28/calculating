@@ -36,7 +36,7 @@ const STEPS = [
   {
     icon: <IconCalculator size={22} />,
     title: 'Calculate',
-    text: 'Placings are worked out as you go by majority of placings, with the reasoning shown.',
+    text: 'Placings are worked out by the CIPA system of majority victories, showing how every tie was resolved.',
   },
   {
     icon: <IconFileTypePdf size={22} />,
@@ -149,7 +149,7 @@ export function HomePage() {
                 <Stack gap="sm" h="100%" justify="space-between">
                   <div>
                     <Text className="display" fz={24}>
-                      Running another event?
+                      Calculating an event?
                     </Text>
                     <Text c="dimmed" size="sm" mt={4}>
                       Create a competition, then add its events, skaters and judges. You can import a
