@@ -51,11 +51,15 @@ export function EventDetailsForm({
           required
           {...form.getInputProps('name')}
         />
-        <Input.Wrapper label="Entry type" description="Team is for team, superteam, quartet and show events">
+        <Input.Wrapper
+          label="Entry type"
+          description="Use ‘Team’ for team, super-team, quartet and show events"
+          inputWrapperOrder={['label', 'input', 'description', 'error']}
+        >
           <SegmentedControl
             display="flex"
             w="fit-content"
-            mt={4}
+            my={4}
             data={[
               { value: 'solo', label: 'Solo' },
               { value: 'duo', label: 'Duo' },
