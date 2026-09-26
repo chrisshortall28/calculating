@@ -109,7 +109,7 @@ export function CompetitionsPage() {
         meta={<Text size="sm">Set up events, enter judges’ marks and print results — all offline.</Text>}
         actions={
           <>
-            <FileButton onChange={onFile} accept="application/json,.json">
+            <FileButton onChange={onFile} accept=".pod,.json">
               {(props) => (
                 <Button variant="white" color="navy.9" leftSection={<IconFileImport size={16} />} {...props}>
                   Import

@@ -7,7 +7,7 @@ results as PDFs.
 
 - Runs entirely in the browser (installable PWA). Data lives in IndexedDB on the device,
   and there is no server.
-- **Export file** (on each competition) saves a `.podium.json` backup, and **Import** restores it.
+- **Export file** (on each competition) saves a `.pod` backup (JSON inside), and **Import** restores it (older `.json` backups still import).
 
 ## Development
 
