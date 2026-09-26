@@ -26,7 +26,7 @@ export function CompetitionSettingsTab() {
       confirmProps: { color: 'red' },
       onConfirm: async () => {
         await deleteCompetition(compId);
-        navigate('/');
+        navigate('/competitions');
       },
     });
 

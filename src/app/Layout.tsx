@@ -1,6 +1,7 @@
 import {
   ActionIcon,
   AppShell,
+  Button,
   Group,
   Text,
   Tooltip,
@@ -8,16 +9,17 @@ import {
   useComputedColorScheme,
   useMantineColorScheme,
 } from '@mantine/core';
-import { IconMoon, IconSun, IconTrophyFilled } from '@tabler/icons-react';
+import { IconHelpCircle, IconMoon, IconSun, IconTrophyFilled } from '@tabler/icons-react';
 import { Link, Outlet } from 'react-router';
 import classes from './Layout.module.css';
 import { PwaUpdatePrompt } from './PwaUpdatePrompt';
+import { StatusBar } from './StatusBar';
 
 export function Layout() {
   const { setColorScheme } = useMantineColorScheme();
   const scheme = useComputedColorScheme('light');
   return (
-    <AppShell header={{ height: 60 }} padding="lg">
+    <AppShell header={{ height: 60 }} footer={{ height: 32 }} padding="lg">
       <AppShell.Header className={classes.header}>
         <Group h="100%" px="lg" justify="space-between" wrap="nowrap">
           <UnstyledButton component={Link} to="/" className={classes.brand} aria-label="Podium home">
@@ -31,23 +33,51 @@ export function Layout() {
               </Text>
             </span>
           </UnstyledButton>
-          <Tooltip label={scheme === 'dark' ? 'Light mode' : 'Dark mode'}>
-            <ActionIcon
+          <Group gap="xs" wrap="nowrap">
+            <Button
+              component={Link}
+              to="/guide"
               variant="subtle"
               color="gray.0"
-              size="lg"
-              onClick={() => setColorScheme(scheme === 'dark' ? 'light' : 'dark')}
-              aria-label="Toggle colour scheme"
+              leftSection={<IconHelpCircle size={20} />}
+              visibleFrom="xs"
             >
-              {scheme === 'dark' ? <IconSun size={20} /> : <IconMoon size={20} />}
-            </ActionIcon>
-          </Tooltip>
+              Guide
+            </Button>
+            <Tooltip label="Guide">
+              <ActionIcon
+                component={Link}
+                to="/guide"
+                variant="subtle"
+                color="gray.0"
+                size="lg"
+                hiddenFrom="xs"
+                aria-label="Guide"
+              >
+                <IconHelpCircle size={20} />
+              </ActionIcon>
+            </Tooltip>
+            <Tooltip label={scheme === 'dark' ? 'Light mode' : 'Dark mode'}>
+              <ActionIcon
+                variant="subtle"
+                color="gray.0"
+                size="lg"
+                onClick={() => setColorScheme(scheme === 'dark' ? 'light' : 'dark')}
+                aria-label="Toggle colour scheme"
+              >
+                {scheme === 'dark' ? <IconSun size={20} /> : <IconMoon size={20} />}
+              </ActionIcon>
+            </Tooltip>
+          </Group>
         </Group>
       </AppShell.Header>
       <AppShell.Main>
         <Outlet />
         <PwaUpdatePrompt />
       </AppShell.Main>
+      <AppShell.Footer className={classes.footer}>
+        <StatusBar />
+      </AppShell.Footer>
     </AppShell>
   );
 }

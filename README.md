@@ -7,7 +7,7 @@ results as PDFs.
 
 - Runs entirely in the browser (installable PWA). Data lives in IndexedDB on the device,
   and there is no server.
-- **Export file** (on each competition) saves a `.podium.json` backup, and **Import** restores it.
+- **Export file** (on each competition) saves a `.pod` backup (JSON inside), and **Import** restores it (older `.json` backups still import).
 
 ## Development
 
@@ -33,6 +33,9 @@ To install on the competition laptop, open the URL while online in Chrome or Edg
 When a new version is deployed, the app shows "Update available" the next time it starts
 online; nothing changes unless the Calculator clicks Reload.
 
+To release a new version, bump `version` in `package.json` (shown in the status bar) and add an
+entry to `src/app/changelog.ts` (shown in the "What's New?" popup when the version is clicked).
+
 ## Layout
 
 | Path | What |
@@ -43,7 +46,7 @@ online; nothing changes unless the Calculator clicks Reload.
 | `src/db/` | Dexie schema and repository functions, which cascade deletes of marks. |
 | `src/io/` | Competition file export/import (versioned, validated with zod). |
 | `src/pdf/` | Judge sheets and results PDFs (pdfmake, lazy-loaded). |
-| `src/features/` | Screens: competitions, events, rosters, scoring, results. |
+| `src/features/` | Screens: home, competitions, events, rosters, scoring, results. |
 
 ## Scoring rules (initial approximation, to be checked against the CIPA rulebook)
 
@@ -60,3 +63,9 @@ online; nothing changes unless the Calculator clicks Reload.
 Rules are data plus pure functions (`ScoringConfig`), so they can be reordered or replaced
 without touching the UI. Add worked examples from the rulebook to
 `src/scoring/scoring.test.ts`.
+
+## Licence
+
+Podium is free to use, copy, modify and share for any purpose, under the [BSD Zero Clause
+License](LICENSE). The open-source packages it is built on keep their own (permissive) licences;
+see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

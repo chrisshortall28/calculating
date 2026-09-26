@@ -94,6 +94,9 @@ export function MarkGrid(props: Props) {
   }
 
   const multi = markKeys.length > 1;
+  // With one mark per judge the ordinal sits inside the mark's cell (padded equally on both sides), so
+  // the box is centred under the judge heading rather than off to one side of a separate ordinal column.
+  const ordinalCol = !!ordinals && multi;
   const activeJudge = active ? Math.floor(active.col / markKeys.length) : -1;
 
   return (
@@ -110,7 +113,7 @@ export function MarkGrid(props: Props) {
             {judges.map((j, ji) => (
               <th
                 key={j.id}
-                colSpan={markKeys.length + (ordinals ? 1 : 0)}
+                colSpan={markKeys.length + (ordinalCol ? 1 : 0)}
                 className={`${classes.judgeStart} ${ji === activeJudge ? classes.activeCol : ''}`}
                 title={j.name}
               >
@@ -138,7 +141,7 @@ export function MarkGrid(props: Props) {
                       {markKeyLabel(k)}
                     </th>
                   ))}
-                  {ordinals && <th className={classes.ordinal}>pl</th>}
+                  {ordinalCol && <th className={classes.ordinal}>pl</th>}
                 </Fragment>
               ))}
             </tr>
@@ -164,7 +167,10 @@ export function MarkGrid(props: Props) {
                     const col = ji * markKeys.length + ki;
                     const cell = { row: r, col };
                     return (
-                      <td key={key} className={ki === 0 ? classes.judgeStart : undefined}>
+                      <td
+                        key={key}
+                        className={`${ki === 0 ? classes.judgeStart : ''} ${ordinals && !multi ? classes.withOrdinal : ''}`}
+                      >
                         <MarkCell
                           value={getValue(key, j.id, row.id)}
                           readOnly={readOnly}
@@ -179,10 +185,15 @@ export function MarkGrid(props: Props) {
                           onNavigate={(intent) => navigate(cell, intent)}
                           onFocus={() => setActive(cell)}
                         />
+                        {ordinals && !multi && (
+                          <span className={`${classes.ordinal} ${classes.inlineOrdinal}`}>
+                            {ordinals.get(j.id)?.get(row.id) ?? ''}
+                          </span>
+                        )}
                       </td>
                     );
                   })}
-                  {ordinals && <td className={classes.ordinal}>{ordinals.get(j.id)?.get(row.id) ?? ''}</td>}
+                  {ordinalCol && <td className={classes.ordinal}>{ordinals.get(j.id)?.get(row.id) ?? ''}</td>}
                 </Fragment>
               ))}
               {places && <td className={classes.place}>{places.get(row.id) ?? ''}</td>}

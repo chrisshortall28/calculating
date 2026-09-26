@@ -75,7 +75,7 @@ export function ProvisionalPanel({
                   <Table.Td>{label.get(o.entryId)}</Table.Td>
                   {multi && (
                     <Table.Td ta="right" c="dimmed">
-                      {o.segmentPlaces.join(' + ')} = {o.score}
+                      {o.segmentPlaces.join(', ')}
                     </Table.Td>
                   )}
                 </Table.Tr>

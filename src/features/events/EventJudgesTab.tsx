@@ -41,13 +41,17 @@ export function EventJudgesTab({ event }: { event: CompEvent }) {
     .filter((j) => j.id !== event.refereeId)
     .map((j) => j.name);
 
-  const add = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const n = name.trim();
+  const addJudgeToPanel = async (judgeName: string) => {
+    const n = judgeName.trim();
     if (!n) return;
     const id = await resolveJudge(event.competitionId, n, judgeList);
     if (!event.judgeIds.includes(id)) await updateEvent(event.id, { judgeIds: [...event.judgeIds, id] });
     setName('');
+  };
+
+  const add = (e: React.FormEvent) => {
+    e.preventDefault();
+    void addJudgeToPanel(name);
   };
 
   const remove = async (judgeId: string) => {
@@ -60,12 +64,16 @@ export function EventJudgesTab({ event }: { event: CompEvent }) {
 
   const setReferee = (refereeId: string | undefined) => updateEvent(event.id, { refereeId });
 
-  const submitReferee = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const n = refName.trim();
+  const chooseReferee = async (refereeName: string) => {
+    const n = refereeName.trim();
     if (!n) return;
     await setReferee(await resolveJudge(event.competitionId, n, judgeList));
     setRefName('');
+  };
+
+  const submitReferee = (e: React.FormEvent) => {
+    e.preventDefault();
+    void chooseReferee(refName);
   };
 
   return (
@@ -92,6 +100,9 @@ export function EventJudgesTab({ event }: { event: CompEvent }) {
               data={available}
               value={name}
               onChange={setName}
+              // Picking from the list adds straight away (the async add clears the box after Mantine fills it).
+              onOptionSubmit={(v) => void addJudgeToPanel(v)}
+              maxDropdownHeight={280}
               style={{ flex: 1 }}
             />
             <Button type="submit">Add</Button>
@@ -179,9 +190,11 @@ export function EventJudgesTab({ event }: { event: CompEvent }) {
             <Autocomplete
               label={referee ? 'Change referee' : 'Set referee'}
               description="Pick a judge or type a new name"
-              data={refName.trim() ? refereeOptions : []}
+              data={refereeOptions}
               value={refName}
               onChange={setRefName}
+              onOptionSubmit={(v) => void chooseReferee(v)}
+              maxDropdownHeight={280}
               style={{ flex: 1 }}
             />
             <Button type="submit" variant="light" color="grape">

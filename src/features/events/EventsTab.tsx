@@ -125,7 +125,7 @@ export function EventsTab() {
                 </Tooltip>
                 <Tooltip label={`${markCount} of ${expected} marks entered`}>
                   <RingProgress
-                    size={52}
+                    size={60}
                     thickness={5}
                     roundCaps
                     sections={[{ value: pct, color: pct === 100 ? 'teal' : 'podium' }]}
@@ -141,7 +141,7 @@ export function EventsTab() {
                   leftSection={<IconPlayerPlayFilled size={14} />}
                   onClick={() => navigate(`/c/${compId}/e/${ev.id}/scoring`)}
                 >
-                  Score
+                  View
                 </Button>
               </div>
             );

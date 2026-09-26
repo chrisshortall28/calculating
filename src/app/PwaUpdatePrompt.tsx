@@ -11,7 +11,13 @@ export function PwaUpdatePrompt() {
     <Notification
       title="Update available"
       onClose={() => setNeedRefresh(false)}
-      style={{ position: 'fixed', bottom: 16, left: 16, zIndex: 1000, maxWidth: 360 }}
+      style={{
+        position: 'fixed',
+        bottom: 'calc(var(--app-shell-footer-offset, 0px) + 16px)',
+        left: 16,
+        zIndex: 1000,
+        maxWidth: 360,
+      }}
     >
       <Group justify="space-between" mt={4}>
         A new version of Podium is ready.

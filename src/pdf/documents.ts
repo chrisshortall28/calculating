@@ -1,4 +1,5 @@
 import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces';
+import { clubColors, onColor } from '../app/clubColors';
 import { markKeyLabel } from '../domain/segments';
 import { formatTenths } from '../marks/parseMark';
 import { ordinalLabel } from '../scoring';
@@ -12,14 +13,43 @@ const styles: TDocumentDefinitions['styles'] = {
   small: { fontSize: 8, color: '#555' },
 };
 
+/**
+ * Results tables in the competition's colours: header cells filled with the primary colour (with
+ * readable text on it) and ruled off in the secondary colour; light rules between rows.
+ */
+function clubTable(d: EventData) {
+  const { primary, secondary } = clubColors(d.competition);
+  return {
+    th: (text: string, extra: Record<string, unknown> = {}): TableCell => ({
+      text,
+      style: 'th',
+      fillColor: primary,
+      color: onColor(primary),
+      ...extra,
+    }),
+    layout: {
+      hLineWidth: (i: number, node: { table: { headerRows?: number } }) =>
+        i === 0 ? 0 : i === node.table.headerRows ? 2 : 0.5,
+      hLineColor: (i: number, node: { table: { headerRows?: number } }) =>
+        i === node.table.headerRows ? secondary : '#cccccc',
+      vLineWidth: () => 0,
+      paddingLeft: () => 4,
+      paddingRight: () => 4,
+      paddingTop: () => 3,
+      paddingBottom: () => 3,
+    },
+  };
+}
+
 function compLine(d: EventData) {
   const c = d.competition;
   return [c.name, c.date && new Date(c.date).toLocaleDateString(), c.venue].filter(Boolean).join(' · ');
 }
 
-function header(d: EventData, subtitle?: string): Content[] {
+/** Competition line and event title; pages that share several events show the competition once, in the page header. */
+function header(d: EventData, subtitle?: string, withCompetition = true): Content[] {
   return [
-    { text: compLine(d), style: 'comp' },
+    ...(withCompetition ? [{ text: compLine(d), style: 'comp' }] : []),
     { text: d.event.name + (subtitle ? ` — ${subtitle}` : ''), style: 'title' },
   ];
 }
@@ -180,18 +210,15 @@ function resultsTable(d: EventData, placingsOnly: boolean): Content {
   const { result } = d;
   const name = new Map(d.rows.map((r) => [r.id, r]));
   const center = 'center' as const;
+  const { th, layout } = clubTable(d);
   const body: TableCell[][] = [
     [
-      { text: 'Place', style: 'th' },
-      { text: 'Entry', style: 'th', alignment: 'left' },
-      { text: 'Club', style: 'th', alignment: 'left' },
+      th('Place'),
+      th('Entry', { alignment: 'left' }),
+      th('Club', { alignment: 'left' }),
       ...(placingsOnly
         ? []
-        : [
-            { text: 'Major victories', style: 'th' },
-            { text: 'Total points', style: 'th' },
-            ...d.judges.map((_, i) => ({ text: `J${i + 1}`, style: 'th' })),
-          ]),
+        : [th('Major victories'), th('Total points'), ...d.judges.map((_, i) => th(`J${i + 1}`))]),
     ],
     ...result.overall.map((o) => {
       const r = name.get(o.entryId)!;
@@ -217,7 +244,7 @@ function resultsTable(d: EventData, placingsOnly: boolean): Content {
       widths: placingsOnly ? [34, '*', 180] : [34, '*', 110, 48, 44, ...d.judges.map(() => 24)],
       body,
     },
-    layout: 'lightHorizontalLines',
+    layout,
   };
 }
 
@@ -226,16 +253,14 @@ function detailTables(d: EventData): Content[] {
   return d.segments.flatMap((seg, si) => {
     const sr = d.result.segments[si]!;
     const multi = seg.markKeys.length > 1;
+    const { th, layout } = clubTable(d);
     const head: TableCell[] = [
-      { text: 'Entry', style: 'th', alignment: 'left' },
+      th('Entry', { alignment: 'left' }),
       ...d.judges.flatMap((_, ji) => [
-        ...seg.markKeys.map((k) => ({
-          text: `J${ji + 1}${multi ? ` ${markKeyLabel(k)}` : ''}`,
-          style: 'th',
-        })),
-        { text: 'Pl', style: 'th' },
+        ...seg.markKeys.map((k) => th(`J${ji + 1}${multi ? ` ${markKeyLabel(k)}` : ''}`)),
+        th('Pl'),
       ]),
-      { text: 'Place', style: 'th' },
+      th('Place'),
     ];
     const rows: TableCell[][] = d.rows.map((r) => [
       r.name,
@@ -260,7 +285,7 @@ function detailTables(d: EventData): Content[] {
           widths: ['*', ...d.judges.flatMap(() => [...seg.markKeys.map(() => 30), 18]), 34],
           body: [head, ...rows],
         },
-        layout: 'lightHorizontalLines',
+        layout,
         fontSize: 9,
       } as Content,
       { stack: steps, margin: [0, 4, 0, 0] },
@@ -268,16 +293,26 @@ function detailTables(d: EventData): Content[] {
   });
 }
 
+/** Standard and guest results fit several events per page; with-marks gets a page per event. */
+const sharesPages = (style: ResultsStyle) => style !== 'withMarks';
+
 export function resultsPages(events: EventData[], style: ResultsStyle): Content[] {
   const pages = events
     .filter((d) => d.result.complete)
     .map((d): Content[] => [
-      ...header(d, 'Results'),
+      ...header(d, 'Results', !sharesPages(style)),
       officialsBlock(d),
       resultsTable(d, style === 'guest'),
       ...(style === 'withMarks' ? detailTables(d) : []),
     ]);
-  return withPageBreaks(pages);
+  if (!sharesPages(style)) return withPageBreaks(pages);
+  // Shorter results share pages: events follow on in order, each kept whole (moved to the next page
+  // rather than split). An event taller than a whole page still has to break.
+  return pages.map((content, i) => ({
+    stack: content,
+    unbreakable: true,
+    ...(i > 0 ? { margin: [0, 24, 0, 0] as [number, number, number, number] } : {}),
+  }));
 }
 
 function withPageBreaks(pages: Content[][]): Content[] {
@@ -287,11 +322,28 @@ function withPageBreaks(pages: Content[][]): Content[] {
   }));
 }
 
-export function document(content: Content[], landscape = false): TDocumentDefinitions {
+export function resultsDocument(events: EventData[], style: ResultsStyle): TDocumentDefinitions {
+  const first = events[0];
+  return document(
+    resultsPages(events, style),
+    false,
+    sharesPages(style) && first ? compLine(first) : undefined,
+  );
+}
+
+/** `pageHeader` is repeated at the top of every page. */
+export function document(content: Content[], landscape = false, pageHeader?: string): TDocumentDefinitions {
   return {
     pageSize: 'A4',
     pageOrientation: landscape ? 'landscape' : 'portrait',
-    pageMargins: [36, 36, 36, 40],
+    pageMargins: [36, pageHeader ? 52 : 36, 36, 40],
+    ...(pageHeader && {
+      header: {
+        text: pageHeader,
+        style: 'comp',
+        margin: [36, 24, 36, 0] as [number, number, number, number],
+      },
+    }),
     defaultStyle: { fontSize: 10 },
     styles,
     content: content.length ? content : [{ text: 'Nothing to print.' }],

@@ -1,5 +1,5 @@
 import { Badge, Container, Loader, Text } from '@mantine/core';
-import { IconAdjustments, IconMusic, IconPencilBolt, IconPodium, IconUsers } from '@tabler/icons-react';
+import { IconAdjustments, IconMusic, IconPencilBolt, IconTrophy, IconUsers } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { IconJudge } from '../../app/IconJudge';
@@ -22,7 +22,7 @@ const TABS = [
   { value: 'entries', label: 'Entries', icon: <IconUsers size={18} /> },
   { value: 'judges', label: 'Judges', icon: <IconJudge size={18} /> },
   { value: 'scoring', label: 'Scoring', icon: <IconPencilBolt size={18} /> },
-  { value: 'results', label: 'Results', icon: <IconPodium size={18} /> },
+  { value: 'results', label: 'Results', icon: <IconTrophy size={18} /> },
 ];
 
 const PANELS: Record<string, (event: CompEvent, competition: Competition) => ReactNode> = {
@@ -52,7 +52,7 @@ export function EventPage() {
         colors={clubColors(competition)}
         size="xl"
         crumbs={[
-          { label: 'Competitions', to: '/' },
+          { label: 'Competitions', to: '/competitions' },
           { label: competition.name, to: `/c/${compId}` },
           { label: event.name },
         ]}
