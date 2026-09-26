@@ -6,7 +6,7 @@ export const DEFAULT_PRIMARY = '#0b1d3a';
 export const DEFAULT_SECONDARY = '#ffb018';
 
 /** Readable text/icon colour on top of a background colour. */
-const onColor = (background: string) => (isLightColor(background) ? DEFAULT_PRIMARY : '#ffffff');
+export const onColor = (background: string) => (isLightColor(background) ? DEFAULT_PRIMARY : '#ffffff');
 
 export interface ClubColors {
   primary: string;
