@@ -51,10 +51,10 @@ values, `judgeTies`, the victories table), and `src/scoring/rules.ts` turns it i
 (`explainStep`, `explainJudgeTie`) and labels (`ruleLabel`: 6B shows as "6B (S.M.V.)"). The README's
 "Scoring rules" section is the prose version — keep the two in step.
 
-**Where results appear.** The Results tab (`src/features/results/`) and the three results PDF
-styles (`standard`, `withMarks`, `guest` in `src/pdf/documents.ts`) must show how every tied
-place was resolved: the rule number in a Rule column (blank for rule 5), with fuller explanations
-in the app and in the with-marks PDF. The Scoring tab's side panel shows the event result, or the
+**Where results appear.** The Results tab (`src/features/results/`) and the `standard` and
+`withMarks` results PDF styles (`src/pdf/documents.ts`) must show how every tied place was
+resolved: the rule number in a Rule column (blank for rule 5), with fuller explanations in the app
+and in the with-marks PDF. The `guest` style shows placings only — no scores, rules or rule key. The Scoring tab's side panel shows the event result, or the
 standing from the dances completed so far (CIPA has no per-dance places; per-judge dance rankings
 in the grid are display-only).
 

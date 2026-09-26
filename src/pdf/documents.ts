@@ -223,7 +223,7 @@ function officialsBlock(d: Officials): Content {
  * - `standard`: placings with points (total sums), majority victories, the tie-break rule and each judge's ranking
  * - `withMarks`: standard plus the summary of scores and table of victories, how each tie was
  *   resolved, and every judge's marks for each dance
- * - `guest`: for events with guest judges — placings and tie-break rules only, no scores
+ * - `guest`: for events with guest judges — placings only, no scores or tie-break rules
  */
 export type ResultsStyle = 'standard' | 'withMarks' | 'guest';
 
@@ -233,15 +233,15 @@ function resultsTable(d: EventData, placingsOnly: boolean): Content {
   const center = 'center' as const;
   const { th, layout } = clubTable(d);
   // Place, Entry, Club, then Points, Majority victories, Rule and each judge's ranking (the
-  // guest style keeps only the Rule of those).
+  // guest style has none of those).
   const body: TableCell[][] = [
     [
       th('Place'),
       th('Entry', { alignment: 'left' }),
       th('Club', { alignment: 'left' }),
-      ...(placingsOnly ? [] : [th('Points'), th('Majority victories')]),
-      th('Rule'),
-      ...(placingsOnly ? [] : d.judges.map((_, i) => th(`J${i + 1}`))),
+      ...(placingsOnly
+        ? []
+        : [th('Points'), th('Majority victories'), th('Rule'), ...d.judges.map((_, i) => th(`J${i + 1}`))]),
     ],
     ...result.overall.map((o) => {
       const r = name.get(o.entryId)!;
@@ -256,18 +256,16 @@ function resultsTable(d: EventData, placingsOnly: boolean): Content {
           : [
               { text: formatTenths(o.totalTenths), alignment: center },
               { text: formatVictories(o.majorityVictories), bold: true, alignment: center },
+              { text: o.rule === '5' ? '' : ruleLabel(o.rule), alignment: center, color: '#555' },
+              ...o.judgeRanks.map((rank) => ({ text: String(rank), alignment: center, color: '#555' })),
             ]),
-        { text: o.rule === '5' ? '' : ruleLabel(o.rule), alignment: center, color: '#555' },
-        ...(placingsOnly
-          ? []
-          : o.judgeRanks.map((rank) => ({ text: String(rank), alignment: center, color: '#555' }))),
       ];
     }),
   ];
   return {
     table: {
       headerRows: 1,
-      widths: placingsOnly ? [34, '*', 160, 58] : [34, '*', 90, 44, 52, 58, ...d.judges.map(() => 22)],
+      widths: placingsOnly ? [34, '*', 180] : [34, '*', 90, 44, 52, 58, ...d.judges.map(() => 22)],
       body,
     },
     layout,
@@ -426,7 +424,7 @@ export function resultsPages(events: EventData[], style: ResultsStyle): Content[
       ...header(d, 'Results', !sharesPages(style)),
       officialsBlock(d),
       resultsTable(d, style === 'guest'),
-      ...ruleKey(d),
+      ...(style === 'guest' ? [] : ruleKey(d)),
       ...(style === 'withMarks' ? [...tieNotes(d), ...victoriesTable(d), ...detailTables(d)] : []),
     ]);
   if (!sharesPages(style)) return withPageBreaks(pages);

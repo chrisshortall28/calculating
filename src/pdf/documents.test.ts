@@ -74,7 +74,7 @@ describe('resultsPages', () => {
     expect(perEvent.header).toBeUndefined();
   });
 
-  it('shows the rule that resolved a tie, with a key, in every style', () => {
+  it('shows the rule that resolved a tie, with a key, in the standard and with-marks styles', () => {
     const d = sampleEvent();
     const mark = () => 50; // every mark equal: a tie that no rule splits
     const tied = {
@@ -87,10 +87,15 @@ describe('resultsPages', () => {
         mark,
       }),
     };
-    for (const style of ['standard', 'withMarks', 'guest'] as const) {
+    for (const style of ['standard', 'withMarks'] as const) {
       const t = texts(resultsPages([tied], style));
       expect(t).toEqual(expect.arrayContaining(['Rule', '8', '1=', 'CIPA tie-break rules: 8 tie']));
     }
+    const guest = texts(resultsPages([tied], 'guest'));
+    expect(guest).toContain('1=');
+    expect(guest).not.toContain('Rule');
+    expect(guest).not.toContain('8');
+    expect(guest).not.toContain('CIPA tie-break rules: 8 tie');
     const detail = texts(resultsPages([tied], 'withMarks'));
     expect(detail).toEqual(
       expect.arrayContaining(['How ties were resolved', 'Summary of scores and table of victories']),

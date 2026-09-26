@@ -79,7 +79,8 @@ the worked examples C-1 to D-4 are on pages 24–31). Rule numbers are the manua
   resolved" with the values compared at each rule and a link to the manual, the judges' equal
   sums (rule 3), and the summary of scores and table of victories.
 - **Results PDFs**: a short Rule column with a key to the rules used; "Results with marks" adds
-  the tie explanations and the table of victories.
+  the tie explanations and the table of victories. The guest judges PDF shows placings only (tied
+  places marked `=`), with no rules.
 - **Scoring tab**: the event result once every mark is in, and before that the standing from the
   dances completed so far (CIPA has no per-dance places).
 
