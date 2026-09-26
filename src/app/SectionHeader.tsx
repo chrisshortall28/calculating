@@ -1,7 +1,7 @@
-import { Badge, Group, Text } from '@mantine/core';
+import { Group, Text } from '@mantine/core';
 import type { ReactNode } from 'react';
 
-/** Bold condensed section title with an optional count, hint and action. */
+/** Bold condensed section title with an optional count, e.g. "Events (3)", hint and action. */
 export function SectionHeader({
   title,
   count,
@@ -24,12 +24,8 @@ export function SectionHeader({
           c="light-dark(var(--mantine-color-navy-9), var(--mantine-color-white))"
         >
           {title}
+          {count !== undefined && ` (${count})`}
         </Text>
-        {count !== undefined && (
-          <Badge color="medal.5" c="navy.9" size="lg" radius="sm">
-            {count}
-          </Badge>
-        )}
         {hint && (
           <Text size="xs" c="dimmed">
             {hint}
