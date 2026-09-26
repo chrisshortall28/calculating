@@ -47,6 +47,7 @@ describe('resultsPages', () => {
   it('standard results include points, majority victories, the rule and judge rankings, in that order', () => {
     const t = texts(resultsPages([sampleEvent()], 'standard'));
     expect(t).toEqual(expect.arrayContaining(['Referee', 'Kate', '15.0']));
+    expect(t.filter((s) => s.startsWith('Event'))).toEqual(['Event']); // the title, with no "— Results"
     const order = ['Place', 'Entry', 'Club', 'Points', 'Majority victories', 'Rule', 'J1', 'J2', 'J3'];
     const at = order.map((h) => t.indexOf(h));
     expect(at.every((i) => i >= 0)).toBe(true);

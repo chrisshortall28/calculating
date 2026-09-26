@@ -421,7 +421,7 @@ export function resultsPages(events: EventData[], style: ResultsStyle): Content[
   const pages = events
     .filter((d) => d.result.complete)
     .map((d): Content[] => [
-      ...header(d, 'Results', !sharesPages(style)),
+      ...header(d, undefined, !sharesPages(style)),
       officialsBlock(d),
       resultsTable(d, style === 'guest'),
       ...(style === 'guest' ? [] : ruleKey(d)),
