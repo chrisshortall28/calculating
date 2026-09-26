@@ -54,6 +54,14 @@ describe('resultsPages', () => {
     expect([...at].sort((a, b) => a - b)).toEqual(at);
   });
 
+  it('lists the judges and referee under the results table, in every style', () => {
+    for (const style of ['standard', 'withMarks', 'guest'] as const) {
+      const t = texts(resultsPages([sampleEvent()], style));
+      expect(t.indexOf('Judges')).toBeGreaterThan(t.indexOf('Beth')); // Beth is the table's last row
+      expect(t.indexOf('Referee')).toBeGreaterThan(t.indexOf('Judges'));
+    }
+  });
+
   it('standard and guest results share pages but keep each event whole; with-marks gets a page each', () => {
     const events = [sampleEvent(), sampleEvent()];
     for (const style of ['standard', 'guest'] as const) {

@@ -205,13 +205,13 @@ export function officialsLine(d: Officials): string {
   return `Judges: ${judgesText(d)} · Referee: ${refereeText(d)}`;
 }
 
-/** The event's officials as labelled lines, for the top of the results. */
+/** The event's officials as labelled lines, under the results table. */
 function officialsBlock(d: Officials): Content {
   const row = (label: string, value: string) => [{ text: label, bold: true }, { text: value }];
   return {
     table: { widths: [52, '*'], body: [row('Judges', judgesText(d)), row('Referee', refereeText(d))] },
     layout: 'noBorders',
-    margin: [0, 0, 0, 8],
+    margin: [0, 8, 0, 0],
   };
 }
 
@@ -422,9 +422,9 @@ export function resultsPages(events: EventData[], style: ResultsStyle): Content[
     .filter((d) => d.result.complete)
     .map((d): Content[] => [
       ...header(d, undefined, !sharesPages(style)),
-      officialsBlock(d),
       resultsTable(d, style === 'guest'),
       ...(style === 'guest' ? [] : ruleKey(d)),
+      officialsBlock(d),
       ...(style === 'withMarks' ? [...tieNotes(d), ...victoriesTable(d), ...detailTables(d)] : []),
     ]);
   if (!sharesPages(style)) return withPageBreaks(pages);
