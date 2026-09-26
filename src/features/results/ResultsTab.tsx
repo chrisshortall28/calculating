@@ -88,14 +88,13 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
                 <Table.Th w={60}>Place</Table.Th>
                 <Table.Th>Entry</Table.Th>
                 <Table.Th>Club</Table.Th>
-                {multi &&
-                  segments.map((s) => (
-                    <Table.Th key={s.id} ta="center">
-                      {s.name}
-                    </Table.Th>
-                  ))}
-                {multi && <Table.Th ta="center">Sum</Table.Th>}
+                <Table.Th ta="center">Major victories</Table.Th>
                 <Table.Th ta="right">Total points</Table.Th>
+                {event.judgeIds.map((j, ji) => (
+                  <Table.Th key={j} ta="center" title={judgeMap.get(j)?.name}>
+                    J{ji + 1}
+                  </Table.Th>
+                ))}
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -109,20 +108,15 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
                     </Table.Td>
                     <Table.Td fw={500}>{entryName(entry, skaters)}</Table.Td>
                     <Table.Td c="dimmed">{entryClub(entry, skaters)}</Table.Td>
-                    {multi &&
-                      o.segmentPlaces.map((p, i) => (
-                        <Table.Td key={i} ta="center">
-                          {p}
-                        </Table.Td>
-                      ))}
-                    {multi && (
-                      <Table.Td ta="center" fw={600}>
-                        {o.score}
-                      </Table.Td>
-                    )}
-                    <Table.Td ta="right" c="dimmed">
-                      {formatTenths(o.totalTenths)}
+                    <Table.Td ta="center" fw={600}>
+                      {o.majorVictories}
                     </Table.Td>
+                    <Table.Td ta="right">{formatTenths(o.totalTenths)}</Table.Td>
+                    {o.judgeRanks.map((rank, i) => (
+                      <Table.Td key={i} ta="center" c="dimmed">
+                        {rank}
+                      </Table.Td>
+                    ))}
                   </Table.Tr>
                 );
               })}

@@ -134,36 +134,36 @@ export function officialsLine(d: Pick<EventData, 'judges' | 'referee'>): string 
 // ---------------------------------------------------------------------------
 
 function resultsTable(d: EventData): Content {
-  const { result, segments } = d;
-  const multi = segments.length > 1;
+  const { result } = d;
   const name = new Map(d.rows.map((r) => [r.id, r]));
+  const center = 'center' as const;
   const body: TableCell[][] = [
     [
       { text: 'Place', style: 'th' },
       { text: 'Entry', style: 'th', alignment: 'left' },
       { text: 'Club', style: 'th', alignment: 'left' },
-      ...(multi ? segments.map((s) => ({ text: s.name, style: 'th' })) : []),
-      ...(multi ? [{ text: 'Total', style: 'th' }] : []),
+      { text: 'Major victories', style: 'th' },
+      { text: 'Total points', style: 'th' },
+      ...d.judges.map((_, i) => ({ text: `J${i + 1}`, style: 'th' })),
     ],
     ...result.overall.map((o) => {
       const r = name.get(o.entryId)!;
       return [
-        { text: `${o.place}${o.tied ? '=' : ''}`, bold: true, alignment: 'center' as const, fontSize: 12 },
+        { text: `${o.place}${o.tied ? '=' : ''}`, bold: true, alignment: center, fontSize: 12 },
         {
           stack: [{ text: r.name, bold: true }, ...(r.members ? [{ text: r.members, style: 'small' }] : [])],
         },
         r.club,
-        ...(multi
-          ? o.segmentPlaces.map((p) => ({ text: String(p ?? ''), alignment: 'center' as const }))
-          : []),
-        ...(multi ? [{ text: String(o.score), alignment: 'center' as const }] : []),
+        { text: String(o.majorVictories), bold: true, alignment: center },
+        { text: formatTenths(o.totalTenths), alignment: center },
+        ...o.judgeRanks.map((rank) => ({ text: String(rank), alignment: center, color: '#555' })),
       ];
     }),
   ];
   return {
     table: {
       headerRows: 1,
-      widths: [36, '*', 120, ...(multi ? [...segments.map(() => 50), 36] : [])],
+      widths: [34, '*', 110, 48, 44, ...d.judges.map(() => 24)],
       body,
     },
     layout: 'lightHorizontalLines',
