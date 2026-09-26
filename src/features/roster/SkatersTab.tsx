@@ -1,4 +1,4 @@
-import { ActionIcon, Button, Card, Group, Table, Text, TextInput } from '@mantine/core';
+import { ActionIcon, Button, Card, Group, Stack, Table, Text, TextInput } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { IconClipboardList, IconTrash } from '@tabler/icons-react';
@@ -11,6 +11,7 @@ import { addSkater, addSkaters, deleteSkater, updateSkater } from '../../db/repo
 import type { PastedRow } from '../../domain/pasteList';
 import { InlineEdit } from './InlineEdit';
 import { PasteListModal } from './PasteListModal';
+import { RosterNote } from './RosterNote';
 
 export function SkatersTab() {
   const { compId } = useParams() as { compId: string };
@@ -70,80 +71,91 @@ export function SkatersTab() {
     });
 
   return (
-    <Card withBorder>
-      <form onSubmit={add}>
-        <Group align="flex-end" mb="md">
-          <TextInput
-            ref={nameRef}
-            label="Skater name"
-            value={name}
-            onChange={(e) => setName(e.currentTarget.value)}
-            style={{ flex: 2 }}
-          />
-          <TextInput
-            label="Club"
-            value={club}
-            onChange={(e) => setClub(e.currentTarget.value)}
-            style={{ flex: 1 }}
-          />
-          <Button type="submit">Add skater</Button>
-          <Button
-            variant="light"
-            leftSection={<IconClipboardList size={16} />}
-            onClick={() => setPasting(true)}
-          >
-            Paste list
-          </Button>
-        </Group>
-      </form>
-      <Table striped highlightOnHover>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Name</Table.Th>
-            <Table.Th>Club</Table.Th>
-            <Table.Th w={80}>Entries</Table.Th>
-            <Table.Th w={50} />
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {skaters?.map((s) => (
-            <Table.Tr key={s.id}>
-              <Table.Td>
-                <InlineEdit value={s.name} onSave={(v) => updateSkater(s.id, { name: v })} required />
-              </Table.Td>
-              <Table.Td>
-                <InlineEdit value={s.club} onSave={(v) => updateSkater(s.id, { club: v })} placeholder="—" />
-              </Table.Td>
-              <Table.Td>{usage?.get(s.id) ?? 0}</Table.Td>
-              <Table.Td>
-                <ActionIcon
-                  variant="subtle"
-                  color="red"
-                  onClick={() => remove(s.id, s.name)}
-                  aria-label="Delete skater"
-                >
-                  <IconTrash size={16} />
-                </ActionIcon>
-              </Table.Td>
+    <Stack>
+      <RosterNote>
+        Add and manage the competition’s skaters here, one at a time or by pasting a whole list. You can also
+        add skaters while setting up an event’s entries; they are added to this list too, ready for other
+        events.
+      </RosterNote>
+      <Card withBorder>
+        <form onSubmit={add}>
+          <Group align="flex-end" mb="md">
+            <TextInput
+              ref={nameRef}
+              label="Skater name"
+              value={name}
+              onChange={(e) => setName(e.currentTarget.value)}
+              style={{ flex: 2 }}
+            />
+            <TextInput
+              label="Club"
+              value={club}
+              onChange={(e) => setClub(e.currentTarget.value)}
+              style={{ flex: 1 }}
+            />
+            <Button type="submit">Add skater</Button>
+            <Button
+              variant="light"
+              leftSection={<IconClipboardList size={16} />}
+              onClick={() => setPasting(true)}
+            >
+              Paste list
+            </Button>
+          </Group>
+        </form>
+        <Table striped highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Name</Table.Th>
+              <Table.Th>Club</Table.Th>
+              <Table.Th w={80}>Entries</Table.Th>
+              <Table.Th w={50} />
             </Table.Tr>
-          ))}
-        </Table.Tbody>
-      </Table>
-      {skaters?.length === 0 && (
-        <Text c="dimmed" ta="center" py="md">
-          No skaters yet. Add them one at a time, paste a whole list, or add them directly when entering an
-          event.
-        </Text>
-      )}
-      <PasteListModal
-        opened={pasting}
-        onClose={() => setPasting(false)}
-        title="Paste a list of skaters"
-        type="solo"
-        noun="skaters"
-        skipReason={alreadyListed}
-        onAdd={addPasted}
-      />
-    </Card>
+          </Table.Thead>
+          <Table.Tbody>
+            {skaters?.map((s) => (
+              <Table.Tr key={s.id}>
+                <Table.Td>
+                  <InlineEdit value={s.name} onSave={(v) => updateSkater(s.id, { name: v })} required />
+                </Table.Td>
+                <Table.Td>
+                  <InlineEdit
+                    value={s.club}
+                    onSave={(v) => updateSkater(s.id, { club: v })}
+                    placeholder="—"
+                  />
+                </Table.Td>
+                <Table.Td>{usage?.get(s.id) ?? 0}</Table.Td>
+                <Table.Td>
+                  <ActionIcon
+                    variant="subtle"
+                    color="red"
+                    onClick={() => remove(s.id, s.name)}
+                    aria-label="Delete skater"
+                  >
+                    <IconTrash size={16} />
+                  </ActionIcon>
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+        {skaters?.length === 0 && (
+          <Text c="dimmed" ta="center" py="md">
+            No skaters yet. Add them one at a time, paste a whole list, or add them directly when entering an
+            event.
+          </Text>
+        )}
+        <PasteListModal
+          opened={pasting}
+          onClose={() => setPasting(false)}
+          title="Paste a list of skaters"
+          type="solo"
+          noun="skaters"
+          skipReason={alreadyListed}
+          onAdd={addPasted}
+        />
+      </Card>
+    </Stack>
   );
 }

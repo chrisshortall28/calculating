@@ -23,6 +23,7 @@ export function JudgesTab() {
   return (
     <NameListTab
       noun="judge"
+      intro="Add and manage the competition’s judges here, ready to assign to each event’s panel. You can also add judges while setting up an event’s panel (its Judges tab); they are added to this list too."
       empty="No judges yet. Judges can be added on the day and assigned to each event’s panel."
       items={judges}
       usage={usage}
