@@ -29,6 +29,12 @@ import { markKey, useEventResult } from './useEventResult';
 
 /** More dances than this switch with a dropdown rather than side-by-side tabs. */
 const MAX_TABBED_DANCES = 5;
+const fitWidth = {
+  width: 'fit-content',
+  minWidth: 'min(100%, calc(var(--container-size-xl) - 2 * var(--mantine-spacing-md)))',
+  maxWidth: '100%',
+  marginInline: 'auto',
+};
 const checkIcon = <IconCheck size={14} color="var(--mantine-color-green-6)" />;
 
 export function ScoringTab({ event }: { event: CompEvent }) {
@@ -120,7 +126,9 @@ export function ScoringTab({ event }: { event: CompEvent }) {
     });
 
   return (
-    <Stack>
+    // Centred and as wide as the mark grid needs: the usual page width for a typical panel,
+    // growing towards the window edges (then scrolling) as judges are added.
+    <Stack style={fitWidth}>
       <Group justify="space-between" align="flex-end">
         {segments.length > MAX_TABBED_DANCES ? (
           // Too many dances to sit side by side: pick from a list instead.
@@ -229,7 +237,8 @@ export function ScoringTab({ event }: { event: CompEvent }) {
               autoAdvance={autoAdvance}
               readOnly={locked}
             />
-            <Text size="xs" c="dimmed" mt="sm">
+            {/* Wraps to the grid's width rather than widening the page to fit on one line. */}
+            <Text size="xs" c="dimmed" mt="sm" style={{ contain: 'inline-size' }}>
               Type <Kbd>57</Kbd> for 5.7, <Kbd>100</Kbd> for 10.0, <Kbd>5</Kbd> <Kbd>Enter</Kbd> for 5.0.{' '}
               <Kbd>Enter</Kbd>/<Kbd>Tab</Kbd> next · <Kbd>Shift</Kbd> back · arrows move · <Kbd>Esc</Kbd> undo
               edit · empty + <Kbd>Enter</Kbd> keeps the value; delete the text to clear a mark.
