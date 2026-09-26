@@ -123,10 +123,24 @@ export function judgeSheets(events: EventData[], blankCount = 3): Content[] {
   return withPageBreaks(pages);
 }
 
-/** "Judges: J1 A, J2 B, J3 C · Referee: D" */
-export function officialsLine(d: Pick<EventData, 'judges' | 'referee'>): string {
-  const judges = `Judges: ${d.judges.map((j, i) => `J${i + 1} ${j.name}`).join(', ') || '—'}`;
-  return d.referee ? `${judges} · Referee: ${d.referee.name}` : judges;
+type Officials = Pick<EventData, 'judges' | 'referee'>;
+
+const judgesText = (d: Officials) => d.judges.map((j, i) => `J${i + 1} ${j.name}`).join(', ') || '—';
+const refereeText = (d: Officials) => d.referee?.name ?? '—';
+
+/** "Judges: J1 A, J2 B, J3 C · Referee: D" (referee shown as "—" if not assigned) */
+export function officialsLine(d: Officials): string {
+  return `Judges: ${judgesText(d)} · Referee: ${refereeText(d)}`;
+}
+
+/** The event's officials as labelled lines, for the top of the results. */
+function officialsBlock(d: Officials): Content {
+  const row = (label: string, value: string) => [{ text: label, bold: true }, { text: value }];
+  return {
+    table: { widths: [52, '*'], body: [row('Judges', judgesText(d)), row('Referee', refereeText(d))] },
+    layout: 'noBorders',
+    margin: [0, 0, 0, 8],
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -222,11 +236,7 @@ export function resultsPages(events: EventData[], withDetail: boolean): Content[
     .filter((d) => d.result.complete)
     .map((d): Content[] => [
       ...header(d, 'Results'),
-      {
-        text: officialsLine(d),
-        style: 'comp',
-        margin: [0, 0, 0, 8],
-      },
+      officialsBlock(d),
       resultsTable(d),
       ...(withDetail ? detailTables(d) : []),
     ]);
