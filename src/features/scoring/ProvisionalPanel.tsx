@@ -12,11 +12,13 @@ export function ProvisionalPanel({
   standing,
   standingAfter,
   rows,
+  entryLabel,
 }: {
   result: EventResult;
   standing?: EventResult;
   standingAfter: string[];
   rows: GridRow[];
+  entryLabel: string;
 }) {
   const label = new Map(rows.map((r) => [r.id, r.label]));
   const shown = result.complete ? result : standing;
@@ -39,7 +41,7 @@ export function ProvisionalPanel({
           <Table.Thead>
             <Table.Tr>
               <Table.Th w={40}>Pl</Table.Th>
-              <Table.Th>Entry</Table.Th>
+              <Table.Th>{entryLabel}</Table.Th>
               <Table.Th ta="center" title="Majority victories">
                 MV
               </Table.Th>

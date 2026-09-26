@@ -20,7 +20,7 @@ import { IconCheck, IconEraser, IconLock, IconLockOpen } from '@tabler/icons-rea
 import { useMemo, useState } from 'react';
 import { useJudges, useSkaters } from '../../app/data';
 import { clearMarks, setEventStatus, setMark } from '../../db/repo';
-import { byId, entryClub, entryName } from '../../domain/entryName';
+import { byId, entryClub, entryHeading, entryName } from '../../domain/entryName';
 import type { CompEvent } from '../../domain/types';
 import type { Direction } from '../../marks/gridNav';
 import { MarkGrid } from '../../marks/MarkGrid';
@@ -226,6 +226,7 @@ export function ScoringTab({ event }: { event: CompEvent }) {
             <MarkGrid
               focusKey={`${event.id}:${segment.id}`}
               rows={rows}
+              entryLabel={entryHeading[event.entryType]}
               judges={judges}
               markKeys={segment.markKeys}
               getValue={(k, j, e) => markMap.get(markKey(k, j, e))}
@@ -247,7 +248,13 @@ export function ScoringTab({ event }: { event: CompEvent }) {
           </Card>
         </Box>
         <Box flex="1 0 380px">
-          <ProvisionalPanel result={result} standing={standing} standingAfter={standingAfter} rows={rows} />
+          <ProvisionalPanel
+            result={result}
+            standing={standing}
+            standingAfter={standingAfter}
+            rows={rows}
+            entryLabel={entryHeading[event.entryType]}
+          />
         </Box>
       </Flex>
     </Stack>

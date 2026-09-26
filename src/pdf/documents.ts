@@ -1,5 +1,6 @@
 import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { clubColors, onColor } from '../app/clubColors';
+import { entryHeading } from '../domain/entryName';
 import { markKeyLabel } from '../domain/segments';
 import { formatTenths } from '../marks/parseMark';
 import {
@@ -105,7 +106,7 @@ function judgeSheetPage(
 
   const headRow1: TableCell[] = [
     { text: '#', style: 'th', rowSpan: 2 },
-    { text: 'Entry', style: 'th', rowSpan: 2, alignment: 'left' },
+    { text: entryHeading[d.event.entryType], style: 'th', rowSpan: 2, alignment: 'left' },
     ...columns.flatMap((c) => {
       const cells: TableCell[] = [{ text: c.name, style: 'th', colSpan: c.subs.length }];
       for (let i = 1; i < c.subs.length; i++) cells.push({});
@@ -237,7 +238,7 @@ function resultsTable(d: EventData, placingsOnly: boolean): Content {
   const body: TableCell[][] = [
     [
       th('Place'),
-      th('Entry', { alignment: 'left' }),
+      th(entryHeading[d.event.entryType], { alignment: 'left' }),
       th('Club', { alignment: 'left' }),
       ...(placingsOnly
         ? []
@@ -296,7 +297,7 @@ function victoriesTable(d: EventData): Content[] {
   const center = 'center' as const;
   const head: TableCell[] = [
     th('#'),
-    th('Entry', { alignment: 'left' }),
+    th(entryHeading[d.event.entryType], { alignment: 'left' }),
     ...d.judges.map((_, i) => th(`J${i + 1}`)),
     th('Total'),
     ...d.rows.map((_, i) => th(`v${i + 1}`)),
@@ -385,7 +386,7 @@ function detailTables(d: EventData): Content[] {
     const multi = seg.markKeys.length > 1;
     const { th, layout } = clubTable(d);
     const head: TableCell[] = [
-      th('Entry', { alignment: 'left' }),
+      th(entryHeading[d.event.entryType], { alignment: 'left' }),
       ...d.judges.flatMap((_, ji) =>
         seg.markKeys.map((k) => th(`J${ji + 1}${multi ? ` ${markKeyLabel(k)}` : ''}`)),
       ),

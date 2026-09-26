@@ -48,10 +48,25 @@ describe('resultsPages', () => {
     const t = texts(resultsPages([sampleEvent()], 'standard'));
     expect(t).toEqual(expect.arrayContaining(['Referee', 'Kate', '15.0']));
     expect(t.filter((s) => s.startsWith('Event'))).toEqual(['Event']); // the title, with no "— Results"
-    const order = ['Place', 'Entry', 'Club', 'Points', 'Majority victories', 'Rule', 'J1', 'J2', 'J3'];
+    const order = ['Place', 'Skater', 'Club', 'Points', 'Majority victories', 'Rule', 'J1', 'J2', 'J3'];
     const at = order.map((h) => t.indexOf(h));
     expect(at.every((i) => i >= 0)).toBe(true);
     expect([...at].sort((a, b) => a - b)).toEqual(at);
+  });
+
+  it('heads the entry column by entry type, on results and judges’ sheets', () => {
+    for (const [entryType, heading] of [
+      ['solo', 'Skater'],
+      ['duo', 'Skaters'],
+      ['team', 'Team'],
+    ] as const) {
+      const d = sampleEvent();
+      const ev = { ...d, event: { ...d.event, entryType } };
+      for (const t of [texts(resultsPages([ev], 'withMarks')), texts(judgeSheets([ev]))]) {
+        expect(t).toContain(heading);
+        expect(t).not.toContain('Entry');
+      }
+    }
   });
 
   it('lists the judges and referee under the results table, in every style', () => {
@@ -114,7 +129,9 @@ describe('resultsPages', () => {
 
   it('guest-judge results show placings and officials only', () => {
     const t = texts(resultsPages([sampleEvent()], 'guest'));
-    expect(t).toEqual(expect.arrayContaining(['Place', 'Entry', 'Club', 'Amy', 'Judges', 'Referee', 'Kate']));
+    expect(t).toEqual(
+      expect.arrayContaining(['Place', 'Skater', 'Club', 'Amy', 'Judges', 'Referee', 'Kate']),
+    );
     expect(t).not.toContain('Majority victories');
     expect(t).not.toContain('Points');
     expect(t).not.toContain('J1');

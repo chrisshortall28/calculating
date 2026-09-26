@@ -8,6 +8,7 @@ import { clubColors } from '../../app/clubColors';
 import { HeroMeta, HeroTabs, PageHero } from '../../app/PageHero';
 import { entryTypeColor } from '../../app/theme';
 import { entryTypeLabel } from '../../db/repo';
+import { entryHeading } from '../../domain/entryName';
 import { eventSegments } from '../../domain/segments';
 import type { CompEvent, Competition } from '../../domain/types';
 import { ResultsTab } from '../results/ResultsTab';
@@ -17,9 +18,9 @@ import { EventJudgesTab } from './EventJudgesTab';
 import { EventSetupTab } from './EventSetupTab';
 import { StatusBadge } from './StatusBadge';
 
-const TABS = [
+const tabs = (event: CompEvent) => [
   { value: 'setup', label: 'Setup', icon: <IconAdjustments size={18} /> },
-  { value: 'entries', label: 'Entries', icon: <IconUsers size={18} /> },
+  { value: 'entries', label: entryHeading[event.entryType], icon: <IconUsers size={18} /> },
   { value: 'judges', label: 'Judges', icon: <IconJudge size={18} /> },
   { value: 'scoring', label: 'Scoring', icon: <IconPencilBolt size={18} /> },
   { value: 'results', label: 'Results', icon: <IconTrophy size={18} /> },
@@ -72,7 +73,7 @@ export function EventPage() {
         }
       >
         <HeroTabs
-          tabs={TABS}
+          tabs={tabs(event)}
           value={tab}
           onChange={(v) => navigate(`/c/${compId}/e/${eventId}/${v}`, { replace: true })}
         />
