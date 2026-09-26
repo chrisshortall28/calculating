@@ -38,7 +38,7 @@ export function CompetitionSettingsTab() {
         </Title>
         <CompetitionDetailsForm
           // Remount when the stored details change (e.g. edited from the header) so the form shows them.
-          key={`${competition.name}|${competition.date}|${competition.venue}|${competition.primaryColor}|${competition.secondaryColor}`}
+          key={`${competition.name}|${competition.date}|${competition.venue}|${competition.primaryColor}|${competition.secondaryColor}|${competition.welcome}`}
           initial={detailsOf(competition)}
           submitLabel="Save"
           onSubmit={async (values) => {

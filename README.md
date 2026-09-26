@@ -26,7 +26,8 @@ and results PDFs ready to print.
   numbers behind it, with a link to the CIPA manual.
 - 📊 **Standings while you score.** A live provisional standing updates as each dance is
   completed.
-- 🖨️ **PDFs in one click.** Judge sheets, plus standard, with-marks and guest-judges results.
+- 🖨️ **PDFs in one click.** Judge sheets; standard, with-marks and guest-judges results; and a
+  programme for spectators with a club-coloured cover and each event's skating order.
 - 📴 **Works offline.** Podium is an installable app that runs entirely in the browser, with no
   server and no sign-in. Your data stays on your device.
 - 💾 **Backup and transfer.** Export a competition to a `.pod` file and import it on another
@@ -86,7 +87,7 @@ entry to `src/app/changelog.ts` (shown in the "What's New?" popup when the versi
 | `src/domain/` | Types, segments (compulsory dances and the free dance's A/B marks), entry display helpers. |
 | `src/db/` | Dexie schema and repository functions, which cascade deletes of marks. |
 | `src/io/` | Competition file export/import (versioned, validated with zod). |
-| `src/pdf/` | Judge sheets and results PDFs (pdfmake, lazy-loaded). |
+| `src/pdf/` | Judge sheets, results and programme PDFs (pdfmake, lazy-loaded). |
 | `src/features/` | Screens: home, competitions, events, rosters, scoring, results. |
 | `public/` | Icons, and the CIPA scoring manual (`2009 - The CIPA System of Scoring.pdf`) linked from the results. |
 

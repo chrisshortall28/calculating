@@ -20,7 +20,7 @@ import { formatLongDate } from '../../app/format';
 import { clubColors } from '../../app/clubColors';
 import { HeroMeta, HeroTabs, PageHero } from '../../app/PageHero';
 import { updateCompetition } from '../../db/repo';
-import { printJudgeSheets, printResults } from '../../pdf/actions';
+import { printJudgeSheets, printProgramme, printResults } from '../../pdf/actions';
 import type { ResultsStyle } from '../../pdf/documents';
 import { CompetitionDetailsForm, detailsOf } from './CompetitionDetailsForm';
 import { useExportCompetition } from './useExportCompetition';
@@ -97,6 +97,10 @@ export function CompetitionLayout() {
                 </Button>
               </Menu.Target>
               <Menu.Dropdown>
+                <Menu.Item onClick={() => printProgramme(competition.id, competition.name)}>
+                  Programme for spectators
+                </Menu.Item>
+                <Menu.Divider />
                 <Menu.Item
                   onClick={() => printJudgeSheets({ competitionId: competition.id }, competition.name)}
                 >

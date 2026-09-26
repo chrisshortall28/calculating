@@ -8,6 +8,14 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.0.1',
+    date: '2026-09-26',
+    changes: [
+      'Print a programme for spectators: a cover in the club colours, a welcome page listing the events, then the skaters in each event in skating order with its dances.',
+      'Write the programme’s welcome message in the competition’s details, or leave it blank for a standard welcome.',
+    ],
+  },
+  {
     version: '1.0.0',
     changes: [
       'First release of Podium.',
