@@ -12,7 +12,7 @@ const load = async (target: Target): Promise<EventData[]> =>
 /** Call directly from a click handler (the PDF tab must open before any await). */
 export function printJudgeSheets(target: Target, name: string) {
   return openPdf(
-    load(target).then((events) => document(judgeSheets(events))),
+    load(target).then((events) => document(judgeSheets(events), true)),
     fileNameFor(`${name} judge sheets`, 'pdf'),
   );
 }

@@ -34,30 +34,59 @@ interface Official {
   name: string; // blank = name to be written in
 }
 
+/** Landscape sheet: each compulsory dance gets a wide Comments column and a Mark column; the free
+ * dance gets A and B; Total points and Place sit on the far right. */
 function judgeSheetPage(d: EventData, { role, label, name }: Official): Content[] {
-  const markCols = d.segments.flatMap((s) => s.markKeys.map((k) => ({ seg: s, key: k })));
+  const MARK_WIDTH = 38;
+  const columns = d.segments.map((s) =>
+    s.kind === 'compulsory'
+      ? {
+          name: s.name,
+          subs: [
+            { label: 'Comments', width: '*' as const },
+            { label: 'Mark', width: MARK_WIDTH },
+          ],
+        }
+      : { name: s.name, subs: s.markKeys.map((k) => ({ label: markKeyLabel(k), width: MARK_WIDTH })) },
+  );
+  const subCols = columns.flatMap((c) => c.subs);
+
   const headRow1: TableCell[] = [
     { text: '#', style: 'th', rowSpan: 2 },
     { text: 'Entry', style: 'th', rowSpan: 2, alignment: 'left' },
-    ...d.segments.flatMap((s) => {
-      const cells: TableCell[] = [{ text: s.name, style: 'th', colSpan: s.markKeys.length }];
-      for (let i = 1; i < s.markKeys.length; i++) cells.push({});
+    ...columns.flatMap((c) => {
+      const cells: TableCell[] = [{ text: c.name, style: 'th', colSpan: c.subs.length }];
+      for (let i = 1; i < c.subs.length; i++) cells.push({});
       return cells;
     }),
+    { text: 'Total points', style: 'th', rowSpan: 2 },
+    { text: 'Place', style: 'th', rowSpan: 2 },
   ];
-  const headRow2: TableCell[] = [
-    {},
-    {},
-    ...markCols.map(({ key }) => ({ text: markKeyLabel(key) || 'Mark', style: 'th' })),
+  const headRow2: TableCell[] = [{}, {}, ...subCols.map((s) => ({ text: s.label, style: 'th' })), {}, {}];
+  // Repeats at the top of every page, so a continuation page still says whose sheet it is.
+  const colCount = headRow2.length;
+  const official = [role, label, name].filter(Boolean).join(' ');
+  const noBorder: [boolean, boolean, boolean, boolean] = [false, false, false, false];
+  const captionRow: TableCell[] = [
+    {
+      text: `${d.event.name} · ${official}`,
+      colSpan: colCount,
+      style: 'small',
+      margin: [0, 0, 0, 2],
+      border: noBorder,
+    },
+    // Spanned cells draw their own borders too, so blank them as well.
+    ...Array.from({ length: colCount - 1 }, () => ({ text: '', border: noBorder })),
   ];
   const body: TableCell[][] = [
+    captionRow,
     headRow1,
     headRow2,
     ...d.rows.map((r, i) => [
       {
         text: String(i + 1),
         alignment: 'center' as const,
-        margin: [0, 6, 0, 6] as [number, number, number, number],
+        margin: [0, 9, 0, 9] as [number, number, number, number],
       },
       {
         stack: [
@@ -65,7 +94,9 @@ function judgeSheetPage(d: EventData, { role, label, name }: Official): Content[
           { text: [r.club, r.members].filter(Boolean).join(' · '), style: 'small' },
         ],
       },
-      ...markCols.map(() => ({ text: '' })),
+      ...subCols.map(() => ({ text: '' })),
+      { text: '' },
+      { text: '' },
     ]),
   ];
 
@@ -79,29 +110,30 @@ function judgeSheetPage(d: EventData, { role, label, name }: Official): Content[
             [label, name || '______________________________'].filter(Boolean).join('  '),
           ],
         },
-        { text: `${d.rows.length} entries`, alignment: 'right', style: 'comp' },
+        {
+          text: `Marks out of 10.0, one decimal place · ${d.rows.length} entries`,
+          alignment: 'right',
+          style: 'comp',
+        },
       ],
       margin: [0, 0, 0, 8],
     },
     {
       table: {
-        headerRows: 2,
+        headerRows: 3,
         dontBreakRows: true,
-        widths: [22, '*', ...markCols.map(() => 52)],
+        // Comments columns share the spare width; with no compulsory dances, the Entry column takes it.
+        widths: [
+          18,
+          subCols.some((s) => s.width === '*') ? 130 : '*',
+          ...subCols.map((s) => s.width),
+          44,
+          34,
+        ],
         body,
       },
-    },
-    {
-      text: 'Marks out of 10.0, one decimal place.',
-      style: 'small',
-      margin: [0, 6, 0, 0],
-    },
-    {
-      columns: [
-        { text: 'Signature: ______________________________' },
-        { text: 'Date: ______________', alignment: 'right' },
-      ],
-      margin: [0, 30, 0, 0],
+      // The caption row's top edge comes from the table layout, not the cell borders.
+      layout: { hLineWidth: (i: number) => (i === 0 ? 0 : 1) },
     },
   ];
 }
