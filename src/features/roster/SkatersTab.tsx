@@ -140,12 +140,6 @@ export function SkatersTab() {
             ))}
           </Table.Tbody>
         </Table>
-        {skaters?.length === 0 && (
-          <Text c="dimmed" ta="center" py="md">
-            No skaters yet. Add them one at a time, paste a whole list, or add them directly when entering an
-            event.
-          </Text>
-        )}
         <PasteListModal
           opened={pasting}
           onClose={() => setPasting(false)}

@@ -14,7 +14,6 @@ interface Item {
 export function NameListTab({
   noun,
   intro,
-  empty,
   items,
   usage,
   usageLabel,
@@ -25,7 +24,6 @@ export function NameListTab({
 }: {
   noun: string;
   intro?: ReactNode;
-  empty?: ReactNode;
   items: Item[] | undefined;
   usage: Map<string, number> | undefined;
   usageLabel: string;
@@ -96,11 +94,6 @@ export function NameListTab({
             ))}
           </Table.Tbody>
         </Table>
-        {items?.length === 0 && empty && (
-          <Text c="dimmed" ta="center" py="md">
-            {empty}
-          </Text>
-        )}
       </Card>
     </Stack>
   );
