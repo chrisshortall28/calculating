@@ -1,0 +1,63 @@
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  padding: 10px 14px 10px 18px;
+  margin-bottom: 8px;
+  background: var(--mantine-color-body);
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-lg);
+  overflow: hidden;
+  transition:
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+.row:hover {
+  box-shadow: var(--mantine-shadow-md);
+  transform: translateY(-1px);
+}
+
+/* Status stripe down the left edge */
+.row::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: var(--stripe-color);
+}
+
+.name {
+  font-family: var(--mantine-headings-font-family);
+  font-weight: 700;
+  font-size: 21px;
+  line-height: 1.1;
+  color: var(--mantine-color-text);
+  text-decoration: none;
+}
+
+.name:hover {
+  color: var(--mantine-primary-color-filled);
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-sm);
+  white-space: nowrap;
+}
+
+.statValue {
+  font-family: var(--mantine-headings-font-family);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--mantine-color-text);
+}
+
+.warn .statValue,
+.warn {
+  color: var(--mantine-color-orange-7);
+}

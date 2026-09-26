@@ -1,35 +1,35 @@
-import {
-  ActionIcon,
-  Anchor,
-  Breadcrumbs,
-  Button,
-  Container,
-  Group,
-  Loader,
-  Menu,
-  Modal,
-  Tabs,
-  Text,
-  Title,
-  Tooltip,
-} from '@mantine/core';
+import { ActionIcon, Button, Container, Loader, Menu, Modal, Text, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { IconChevronDown, IconDownload, IconPencil, IconPrinter } from '@tabler/icons-react';
+import {
+  IconCalendarEvent,
+  IconChevronDown,
+  IconDownload,
+  IconListNumbers,
+  IconMapPin,
+  IconMusic,
+  IconPencil,
+  IconPrinter,
+  IconSettings,
+  IconUsers,
+} from '@tabler/icons-react';
+import { Outlet, useLocation, useNavigate, useParams } from 'react-router';
+import { IconJudge } from '../../app/IconJudge';
+import { useCompetition } from '../../app/data';
+import { formatLongDate } from '../../app/format';
+import { HeroMeta, HeroTabs, PageHero } from '../../app/PageHero';
+import { updateCompetition } from '../../db/repo';
 import { printJudgeSheets, printResults } from '../../pdf/actions';
 import type { ResultsStyle } from '../../pdf/documents';
-import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router';
-import { useCompetition } from '../../app/data';
-import { updateCompetition } from '../../db/repo';
 import { CompetitionDetailsForm } from './CompetitionDetailsForm';
 import { useExportCompetition } from './useExportCompetition';
 
 const TABS = [
-  { value: 'events', label: 'Events' },
-  { value: 'skaters', label: 'Skaters' },
-  { value: 'judges', label: 'Judges' },
-  { value: 'dances', label: 'Dances' },
-  { value: 'settings', label: 'Settings' },
+  { value: 'events', label: 'Events', icon: <IconListNumbers size={18} /> },
+  { value: 'skaters', label: 'Skaters', icon: <IconUsers size={18} /> },
+  { value: 'judges', label: 'Judges', icon: <IconJudge size={18} /> },
+  { value: 'dances', label: 'Dances', icon: <IconMusic size={18} /> },
+  { value: 'settings', label: 'Settings', icon: <IconSettings size={18} /> },
 ];
 
 export function CompetitionLayout() {
@@ -55,79 +55,80 @@ export function CompetitionLayout() {
   };
 
   return (
-    <Container size="lg">
-      <Breadcrumbs mb="xs">
-        <Anchor component={Link} to="/" size="sm">
-          Competitions
-        </Anchor>
-        <Text size="sm">{competition.name}</Text>
-      </Breadcrumbs>
-      <Group justify="space-between" mb="md">
-        <div>
-          <Group gap="xs" wrap="nowrap">
-            <Title order={2}>{competition.name}</Title>
-            <Tooltip label="Edit competition details">
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                onClick={openEdit}
-                aria-label="Edit competition details"
-              >
-                <IconPencil size={18} />
-              </ActionIcon>
-            </Tooltip>
-          </Group>
-          <Text size="sm" c="dimmed">
-            {[competition.date && new Date(competition.date).toLocaleDateString(), competition.venue]
-              .filter(Boolean)
-              .join(' · ')}
-          </Text>
-        </div>
-        <Group>
-          <Menu position="bottom-end">
-            <Menu.Target>
-              <Button
-                variant="default"
-                leftSection={<IconPrinter size={16} />}
-                rightSection={<IconChevronDown size={14} />}
-              >
-                Print
-              </Button>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Item
-                onClick={() => printJudgeSheets({ competitionId: competition.id }, competition.name)}
-              >
-                Judge sheets — all events
-              </Menu.Item>
-              <Menu.Item onClick={() => printAllResults('standard')}>Results — all complete events</Menu.Item>
-              <Menu.Item onClick={() => printAllResults('withMarks')}>
-                Results with marks — all complete events
-              </Menu.Item>
-              <Menu.Item onClick={() => printAllResults('guest')}>
-                Results for guest judges (placings only) — all complete events
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
-          <Button
-            variant="default"
-            leftSection={<IconDownload size={16} />}
-            onClick={() => exportCompetition(competition.id)}
-          >
-            Export file
-          </Button>
-        </Group>
-      </Group>
-      <Tabs value={current} onChange={(v) => navigate(`/c/${compId}/${v === 'events' ? '' : v}`)} mb="md">
-        <Tabs.List>
-          {TABS.map((t) => (
-            <Tabs.Tab key={t.value} value={t.value}>
-              {t.label}
-            </Tabs.Tab>
-          ))}
-        </Tabs.List>
-      </Tabs>
-      <Outlet />
+    <>
+      <PageHero
+        crumbs={[{ label: 'Competitions', to: '/' }, { label: competition.name }]}
+        title={competition.name}
+        titleAddon={
+          <Tooltip label="Edit competition details">
+            <ActionIcon
+              variant="subtle"
+              color="gray.0"
+              onClick={openEdit}
+              aria-label="Edit competition details"
+            >
+              <IconPencil size={20} />
+            </ActionIcon>
+          </Tooltip>
+        }
+        meta={
+          <>
+            {competition.date && (
+              <HeroMeta icon={<IconCalendarEvent size={16} />}>{formatLongDate(competition.date)}</HeroMeta>
+            )}
+            {competition.venue && <HeroMeta icon={<IconMapPin size={16} />}>{competition.venue}</HeroMeta>}
+          </>
+        }
+        actions={
+          <>
+            <Menu position="bottom-end">
+              <Menu.Target>
+                <Button
+                  variant="white"
+                  color="navy.9"
+                  leftSection={<IconPrinter size={16} />}
+                  rightSection={<IconChevronDown size={14} />}
+                >
+                  Print
+                </Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item
+                  onClick={() => printJudgeSheets({ competitionId: competition.id }, competition.name)}
+                >
+                  Judge sheets — all events
+                </Menu.Item>
+                <Menu.Item onClick={() => printAllResults('standard')}>
+                  Results — all complete events
+                </Menu.Item>
+                <Menu.Item onClick={() => printAllResults('withMarks')}>
+                  Results with marks — all complete events
+                </Menu.Item>
+                <Menu.Item onClick={() => printAllResults('guest')}>
+                  Results for guest judges (placings only) — all complete events
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+            <Button
+              color="medal.5"
+              c="navy.9"
+              leftSection={<IconDownload size={16} />}
+              onClick={() => exportCompetition(competition.id)}
+            >
+              Export file
+            </Button>
+          </>
+        }
+      >
+        <HeroTabs
+          tabs={TABS}
+          value={current}
+          onChange={(v) => navigate(`/c/${compId}/${v === 'events' ? '' : v}`)}
+        />
+      </PageHero>
+      <Container size="lg">
+        <Outlet />
+      </Container>
       <Modal opened={editing} onClose={closeEdit} title="Edit competition details">
         <CompetitionDetailsForm
           initial={{ name: competition.name, date: competition.date, venue: competition.venue }}
@@ -139,6 +140,6 @@ export function CompetitionLayout() {
           }}
         />
       </Modal>
-    </Container>
+    </>
   );
 }

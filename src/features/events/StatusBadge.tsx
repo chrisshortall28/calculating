@@ -1,17 +1,13 @@
 import { Badge } from '@mantine/core';
+import { statusColor } from '../../app/theme';
 import type { EventStatus } from '../../domain/types';
 
-const STATUS: Record<EventStatus, { label: string; color: string }> = {
-  setup: { label: 'Setup', color: 'gray' },
-  scoring: { label: 'Scoring', color: 'blue' },
-  final: { label: 'Final', color: 'green' },
-};
+const LABEL: Record<EventStatus, string> = { setup: 'Setup', scoring: 'Scoring', final: 'Final' };
 
 export function StatusBadge({ status }: { status: EventStatus }) {
-  const s = STATUS[status];
   return (
-    <Badge size="sm" color={s.color} variant="dot">
-      {s.label}
+    <Badge size="sm" color={statusColor[status]} variant={status === 'final' ? 'filled' : 'dot'}>
+      {LABEL[status]}
     </Badge>
   );
 }

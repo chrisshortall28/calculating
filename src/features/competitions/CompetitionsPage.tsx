@@ -1,22 +1,25 @@
 import {
-  Badge,
   Button,
   Card,
   Container,
   FileButton,
   Group,
   Modal,
+  Progress,
   SimpleGrid,
   Stack,
   Text,
-  Title,
+  UnstyledButton,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
-import { IconFileImport, IconPlus } from '@tabler/icons-react';
+import { IconFileImport, IconMapPin, IconPlus, IconTrophy } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
+import { dateTile } from '../../app/format';
+import { PageHero } from '../../app/PageHero';
+import classes from './CompetitionsPage.module.css';
 import { db } from '../../db/db';
 import { createCompetition } from '../../db/repo';
 import { CompetitionDetailsForm, emptyCompetitionDetails } from './CompetitionDetailsForm';
@@ -26,10 +29,25 @@ export function CompetitionsPage() {
   const navigate = useNavigate();
   const [opened, { open, close }] = useDisclosure(false);
   const competitions = useLiveQuery(() => db.competitions.orderBy('updatedAt').reverse().toArray());
-  const eventCounts = useLiveQuery(async () => {
-    const counts = new Map<string, number>();
-    await db.events.each((e) => counts.set(e.competitionId, (counts.get(e.competitionId) ?? 0) + 1));
-    return counts;
+  const stats = useLiveQuery(async () => {
+    const byComp = new Map<string, { events: number; final: number; entries: number }>();
+    const compOfEvent = new Map<string, string>();
+    const get = (id: string) => {
+      let s = byComp.get(id);
+      if (!s) byComp.set(id, (s = { events: 0, final: 0, entries: 0 }));
+      return s;
+    };
+    await db.events.each((e) => {
+      compOfEvent.set(e.id, e.competitionId);
+      const s = get(e.competitionId);
+      s.events++;
+      if (e.status === 'final') s.final++;
+    });
+    await db.entries.each((en) => {
+      const comp = compOfEvent.get(en.eventId);
+      if (comp) get(comp).entries++;
+    });
+    return byComp;
   });
 
   const doImport = async (file: CompetitionFile, mode: 'copy' | 'replace') => {
@@ -83,50 +101,83 @@ export function CompetitionsPage() {
   };
 
   return (
-    <Container size="lg">
-      <Group justify="space-between" mb="lg">
-        <Title order={2}>Competitions</Title>
-        <Group>
-          <FileButton onChange={onFile} accept="application/json,.json">
-            {(props) => (
-              <Button variant="default" leftSection={<IconFileImport size={16} />} {...props}>
-                Import
-              </Button>
-            )}
-          </FileButton>
-          <Button leftSection={<IconPlus size={16} />} onClick={open}>
-            New competition
-          </Button>
-        </Group>
-      </Group>
-
-      {competitions?.length === 0 && (
-        <Card withBorder p="xl" ta="center">
-          <Text c="dimmed">No competitions yet. Create one, or import a competition file.</Text>
-        </Card>
-      )}
-
-      <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
-        {competitions?.map((c) => (
-          <Card
-            key={c.id}
-            withBorder
-            shadow="xs"
-            style={{ cursor: 'pointer' }}
-            onClick={() => navigate(`/c/${c.id}`)}
-          >
-            <Text fw={600} size="lg">
-              {c.name}
+    <>
+      <PageHero
+        crumbs={[]}
+        title="Competitions"
+        meta={<Text size="sm">Set up events, enter judges’ marks and print results — all offline.</Text>}
+        actions={
+          <>
+            <FileButton onChange={onFile} accept="application/json,.json">
+              {(props) => (
+                <Button variant="white" color="navy.9" leftSection={<IconFileImport size={16} />} {...props}>
+                  Import
+                </Button>
+              )}
+            </FileButton>
+            <Button color="medal.5" c="navy.9" leftSection={<IconPlus size={16} />} onClick={open}>
+              New competition
+            </Button>
+          </>
+        }
+      />
+      <Container size="lg">
+        {competitions?.length === 0 && (
+          <Card withBorder p="xl" ta="center">
+            <IconTrophy size={48} color="var(--mantine-color-medal-5)" style={{ margin: '0 auto' }} />
+            <Text fw={700} size="lg" mt="sm">
+              No competitions yet
             </Text>
-            <Text size="sm" c="dimmed">
-              {[c.date && new Date(c.date).toLocaleDateString(), c.venue].filter(Boolean).join(' · ')}
+            <Text c="dimmed" size="sm">
+              Create a competition, or import a competition file.
             </Text>
-            <Badge mt="sm" variant="light">
-              {eventCounts?.get(c.id) ?? 0} events
-            </Badge>
           </Card>
-        ))}
-      </SimpleGrid>
+        )}
+
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
+          {competitions?.map((c) => {
+            const s = stats?.get(c.id) ?? { events: 0, final: 0, entries: 0 };
+            const tile = dateTile(c.date);
+            return (
+              <UnstyledButton key={c.id} component={Link} to={`/c/${c.id}`} className={classes.card}>
+                <div className={classes.band}>
+                  <div className={classes.dateTile}>
+                    {tile ? (
+                      <>
+                        <span className={classes.day}>{tile.day}</span>
+                        <span className={classes.month}>{tile.month}</span>
+                      </>
+                    ) : (
+                      <IconTrophy size={22} />
+                    )}
+                  </div>
+                  <Text className={classes.name} lineClamp={2}>
+                    {c.name}
+                  </Text>
+                </div>
+                <Stack gap="sm" p="md">
+                  <Group gap={6} c="dimmed" wrap="nowrap">
+                    <IconMapPin size={16} />
+                    <Text size="sm" truncate>
+                      {c.venue || 'No venue set'}
+                    </Text>
+                  </Group>
+                  <Group grow gap="xs">
+                    <Stat label="Events" value={s.events} />
+                    <Stat label="Entries" value={s.entries} />
+                    <Stat label="Final" value={`${s.final}/${s.events}`} />
+                  </Group>
+                  <Progress
+                    value={s.events ? (100 * s.final) / s.events : 0}
+                    color={s.events && s.final === s.events ? 'teal' : 'medal.5'}
+                    size="sm"
+                  />
+                </Stack>
+              </UnstyledButton>
+            );
+          })}
+        </SimpleGrid>
+      </Container>
 
       <Modal opened={opened} onClose={close} title="New competition">
         <CompetitionDetailsForm
@@ -139,6 +190,15 @@ export function CompetitionsPage() {
           }}
         />
       </Modal>
-    </Container>
+    </>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className={classes.stat}>
+      <span className={classes.statValue}>{value}</span>
+      <span className={classes.statLabel}>{label}</span>
+    </div>
   );
 }

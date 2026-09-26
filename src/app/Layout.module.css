@@ -1,0 +1,45 @@
+.header {
+  background: linear-gradient(100deg, var(--mantine-color-navy-9) 0%, #13305f 60%, #173a73 100%);
+  border-bottom: 3px solid var(--mantine-color-medal-5);
+  color: var(--mantine-color-white);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+}
+
+.logo {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--mantine-color-medal-3), var(--mantine-color-medal-6));
+  color: var(--mantine-color-navy-9);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
+  transform: skewX(-8deg);
+}
+
+.logo svg {
+  transform: skewX(8deg);
+}
+
+.wordmark {
+  font-family: var(--mantine-headings-font-family);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-style: italic;
+}
+
+.tagline {
+  font-size: 11px;
+  line-height: 1.2;
+  color: rgb(255 255 255 / 0.65);
+  letter-spacing: 0.02em;
+}

@@ -1,0 +1,87 @@
+.card {
+  display: block;
+  background: var(--mantine-color-body);
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-lg);
+  overflow: hidden;
+  transition:
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.card:hover,
+.card:focus-visible {
+  box-shadow: var(--mantine-shadow-lg);
+  transform: translateY(-3px);
+}
+
+.band {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 84px;
+  padding: 14px 16px;
+  background:
+    radial-gradient(circle at 100% 0%, rgb(255 176 24 / 0.22), transparent 55%),
+    linear-gradient(100deg, #13305f, var(--mantine-color-navy-9));
+  color: var(--mantine-color-white);
+  border-bottom: 3px solid var(--mantine-color-medal-5);
+}
+
+.dateTile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  width: 54px;
+  height: 56px;
+  border-radius: 8px;
+  background: var(--mantine-color-medal-5);
+  color: var(--mantine-color-navy-9);
+  line-height: 1;
+}
+
+.day {
+  font-family: var(--mantine-headings-font-family);
+  font-weight: 800;
+  font-size: 26px;
+}
+
+.month {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.name {
+  font-family: var(--mantine-headings-font-family);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 24px;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 4px;
+  border-radius: var(--mantine-radius-md);
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+}
+
+.statValue {
+  font-family: var(--mantine-headings-font-family);
+  font-weight: 800;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.statLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mantine-color-dimmed);
+}

@@ -1,0 +1,107 @@
+.hero {
+  /* Bleed to the AppShell edges, then re-pad the content. */
+  margin: calc(var(--mantine-spacing-lg) * -1) calc(var(--mantine-spacing-lg) * -1) var(--mantine-spacing-lg);
+  background:
+    radial-gradient(circle at 85% -40%, rgb(255 176 24 / 0.18), transparent 45%),
+    linear-gradient(100deg, #13305f 0%, var(--mantine-color-navy-9) 70%);
+  color: var(--mantine-color-white);
+}
+
+.inner {
+  padding-top: var(--mantine-spacing-md);
+  padding-bottom: var(--mantine-spacing-lg);
+}
+
+.crumbs {
+  font-size: var(--mantine-font-size-xs);
+  margin-bottom: 6px;
+  min-width: 0;
+}
+
+.crumbLink {
+  color: rgb(255 255 255 / 0.7);
+  font-size: var(--mantine-font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.crumbLink:hover {
+  color: var(--mantine-color-medal-4);
+}
+
+.crumbCurrent {
+  color: rgb(255 255 255 / 0.9);
+  font-size: var(--mantine-font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.sep {
+  color: rgb(255 255 255 / 0.35);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--mantine-headings-font-family);
+  font-weight: 800;
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  color: rgb(255 255 255 / 0.8);
+  font-size: var(--mantine-font-size-sm);
+}
+
+.metaItem svg {
+  color: var(--mantine-color-medal-4);
+}
+
+/* Tabs along the bottom of the band */
+.tabsList {
+  border: 0;
+  gap: 2px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabsList::before {
+  display: none;
+}
+
+.tab {
+  color: rgb(255 255 255 / 0.7);
+  font-family: var(--mantine-headings-font-family);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 10px 16px 12px;
+  border-radius: 8px 8px 0 0;
+  border: 0;
+  border-bottom: 4px solid transparent;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  background: rgb(255 255 255 / 0.08);
+  color: var(--mantine-color-white);
+  border-bottom-color: transparent;
+}
+
+.tab[data-active] {
+  color: var(--mantine-color-white);
+  border-bottom-color: var(--mantine-color-medal-5);
+  background: rgb(255 255 255 / 0.06);
+}
+
+.tab[data-active]:hover {
+  border-bottom-color: var(--mantine-color-medal-5);
+}

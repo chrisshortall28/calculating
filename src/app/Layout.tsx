@@ -1,25 +1,45 @@
-import { ActionIcon, Anchor, AppShell, Group, Text, Tooltip, useMantineColorScheme } from '@mantine/core';
-import { IconMoon, IconSun, IconTrophy } from '@tabler/icons-react';
+import {
+  ActionIcon,
+  AppShell,
+  Group,
+  Text,
+  Tooltip,
+  UnstyledButton,
+  useComputedColorScheme,
+  useMantineColorScheme,
+} from '@mantine/core';
+import { IconMoon, IconSun, IconTrophyFilled } from '@tabler/icons-react';
 import { Link, Outlet } from 'react-router';
+import classes from './Layout.module.css';
 import { PwaUpdatePrompt } from './PwaUpdatePrompt';
 
 export function Layout() {
-  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
+  const { setColorScheme } = useMantineColorScheme();
+  const scheme = useComputedColorScheme('light');
   return (
-    <AppShell header={{ height: 52 }} padding="md">
-      <AppShell.Header>
-        <Group h="100%" px="md" justify="space-between">
-          <Anchor component={Link} to="/" underline="never" c="inherit">
-            <Group gap={8}>
-              <IconTrophy size={22} color="var(--mantine-color-blue-6)" />
-              <Text fw={700} size="lg">
-                Podium
+    <AppShell header={{ height: 60 }} padding="lg">
+      <AppShell.Header className={classes.header}>
+        <Group h="100%" px="lg" justify="space-between" wrap="nowrap">
+          <UnstyledButton component={Link} to="/" className={classes.brand} aria-label="Podium home">
+            <span className={classes.logo}>
+              <IconTrophyFilled size={20} />
+            </span>
+            <span>
+              <Text className={classes.wordmark}>Podium</Text>
+              <Text className={classes.tagline} visibleFrom="sm">
+                Artistic Roller Skating Scoring
               </Text>
-            </Group>
-          </Anchor>
-          <Tooltip label="Toggle colour scheme">
-            <ActionIcon variant="subtle" onClick={toggleColorScheme} aria-label="Toggle colour scheme">
-              {colorScheme === 'dark' ? <IconSun size={18} /> : <IconMoon size={18} />}
+            </span>
+          </UnstyledButton>
+          <Tooltip label={scheme === 'dark' ? 'Light mode' : 'Dark mode'}>
+            <ActionIcon
+              variant="subtle"
+              color="gray.0"
+              size="lg"
+              onClick={() => setColorScheme(scheme === 'dark' ? 'light' : 'dark')}
+              aria-label="Toggle colour scheme"
+            >
+              {scheme === 'dark' ? <IconSun size={20} /> : <IconMoon size={20} />}
             </ActionIcon>
           </Tooltip>
         </Group>
