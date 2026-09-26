@@ -218,9 +218,10 @@ export function ScoringTab({ event }: { event: CompEvent }) {
         )}
       </Group>
 
-      {/* The mark grid takes all the width the side panel leaves; the panel stacks below on small screens. */}
+      {/* The mark grid's card fits its columns (scrolling once it runs out of room) and the side panel
+          takes the rest; the panel stacks below on small screens. */}
       <Flex gap="lg" direction={{ base: 'column', lg: 'row' }} align={{ base: 'stretch', lg: 'flex-start' }}>
-        <Box flex={1} miw={0}>
+        <Box flex="0 1 auto" miw={0}>
           <Card withBorder p="sm">
             <MarkGrid
               focusKey={`${event.id}:${segment.id}`}
@@ -245,7 +246,7 @@ export function ScoringTab({ event }: { event: CompEvent }) {
             </Text>
           </Card>
         </Box>
-        <Box w={{ base: '100%', lg: 380 }} style={{ flexShrink: 0 }}>
+        <Box flex="1 0 380px">
           <ProvisionalPanel result={result} standing={standing} standingAfter={standingAfter} rows={rows} />
         </Box>
       </Flex>
