@@ -1,4 +1,17 @@
-import { Accordion, Alert, Badge, Button, Card, Group, List, Stack, Table, Text, Title } from '@mantine/core';
+import {
+  Accordion,
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Group,
+  List,
+  Stack,
+  Table,
+  Text,
+  Title,
+  Tooltip,
+} from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconFileText, IconPrinter } from '@tabler/icons-react';
 import { useState } from 'react';
@@ -48,8 +61,8 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
         <Button
           leftSection={<IconFileText size={16} />}
           disabled={!result.complete}
-          loading={busy === 'results'}
-          onClick={() => run('results', () => printResults({ eventId: event.id }, event.name, false))}
+          loading={busy === 'standard'}
+          onClick={() => run('standard', () => printResults({ eventId: event.id }, event.name, 'standard'))}
         >
           Results PDF
         </Button>
@@ -57,11 +70,23 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
           variant="light"
           leftSection={<IconFileText size={16} />}
           disabled={!result.complete}
-          loading={busy === 'detail'}
-          onClick={() => run('detail', () => printResults({ eventId: event.id }, event.name, true))}
+          loading={busy === 'withMarks'}
+          onClick={() => run('withMarks', () => printResults({ eventId: event.id }, event.name, 'withMarks'))}
         >
           Results with marks PDF
         </Button>
+        <Tooltip label="Placings only — no major victories, points or judge rankings" withArrow>
+          <Button
+            variant="light"
+            color="grape"
+            leftSection={<IconFileText size={16} />}
+            disabled={!result.complete}
+            loading={busy === 'guest'}
+            onClick={() => run('guest', () => printResults({ eventId: event.id }, event.name, 'guest'))}
+          >
+            Guest judges PDF
+          </Button>
+        </Tooltip>
       </Group>
 
       {!result.complete && (

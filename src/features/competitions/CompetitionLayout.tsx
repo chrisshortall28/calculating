@@ -17,6 +17,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { IconChevronDown, IconDownload, IconPencil, IconPrinter } from '@tabler/icons-react';
 import { printJudgeSheets, printResults } from '../../pdf/actions';
+import type { ResultsStyle } from '../../pdf/documents';
 import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router';
 import { useCompetition } from '../../app/data';
 import { updateCompetition } from '../../db/repo';
@@ -43,11 +44,11 @@ export function CompetitionLayout() {
   if (competition === undefined) return <Loader />;
   if (competition === null) return <Text>Competition not found.</Text>;
 
-  const printAllResults = async (withDetail: boolean) => {
+  const printAllResults = async (style: ResultsStyle) => {
     const { complete, total } = await printResults(
       { competitionId: competition.id },
       competition.name,
-      withDetail,
+      style,
     );
     if (complete < total)
       notifications.show({ message: `${complete} of ${total} events are complete and included.` });
@@ -99,9 +100,12 @@ export function CompetitionLayout() {
               >
                 Judge sheets — all events
               </Menu.Item>
-              <Menu.Item onClick={() => printAllResults(false)}>Results — all complete events</Menu.Item>
-              <Menu.Item onClick={() => printAllResults(true)}>
+              <Menu.Item onClick={() => printAllResults('standard')}>Results — all complete events</Menu.Item>
+              <Menu.Item onClick={() => printAllResults('withMarks')}>
                 Results with marks — all complete events
+              </Menu.Item>
+              <Menu.Item onClick={() => printAllResults('guest')}>
+                Results for guest judges (placings only) — all complete events
               </Menu.Item>
             </Menu.Dropdown>
           </Menu>

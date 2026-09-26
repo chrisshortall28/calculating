@@ -147,7 +147,14 @@ function officialsBlock(d: Officials): Content {
 // Results
 // ---------------------------------------------------------------------------
 
-function resultsTable(d: EventData): Content {
+/**
+ * - `standard`: placings with major victories, total points and each judge's ranking
+ * - `withMarks`: standard plus every judge's marks and the placing explanation for each dance
+ * - `guest`: for events with guest judges — placings only (place, entry, club), no scores
+ */
+export type ResultsStyle = 'standard' | 'withMarks' | 'guest';
+
+function resultsTable(d: EventData, placingsOnly: boolean): Content {
   const { result } = d;
   const name = new Map(d.rows.map((r) => [r.id, r]));
   const center = 'center' as const;
@@ -156,9 +163,13 @@ function resultsTable(d: EventData): Content {
       { text: 'Place', style: 'th' },
       { text: 'Entry', style: 'th', alignment: 'left' },
       { text: 'Club', style: 'th', alignment: 'left' },
-      { text: 'Major victories', style: 'th' },
-      { text: 'Total points', style: 'th' },
-      ...d.judges.map((_, i) => ({ text: `J${i + 1}`, style: 'th' })),
+      ...(placingsOnly
+        ? []
+        : [
+            { text: 'Major victories', style: 'th' },
+            { text: 'Total points', style: 'th' },
+            ...d.judges.map((_, i) => ({ text: `J${i + 1}`, style: 'th' })),
+          ]),
     ],
     ...result.overall.map((o) => {
       const r = name.get(o.entryId)!;
@@ -168,16 +179,20 @@ function resultsTable(d: EventData): Content {
           stack: [{ text: r.name, bold: true }, ...(r.members ? [{ text: r.members, style: 'small' }] : [])],
         },
         r.club,
-        { text: String(o.majorVictories), bold: true, alignment: center },
-        { text: formatTenths(o.totalTenths), alignment: center },
-        ...o.judgeRanks.map((rank) => ({ text: String(rank), alignment: center, color: '#555' })),
+        ...(placingsOnly
+          ? []
+          : [
+              { text: String(o.majorVictories), bold: true, alignment: center },
+              { text: formatTenths(o.totalTenths), alignment: center },
+              ...o.judgeRanks.map((rank) => ({ text: String(rank), alignment: center, color: '#555' })),
+            ]),
       ];
     }),
   ];
   return {
     table: {
       headerRows: 1,
-      widths: [34, '*', 110, 48, 44, ...d.judges.map(() => 24)],
+      widths: placingsOnly ? [34, '*', 180] : [34, '*', 110, 48, 44, ...d.judges.map(() => 24)],
       body,
     },
     layout: 'lightHorizontalLines',
@@ -231,14 +246,14 @@ function detailTables(d: EventData): Content[] {
   });
 }
 
-export function resultsPages(events: EventData[], withDetail: boolean): Content[] {
+export function resultsPages(events: EventData[], style: ResultsStyle): Content[] {
   const pages = events
     .filter((d) => d.result.complete)
     .map((d): Content[] => [
       ...header(d, 'Results'),
       officialsBlock(d),
-      resultsTable(d),
-      ...(withDetail ? detailTables(d) : []),
+      resultsTable(d, style === 'guest'),
+      ...(style === 'withMarks' ? detailTables(d) : []),
     ]);
   return withPageBreaks(pages);
 }
