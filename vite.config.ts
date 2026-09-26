@@ -12,7 +12,7 @@ export default defineConfig({
         name: 'Podium',
         short_name: 'Podium',
         description: 'Roller skating competition calculator',
-        theme_color: '#1c7ed6',
+        theme_color: '#0b1d3a',
         background_color: '#ffffff',
         display: 'standalone',
         // PNGs generated from favicon.svg by `npm run generate-icons` (pwa-assets.config.ts).
