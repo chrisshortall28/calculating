@@ -1,13 +1,52 @@
 # Podium
 
-Offline web app for running roller skating competitions. **Calculators** set up events,
-skaters, dances and judges, then enter judges' marks on the day. Podium ranks each event
-by the CIPA system of scoring (majority victories) and produces judge sheets and
-results as PDFs.
+<p align="center">
+  <img src="docs/images/banner.jpg" alt="Podium: artistic roller skating scoring" width="100%">
+</p>
 
-- Runs entirely in the browser (installable PWA). Data lives in IndexedDB on the device,
-  and there is no server.
-- **Export file** (on each competition) saves a `.pod` backup (JSON inside), and **Import** restores it (older `.json` backups still import).
+<p align="center">
+  <a href="https://chrisshortall28.github.io/calculating/"><strong>🚀 Open Podium</strong></a> ·
+  <a href="#deployment-and-installing">📲 Install it</a> ·
+  <a href="#scoring-rules-cipa-system-of-scoring">🏆 Scoring rules</a> ·
+  <a href="#development">🛠️ Develop</a>
+</p>
+
+**Podium is the Calculator's companion for artistic roller skating competitions.** Set up the
+events, skaters, dances and judges, then key in the judges' marks as the skaters come off the
+floor. Podium works out the placings by the **CIPA system of scoring** and has the judge sheets
+and results PDFs ready to print.
+
+## ✨ Highlights
+
+- ⚡ **Fast mark entry.** A keyboard-driven grid built for speed: type `57` for 5.7 or `100`
+  for 10.0, and the cursor moves on by itself. Enter marks judge by judge or entry by entry.
+- 🏆 **CIPA majority scoring.** The table of victories, majority victories and every tie-break
+  rule (6A/6B, 7B, 7C, 7A, 8) are applied automatically.
+- 🔍 **Every tie explained.** The Results tab shows which rule decided each tied place and the
+  numbers behind it, with a link to the CIPA manual.
+- 📊 **Standings while you score.** A live provisional standing updates as each dance is
+  completed.
+- 🖨️ **PDFs in one click.** Judge sheets, plus standard, with-marks and guest-judges results.
+- 📴 **Works offline.** Podium is an installable app that runs entirely in the browser, with no
+  server and no sign-in. Your data stays on your device.
+- 💾 **Backup and transfer.** Export a competition to a `.pod` file and import it on another
+  device (older `.json` backups still import).
+- 🌙 **Light and dark themes**, and competitions can take their club colours.
+
+## 📸 Screenshots
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/scoring.png" alt="Scoring tab: the mark-entry grid with a provisional standing"><br><sub><b>Scoring:</b> key in marks, with the standing so far alongside.</sub></td>
+    <td width="50%"><img src="docs/images/results.png" alt="Results tab: final placings with the tie-break rules used"><br><sub><b>Results:</b> placings, with each tie-break rule explained.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/events.png" alt="A competition's events with their progress"><br><sub><b>Events:</b> every event's progress at a glance.</sub></td>
+    <td width="50%"><img src="docs/images/results-dark.png" alt="Results tab in the dark theme"><br><sub><b>Dark theme:</b> easy on the eyes at the calculator's table.</sub></td>
+  </tr>
+</table>
+
+<sub>The screenshots use a made-up competition, and every name in them is fictional.</sub>
 
 ## Development
 
