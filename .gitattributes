@@ -1,0 +1,2 @@
+# Keep LF line endings everywhere (matching Prettier), regardless of core.autocrlf.
+* text=auto eol=lf
