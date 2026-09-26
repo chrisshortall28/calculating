@@ -103,7 +103,8 @@ export function HomePage() {
           <div className={classes.heroText}>
             <Text className={classes.eyebrow}>Artistic roller skating scoring</Text>
             <h1 className={classes.heroTitle}>
-              From first mark <span className={classes.accent}>to podium</span>
+              <span className={classes.lead}>From first mark to</span>{' '}
+              <span className={classes.accent}>podium</span>
             </h1>
             <Text className={classes.intro}>
               Podium is the Calculator’s companion for roller skating competitions. Set up the events, key in

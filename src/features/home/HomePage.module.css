@@ -37,6 +37,12 @@
   letter-spacing: 0.01em;
 }
 
+/* The lead-in sits smaller, so "Podium" reads as the headline word. */
+.lead {
+  display: block;
+  font-size: 0.68em;
+}
+
 .accent {
   display: block;
   color: var(--mantine-color-medal-5);
