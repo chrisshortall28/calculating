@@ -1,6 +1,7 @@
 import type { Id } from '../domain/types';
 import { judgeOrdinals } from './judgeOrdinals';
 import { majorityOf, placeByMajority } from './majority';
+import { judgeEventRankings, majorVictories } from './majorVictories';
 import { DEFAULT_TIE_BREAKS } from './tieBreaks';
 import type {
   Candidate,
@@ -90,8 +91,23 @@ function combine(
   segmentResults: SegmentResult[],
   config: ScoringConfig,
 ): { overall: OverallRow[]; steps: ExplainStep[] } {
-  const { entryIds, segments } = input;
+  const { entryIds, judgeIds, segments } = input;
   const freeIndex = segments.findIndex((s) => s.kind === 'free');
+
+  // Each judge's total for the event (all dances), their ranking of entries, and major victories.
+  const eventTotals = new Map(
+    judgeIds.map((j) => [
+      j,
+      new Map(
+        entryIds.map((e) => [
+          e,
+          segmentResults.reduce((sum, s) => sum + (s.judgeTotals.get(j)?.get(e) ?? 0), 0),
+        ]),
+      ),
+    ]),
+  );
+  const rankings = judgeEventRankings(entryIds, eventTotals);
+  const victories = majorVictories(entryIds, judgeIds, rankings);
 
   const rows = entryIds.map((entryId) => {
     const segmentPlaces = segmentResults.map((s) => s.places.get(entryId));
@@ -125,7 +141,13 @@ function combine(
     const same = (o?: typeof r) => o && keys(o).every((k, idx) => k === keys(r)[idx]);
     const place = prev && same(prev) ? overall[i - 1]!.place : i + 1;
     const tied = !!(same(prev) || same(next));
-    overall.push({ ...r, place, tied });
+    overall.push({
+      ...r,
+      place,
+      tied,
+      judgeRanks: judgeIds.map((j) => rankings.get(j)!.get(r.entryId)!),
+      majorVictories: victories.get(r.entryId)!,
+    });
 
     if (single) return;
     const decider = (o?: typeof r) =>

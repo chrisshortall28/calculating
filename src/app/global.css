@@ -1,0 +1,13 @@
+/* App-wide background: a subtle cool tint so white cards stand out. */
+body {
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+}
+
+/* Condensed uppercase display text (page titles, section labels). */
+.display {
+  font-family: var(--mantine-headings-font-family);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}

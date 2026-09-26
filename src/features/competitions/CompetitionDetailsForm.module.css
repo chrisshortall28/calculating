@@ -1,0 +1,36 @@
+/* A small live preview of the competition's title band in its club colours. */
+.preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: var(--mantine-spacing-sm);
+  padding: 10px 12px;
+  border-radius: var(--mantine-radius-md);
+  background: linear-gradient(100deg, var(--club-primary-soft), var(--club-primary));
+  color: var(--club-on-primary);
+  border-bottom: 3px solid var(--club-secondary);
+}
+
+.previewTile {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  background: var(--club-secondary);
+  color: var(--club-on-secondary);
+  font-family: var(--mantine-headings-font-family);
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.previewName {
+  font-family: var(--mantine-headings-font-family);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 20px;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

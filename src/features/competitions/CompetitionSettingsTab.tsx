@@ -4,7 +4,7 @@ import { notifications } from '@mantine/notifications';
 import { useNavigate, useParams } from 'react-router';
 import { useCompetition } from '../../app/data';
 import { deleteCompetition, updateCompetition } from '../../db/repo';
-import { CompetitionDetailsForm } from './CompetitionDetailsForm';
+import { CompetitionDetailsForm, detailsOf } from './CompetitionDetailsForm';
 
 export function CompetitionSettingsTab() {
   const { compId } = useParams() as { compId: string };
@@ -38,8 +38,8 @@ export function CompetitionSettingsTab() {
         </Title>
         <CompetitionDetailsForm
           // Remount when the stored details change (e.g. edited from the header) so the form shows them.
-          key={`${competition.name}|${competition.date}|${competition.venue}`}
-          initial={{ name: competition.name, date: competition.date, venue: competition.venue }}
+          key={`${competition.name}|${competition.date}|${competition.venue}|${competition.primaryColor}|${competition.secondaryColor}`}
+          initial={detailsOf(competition)}
           submitLabel="Save"
           onSubmit={async (values) => {
             await updateCompetition(compId, values);

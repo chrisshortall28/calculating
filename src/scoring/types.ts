@@ -73,6 +73,10 @@ export interface OverallRow {
   segmentPlaces: (number | undefined)[];
   totalTenths: number;
   tied: boolean;
+  /** Each judge's ranking of this entry for the whole event (same order as judgeIds). */
+  judgeRanks: number[];
+  /** Number of other entries that a majority of judges ranked this entry above. */
+  majorVictories: number;
 }
 
 export interface EventResult {

@@ -1,0 +1,113 @@
+/* Colours come from --club-* variables (see clubColors.ts); defaults are navy and gold. */
+.hero {
+  /* Bleed to the AppShell edges, then re-pad the content. */
+  margin: calc(var(--mantine-spacing-lg) * -1) calc(var(--mantine-spacing-lg) * -1) var(--mantine-spacing-lg);
+  background:
+    radial-gradient(
+      circle at 85% -40%,
+      color-mix(in srgb, var(--club-secondary) 18%, transparent),
+      transparent 45%
+    ),
+    linear-gradient(100deg, var(--club-primary-soft) 0%, var(--club-primary) 70%);
+  color: var(--club-on-primary);
+}
+
+.inner {
+  padding-top: var(--mantine-spacing-md);
+  padding-bottom: var(--mantine-spacing-lg);
+}
+
+.crumbs {
+  font-size: var(--mantine-font-size-xs);
+  margin-bottom: 6px;
+  min-width: 0;
+}
+
+.crumbLink,
+.crumbCurrent {
+  font-size: var(--mantine-font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.crumbLink {
+  color: color-mix(in srgb, var(--club-on-primary) 70%, transparent);
+}
+
+.crumbLink:hover {
+  color: var(--club-on-primary);
+  text-decoration-color: var(--club-secondary);
+}
+
+.crumbCurrent {
+  color: color-mix(in srgb, var(--club-on-primary) 90%, transparent);
+}
+
+.sep {
+  color: color-mix(in srgb, var(--club-on-primary) 35%, transparent);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--mantine-headings-font-family);
+  font-weight: 800;
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  color: color-mix(in srgb, var(--club-on-primary) 80%, transparent);
+  font-size: var(--mantine-font-size-sm);
+}
+
+.metaItem svg {
+  color: var(--club-secondary);
+}
+
+/* Tabs along the bottom of the band */
+.tabsList {
+  border: 0;
+  gap: 2px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabsList::before {
+  display: none;
+}
+
+.tab {
+  color: color-mix(in srgb, var(--club-on-primary) 70%, transparent);
+  font-family: var(--mantine-headings-font-family);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 10px 16px 12px;
+  border-radius: 8px 8px 0 0;
+  border: 0;
+  border-bottom: 4px solid transparent;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  background: color-mix(in srgb, var(--club-on-primary) 8%, transparent);
+  color: var(--club-on-primary);
+  border-bottom-color: transparent;
+}
+
+.tab[data-active] {
+  color: var(--club-on-primary);
+  border-bottom-color: var(--club-secondary);
+  background: color-mix(in srgb, var(--club-on-primary) 6%, transparent);
+}
+
+.tab[data-active]:hover {
+  border-bottom-color: var(--club-secondary);
+}

@@ -12,7 +12,7 @@ export default defineConfig({
         name: 'Podium',
         short_name: 'Podium',
         description: 'Roller skating competition calculator',
-        theme_color: '#1c7ed6',
+        theme_color: '#0b1d3a',
         background_color: '#ffffff',
         display: 'standalone',
         // PNGs generated from favicon.svg by `npm run generate-icons` (pwa-assets.config.ts).
@@ -29,10 +29,13 @@ export default defineConfig({
       },
     }),
   ],
+  // The native file watcher intermittently missed edits on Windows, leaving the dev server serving
+  // stale modules; polling is reliable. Dev server only.
+  server: { watch: { usePolling: true, interval: 300 } },
   // Offline app: everything is precached, so large chunks are fine.
   build: { chunkSizeWarningLimit: 1500 },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
   },
 });

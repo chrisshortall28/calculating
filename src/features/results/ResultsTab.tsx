@@ -1,4 +1,17 @@
-import { Accordion, Alert, Badge, Button, Card, Group, List, Stack, Table, Text, Title } from '@mantine/core';
+import {
+  Accordion,
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Group,
+  List,
+  Stack,
+  Table,
+  Text,
+  Title,
+  Tooltip,
+} from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconFileText, IconPrinter } from '@tabler/icons-react';
 import { useState } from 'react';
@@ -48,8 +61,8 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
         <Button
           leftSection={<IconFileText size={16} />}
           disabled={!result.complete}
-          loading={busy === 'results'}
-          onClick={() => run('results', () => printResults({ eventId: event.id }, event.name, false))}
+          loading={busy === 'standard'}
+          onClick={() => run('standard', () => printResults({ eventId: event.id }, event.name, 'standard'))}
         >
           Results PDF
         </Button>
@@ -57,11 +70,23 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
           variant="light"
           leftSection={<IconFileText size={16} />}
           disabled={!result.complete}
-          loading={busy === 'detail'}
-          onClick={() => run('detail', () => printResults({ eventId: event.id }, event.name, true))}
+          loading={busy === 'withMarks'}
+          onClick={() => run('withMarks', () => printResults({ eventId: event.id }, event.name, 'withMarks'))}
         >
           Results with marks PDF
         </Button>
+        <Tooltip label="Placings only — no major victories, points or judge rankings" withArrow>
+          <Button
+            variant="light"
+            color="grape"
+            leftSection={<IconFileText size={16} />}
+            disabled={!result.complete}
+            loading={busy === 'guest'}
+            onClick={() => run('guest', () => printResults({ eventId: event.id }, event.name, 'guest'))}
+          >
+            Guest judges PDF
+          </Button>
+        </Tooltip>
       </Group>
 
       {!result.complete && (
@@ -88,14 +113,13 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
                 <Table.Th w={60}>Place</Table.Th>
                 <Table.Th>Entry</Table.Th>
                 <Table.Th>Club</Table.Th>
-                {multi &&
-                  segments.map((s) => (
-                    <Table.Th key={s.id} ta="center">
-                      {s.name}
-                    </Table.Th>
-                  ))}
-                {multi && <Table.Th ta="center">Sum</Table.Th>}
+                <Table.Th ta="center">Major victories</Table.Th>
                 <Table.Th ta="right">Total points</Table.Th>
+                {event.judgeIds.map((j, ji) => (
+                  <Table.Th key={j} ta="center" title={judgeMap.get(j)?.name}>
+                    J{ji + 1}
+                  </Table.Th>
+                ))}
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -109,20 +133,15 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
                     </Table.Td>
                     <Table.Td fw={500}>{entryName(entry, skaters)}</Table.Td>
                     <Table.Td c="dimmed">{entryClub(entry, skaters)}</Table.Td>
-                    {multi &&
-                      o.segmentPlaces.map((p, i) => (
-                        <Table.Td key={i} ta="center">
-                          {p}
-                        </Table.Td>
-                      ))}
-                    {multi && (
-                      <Table.Td ta="center" fw={600}>
-                        {o.score}
-                      </Table.Td>
-                    )}
-                    <Table.Td ta="right" c="dimmed">
-                      {formatTenths(o.totalTenths)}
+                    <Table.Td ta="center" fw={600}>
+                      {o.majorVictories}
                     </Table.Td>
+                    <Table.Td ta="right">{formatTenths(o.totalTenths)}</Table.Td>
+                    {o.judgeRanks.map((rank, i) => (
+                      <Table.Td key={i} ta="center" c="dimmed">
+                        {rank}
+                      </Table.Td>
+                    ))}
                   </Table.Tr>
                 );
               })}
