@@ -29,6 +29,9 @@ export default defineConfig({
       },
     }),
   ],
+  // The native file watcher intermittently missed edits on Windows, leaving the dev server serving
+  // stale modules; polling is reliable. Dev server only.
+  server: { watch: { usePolling: true, interval: 300 } },
   // Offline app: everything is precached, so large chunks are fine.
   build: { chunkSizeWarningLimit: 1500 },
   test: {
