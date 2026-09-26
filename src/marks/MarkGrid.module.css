@@ -1,0 +1,97 @@
+.wrap {
+  overflow-x: auto;
+}
+
+.table {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.table th,
+.table td {
+  padding: 3px 4px;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.table th {
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 600;
+  background: var(--mantine-color-body);
+}
+
+.judgeStart {
+  border-left: 2px solid var(--mantine-color-default-border);
+}
+
+.entryCell {
+  text-align: left !important;
+  min-width: 200px;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.startNo {
+  color: var(--mantine-color-dimmed);
+  font-weight: 700;
+  width: 32px;
+}
+
+.activeRow td {
+  background: light-dark(var(--mantine-color-blue-0), rgba(34, 139, 230, 0.12));
+}
+
+.activeCol {
+  color: var(--mantine-color-blue-filled);
+}
+
+.cell {
+  width: 64px;
+  height: 36px;
+  font-size: 18px;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: 6px;
+  background: var(--mantine-color-body);
+  color: var(--mantine-color-text);
+  outline: none;
+}
+
+.cell:focus {
+  border-color: var(--mantine-color-blue-filled);
+  box-shadow: 0 0 0 2px var(--mantine-color-blue-light);
+}
+
+.cell[readonly] {
+  background: var(--mantine-color-default-hover);
+  cursor: default;
+}
+
+.empty {
+  background: light-dark(var(--mantine-color-yellow-0), rgba(250, 176, 5, 0.08));
+}
+
+.error,
+.error:focus {
+  border-color: var(--mantine-color-red-filled);
+  box-shadow: 0 0 0 2px var(--mantine-color-red-light);
+  background: var(--mantine-color-red-light);
+}
+
+.ordinal {
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-xs);
+  min-width: 22px;
+}
+
+.place {
+  font-weight: 700;
+  font-size: var(--mantine-font-size-lg);
+  min-width: 48px;
+  border-left: 2px solid var(--mantine-color-default-border);
+}

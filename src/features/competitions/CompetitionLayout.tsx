@@ -1,0 +1,110 @@
+import {
+  Anchor,
+  Breadcrumbs,
+  Button,
+  Container,
+  Group,
+  Loader,
+  Menu,
+  Tabs,
+  Text,
+  Title,
+} from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { IconChevronDown, IconDownload, IconPrinter } from '@tabler/icons-react';
+import { printJudgeSheets, printResults } from '../../pdf/actions';
+import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router';
+import { useCompetition } from '../../app/data';
+import { useExportCompetition } from './useExportCompetition';
+
+const TABS = [
+  { value: 'events', label: 'Events' },
+  { value: 'skaters', label: 'Skaters' },
+  { value: 'judges', label: 'Judges' },
+  { value: 'dances', label: 'Dances' },
+  { value: 'settings', label: 'Settings' },
+];
+
+export function CompetitionLayout() {
+  const { compId } = useParams();
+  const competition = useCompetition(compId);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const exportCompetition = useExportCompetition();
+  const current = location.pathname.split('/')[3] || 'events';
+
+  if (competition === undefined) return <Loader />;
+  if (competition === null) return <Text>Competition not found.</Text>;
+
+  const printAllResults = async (withDetail: boolean) => {
+    const { complete, total } = await printResults(
+      { competitionId: competition.id },
+      competition.name,
+      withDetail,
+    );
+    if (complete < total)
+      notifications.show({ message: `${complete} of ${total} events are complete and included.` });
+  };
+
+  return (
+    <Container size="lg">
+      <Breadcrumbs mb="xs">
+        <Anchor component={Link} to="/" size="sm">
+          Competitions
+        </Anchor>
+        <Text size="sm">{competition.name}</Text>
+      </Breadcrumbs>
+      <Group justify="space-between" mb="md">
+        <div>
+          <Title order={2}>{competition.name}</Title>
+          <Text size="sm" c="dimmed">
+            {[competition.date && new Date(competition.date).toLocaleDateString(), competition.venue]
+              .filter(Boolean)
+              .join(' · ')}
+          </Text>
+        </div>
+        <Group>
+          <Menu position="bottom-end">
+            <Menu.Target>
+              <Button
+                variant="default"
+                leftSection={<IconPrinter size={16} />}
+                rightSection={<IconChevronDown size={14} />}
+              >
+                Print
+              </Button>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item
+                onClick={() => printJudgeSheets({ competitionId: competition.id }, competition.name)}
+              >
+                Judge sheets — all events
+              </Menu.Item>
+              <Menu.Item onClick={() => printAllResults(false)}>Results — all complete events</Menu.Item>
+              <Menu.Item onClick={() => printAllResults(true)}>
+                Results with marks — all complete events
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+          <Button
+            variant="default"
+            leftSection={<IconDownload size={16} />}
+            onClick={() => exportCompetition(competition.id)}
+          >
+            Export file
+          </Button>
+        </Group>
+      </Group>
+      <Tabs value={current} onChange={(v) => navigate(`/c/${compId}/${v === 'events' ? '' : v}`)} mb="md">
+        <Tabs.List>
+          {TABS.map((t) => (
+            <Tabs.Tab key={t.value} value={t.value}>
+              {t.label}
+            </Tabs.Tab>
+          ))}
+        </Tabs.List>
+      </Tabs>
+      <Outlet />
+    </Container>
+  );
+}
