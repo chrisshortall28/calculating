@@ -42,6 +42,8 @@ const medal: MantineColorsTuple = [
   '#b07000',
 ];
 
+const listScroll = { type: 'auto' } as const;
+
 export const theme = createTheme({
   colors: { podium, navy, medal },
   primaryColor: 'podium',
@@ -59,6 +61,12 @@ export const theme = createTheme({
     Button: { defaultProps: { fw: 600 } },
     Badge: { defaultProps: { radius: 'sm' } },
     Card: { defaultProps: { radius: 'lg' } },
+    // Always show the scrollbar on a long option list (Mantine's default shows it only on hover),
+    // so it's clear there are more options below.
+    Autocomplete: { defaultProps: { scrollAreaProps: listScroll } },
+    Select: { defaultProps: { scrollAreaProps: listScroll } },
+    MultiSelect: { defaultProps: { scrollAreaProps: listScroll } },
+    TagsInput: { defaultProps: { scrollAreaProps: listScroll } },
   },
 });
 

@@ -12,25 +12,36 @@ import type {
 import { cdKey } from '../domain/segments';
 import { db, newId, type MarkPK } from './db';
 
+/** Dances a new competition starts with: the WorldSkate 2026 Dance Book's dances plus other
+ * established compulsory dances, alphabetically. Each competition can add or remove its own. */
 export const DEFAULT_DANCES = [
-  'Glide Waltz',
-  'Skaters March',
-  'Dutch Waltz',
-  'Canasta Tango',
-  'Fourteen Step',
-  'Rocker Foxtrot',
-  'Harris Tango',
-  'Kilian',
-  'Westminster Waltz',
-  'Blues',
-  'Quickstep',
-  'Paso Doble',
-  'Starlight Waltz',
-  'Viennese Waltz',
+  'And Foxtrot',
   'Argentine Tango',
-  'Tango Delanco',
+  'Bachata',
+  'Blues',
+  'Canasta Tango',
+  'City Blues',
   'Denver Shuffle',
+  'Easy Paso',
+  'Fourteen Step',
+  'Glide Waltz',
+  'Harris Tango',
+  'Italian Foxtrot',
+  'Kilian',
+  'Olympic Foxtrot',
+  'Paso Doble',
+  'Quickstep',
+  'Rocker Foxtrot',
+  'Roller Samba',
   'Siesta Tango',
+  'Skaters March',
+  'Starlight Waltz',
+  'Sweet Tango',
+  'Swing Foxtrot',
+  'Terenzi Waltz',
+  'Tudor Waltz',
+  'Viennese Waltz',
+  'Westminster Waltz',
 ];
 
 const touch = (competitionId: Id) => db.competitions.update(competitionId, { updatedAt: Date.now() });
@@ -262,6 +273,12 @@ export async function setMark(
   const key: MarkPK = [pk.eventId, pk.segmentKey, pk.judgeId, pk.entryId];
   if (tenths === null) await db.marks.delete(key);
   else await db.marks.put({ ...pk, tenths } satisfies Mark);
+}
+
+/** Deletes every mark in the event, for all dances and judges. */
+export async function clearMarks(eventId: Id) {
+  await db.marks.where({ eventId }).delete();
+  await competitionOfEvent(eventId);
 }
 
 export const entryTypeLabel: Record<EntryType, string> = {

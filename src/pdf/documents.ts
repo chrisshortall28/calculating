@@ -1,5 +1,6 @@
 import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { clubColors, onColor } from '../app/clubColors';
+import { entryHeading } from '../domain/entryName';
 import { markKeyLabel } from '../domain/segments';
 import { formatTenths } from '../marks/parseMark';
 import {
@@ -72,11 +73,29 @@ interface Official {
   name: string; // blank = name to be written in
 }
 
+/** Most dances one landscape sheet can hold while leaving the Comments columns room to write in. */
+const DANCES_PER_SHEET = 4;
+
+/** Splits the dances into as few sheets as fit, sharing them out evenly (5 dances → 3 + 2). */
+function sheetParts<T>(segments: T[]): T[][] {
+  const count = Math.ceil(segments.length / DANCES_PER_SHEET);
+  const size = Math.ceil(segments.length / count);
+  return Array.from({ length: count }, (_, i) => segments.slice(i * size, (i + 1) * size));
+}
+
 /** Landscape sheet: each dance gets a wide Comments column followed by its mark column(s) — Mark
- * for a compulsory dance, A and B for the free dance; Total points and Place sit on the far right. */
-function judgeSheetPage(d: EventData, { role, label, name }: Official): Content[] {
+ * for a compulsory dance, A and B for the free dance; Total points and Place sit on the far right.
+ * An event with more dances than fit takes several sheets per official, with the totals on the last. */
+function judgeSheetPage(
+  d: EventData,
+  { role, label, name }: Official,
+  segments: EventData['segments'],
+  part: { index: number; count: number },
+): Content[] {
   const MARK_WIDTH = 38;
-  const columns = d.segments.map((s) => ({
+  const isLast = part.index === part.count - 1;
+  const partLabel = part.count > 1 ? ` (${part.index + 1} of ${part.count})` : '';
+  const columns = segments.map((s) => ({
     name: s.name,
     subs: [
       { label: 'Comments', width: '*' as const },
@@ -87,33 +106,26 @@ function judgeSheetPage(d: EventData, { role, label, name }: Official): Content[
 
   const headRow1: TableCell[] = [
     { text: '#', style: 'th', rowSpan: 2 },
-    { text: 'Entry', style: 'th', rowSpan: 2, alignment: 'left' },
+    { text: entryHeading[d.event.entryType], style: 'th', rowSpan: 2, alignment: 'left' },
     ...columns.flatMap((c) => {
       const cells: TableCell[] = [{ text: c.name, style: 'th', colSpan: c.subs.length }];
       for (let i = 1; i < c.subs.length; i++) cells.push({});
       return cells;
     }),
-    { text: 'Total points', style: 'th', rowSpan: 2 },
-    { text: 'Place', style: 'th', rowSpan: 2 },
+    ...(isLast
+      ? [
+          { text: 'Total points', style: 'th', rowSpan: 2 },
+          { text: 'Place', style: 'th', rowSpan: 2 },
+        ]
+      : []),
   ];
-  const headRow2: TableCell[] = [{}, {}, ...subCols.map((s) => ({ text: s.label, style: 'th' })), {}, {}];
-  // Repeats at the top of every page, so a continuation page still says whose sheet it is.
-  const colCount = headRow2.length;
-  const official = [role, label, name].filter(Boolean).join(' ');
-  const noBorder: [boolean, boolean, boolean, boolean] = [false, false, false, false];
-  const captionRow: TableCell[] = [
-    {
-      text: `${d.event.name} · ${official}`,
-      colSpan: colCount,
-      style: 'small',
-      margin: [0, 0, 0, 2],
-      border: noBorder,
-    },
-    // Spanned cells draw their own borders too, so blank them as well.
-    ...Array.from({ length: colCount - 1 }, () => ({ text: '', border: noBorder })),
+  const headRow2: TableCell[] = [
+    {},
+    {},
+    ...subCols.map((s) => ({ text: s.label, style: 'th' })),
+    ...(isLast ? [{}, {}] : []),
   ];
   const body: TableCell[][] = [
-    captionRow,
     headRow1,
     headRow2,
     ...d.rows.map((r, i) => [
@@ -129,13 +141,12 @@ function judgeSheetPage(d: EventData, { role, label, name }: Official): Content[
         ],
       },
       ...subCols.map(() => ({ text: '' })),
-      { text: '' },
-      { text: '' },
+      ...(isLast ? [{ text: '' }, { text: '' }] : []),
     ]),
   ];
 
   return [
-    ...header(d, `${role}’s sheet`),
+    ...header(d, `${role}’s sheet${partLabel}`),
     {
       columns: [
         {
@@ -154,14 +165,12 @@ function judgeSheetPage(d: EventData, { role, label, name }: Official): Content[
     },
     {
       table: {
-        headerRows: 3,
+        headerRows: 2,
         dontBreakRows: true,
         // The Comments columns share the spare width.
-        widths: [18, 130, ...subCols.map((s) => s.width), 44, 34],
+        widths: [18, 130, ...subCols.map((s) => s.width), ...(isLast ? [44, 34] : [])],
         body,
       },
-      // The caption row's top edge comes from the table layout, not the cell borders.
-      layout: { hLineWidth: (i: number) => (i === 0 ? 0 : 1) },
     },
   ];
 }
@@ -178,7 +187,11 @@ export function judgeSheets(events: EventData[], blankCount = 3): Content[] {
       ? d.judges.map((j, i) => ({ role: 'Judge', label: `J${i + 1}`, name: j.name }))
       : Array.from({ length: blankCount }, (_, i) => ({ role: 'Judge', label: `J${i + 1}`, name: '' }));
     officials.push({ role: 'Referee', label: '', name: d.referee?.name ?? '' });
-    for (const o of officials) pages.push(judgeSheetPage(d, o));
+    const parts = sheetParts(d.segments);
+    for (const o of officials)
+      parts.forEach((segments, index) =>
+        pages.push(judgeSheetPage(d, o, segments, { index, count: parts.length })),
+      );
   }
   return withPageBreaks(pages);
 }
@@ -193,13 +206,13 @@ export function officialsLine(d: Officials): string {
   return `Judges: ${judgesText(d)} · Referee: ${refereeText(d)}`;
 }
 
-/** The event's officials as labelled lines, for the top of the results. */
+/** The event's officials as labelled lines, under the results table. */
 function officialsBlock(d: Officials): Content {
   const row = (label: string, value: string) => [{ text: label, bold: true }, { text: value }];
   return {
     table: { widths: [52, '*'], body: [row('Judges', judgesText(d)), row('Referee', refereeText(d))] },
     layout: 'noBorders',
-    margin: [0, 0, 0, 8],
+    margin: [0, 8, 0, 0],
   };
 }
 
@@ -211,7 +224,7 @@ function officialsBlock(d: Officials): Content {
  * - `standard`: placings with points (total sums), majority victories, the tie-break rule and each judge's ranking
  * - `withMarks`: standard plus the summary of scores and table of victories, how each tie was
  *   resolved, and every judge's marks for each dance
- * - `guest`: for events with guest judges — placings and tie-break rules only, no scores
+ * - `guest`: for events with guest judges — placings only, no scores or tie-break rules
  */
 export type ResultsStyle = 'standard' | 'withMarks' | 'guest';
 
@@ -221,15 +234,15 @@ function resultsTable(d: EventData, placingsOnly: boolean): Content {
   const center = 'center' as const;
   const { th, layout } = clubTable(d);
   // Place, Entry, Club, then Points, Majority victories, Rule and each judge's ranking (the
-  // guest style keeps only the Rule of those).
+  // guest style has none of those).
   const body: TableCell[][] = [
     [
       th('Place'),
-      th('Entry', { alignment: 'left' }),
+      th(entryHeading[d.event.entryType], { alignment: 'left' }),
       th('Club', { alignment: 'left' }),
-      ...(placingsOnly ? [] : [th('Points'), th('Majority victories')]),
-      th('Rule'),
-      ...(placingsOnly ? [] : d.judges.map((_, i) => th(`J${i + 1}`))),
+      ...(placingsOnly
+        ? []
+        : [th('Points'), th('Majority victories'), th('Rule'), ...d.judges.map((_, i) => th(`J${i + 1}`))]),
     ],
     ...result.overall.map((o) => {
       const r = name.get(o.entryId)!;
@@ -244,18 +257,16 @@ function resultsTable(d: EventData, placingsOnly: boolean): Content {
           : [
               { text: formatTenths(o.totalTenths), alignment: center },
               { text: formatVictories(o.majorityVictories), bold: true, alignment: center },
+              { text: o.rule === '5' ? '' : ruleLabel(o.rule), alignment: center, color: '#555' },
+              ...o.judgeRanks.map((rank) => ({ text: String(rank), alignment: center, color: '#555' })),
             ]),
-        { text: o.rule === '5' ? '' : ruleLabel(o.rule), alignment: center, color: '#555' },
-        ...(placingsOnly
-          ? []
-          : o.judgeRanks.map((rank) => ({ text: String(rank), alignment: center, color: '#555' }))),
       ];
     }),
   ];
   return {
     table: {
       headerRows: 1,
-      widths: placingsOnly ? [34, '*', 160, 58] : [34, '*', 90, 44, 52, 58, ...d.judges.map(() => 22)],
+      widths: placingsOnly ? [34, '*', 180] : [34, '*', 90, 44, 52, 58, ...d.judges.map(() => 22)],
       body,
     },
     layout,
@@ -286,7 +297,7 @@ function victoriesTable(d: EventData): Content[] {
   const center = 'center' as const;
   const head: TableCell[] = [
     th('#'),
-    th('Entry', { alignment: 'left' }),
+    th(entryHeading[d.event.entryType], { alignment: 'left' }),
     ...d.judges.map((_, i) => th(`J${i + 1}`)),
     th('Total'),
     ...d.rows.map((_, i) => th(`v${i + 1}`)),
@@ -375,7 +386,7 @@ function detailTables(d: EventData): Content[] {
     const multi = seg.markKeys.length > 1;
     const { th, layout } = clubTable(d);
     const head: TableCell[] = [
-      th('Entry', { alignment: 'left' }),
+      th(entryHeading[d.event.entryType], { alignment: 'left' }),
       ...d.judges.flatMap((_, ji) =>
         seg.markKeys.map((k) => th(`J${ji + 1}${multi ? ` ${markKeyLabel(k)}` : ''}`)),
       ),
@@ -411,10 +422,10 @@ export function resultsPages(events: EventData[], style: ResultsStyle): Content[
   const pages = events
     .filter((d) => d.result.complete)
     .map((d): Content[] => [
-      ...header(d, 'Results', !sharesPages(style)),
-      officialsBlock(d),
+      ...header(d, undefined, !sharesPages(style)),
       resultsTable(d, style === 'guest'),
-      ...ruleKey(d),
+      ...(style === 'guest' ? [] : ruleKey(d)),
+      officialsBlock(d),
       ...(style === 'withMarks' ? [...tieNotes(d), ...victoriesTable(d), ...detailTables(d)] : []),
     ]);
   if (!sharesPages(style)) return withPageBreaks(pages);
@@ -443,8 +454,18 @@ export function resultsDocument(events: EventData[], style: ResultsStyle): TDocu
   );
 }
 
+/** Judges' sheets are handed out loose, one or more per official, so they carry no page numbers. */
+export function judgeSheetsDocument(events: EventData[]): TDocumentDefinitions {
+  return document(judgeSheets(events), true, undefined, false);
+}
+
 /** `pageHeader` is repeated at the top of every page. */
-export function document(content: Content[], landscape = false, pageHeader?: string): TDocumentDefinitions {
+export function document(
+  content: Content[],
+  landscape = false,
+  pageHeader?: string,
+  pageNumbers = true,
+): TDocumentDefinitions {
   return {
     pageSize: 'A4',
     pageOrientation: landscape ? 'landscape' : 'portrait',
@@ -460,7 +481,7 @@ export function document(content: Content[], landscape = false, pageHeader?: str
     styles,
     content: content.length ? content : [{ text: 'Nothing to print.' }],
     footer: (page, pages) => ({
-      text: `Podium · page ${page} of ${pages}`,
+      text: 'Created with Podium' + (pageNumbers ? ` · page ${page} of ${pages}` : ''),
       alignment: 'center',
       fontSize: 8,
       color: '#888',

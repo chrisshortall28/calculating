@@ -65,6 +65,8 @@
   font-size: 24px;
   line-height: 1.05;
   text-transform: uppercase;
+  /* The line clamp hides overflow, which would shave the slant off an italic last letter. */
+  padding-right: 0.15em;
 }
 
 .stat {

@@ -1,29 +1,41 @@
 import {
   Alert,
   Badge,
+  Box,
   Button,
   Card,
-  Grid,
+  Flex,
   Group,
   Kbd,
   Progress,
   SegmentedControl,
+  Select,
   Stack,
   Switch,
   Text,
 } from '@mantine/core';
 import { useLocalStorage } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
-import { IconCheck, IconLock, IconLockOpen } from '@tabler/icons-react';
+import { IconCheck, IconEraser, IconLock, IconLockOpen } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 import { useJudges, useSkaters } from '../../app/data';
-import { setEventStatus, setMark } from '../../db/repo';
-import { byId, entryClub, entryName } from '../../domain/entryName';
+import { clearMarks, setEventStatus, setMark } from '../../db/repo';
+import { byId, entryClub, entryHeading, entryName } from '../../domain/entryName';
 import type { CompEvent } from '../../domain/types';
 import type { Direction } from '../../marks/gridNav';
 import { MarkGrid } from '../../marks/MarkGrid';
 import { ProvisionalPanel } from './ProvisionalPanel';
 import { markKey, useEventResult } from './useEventResult';
+
+/** More dances than this switch with a dropdown rather than side-by-side tabs. */
+const MAX_TABBED_DANCES = 5;
+const fitWidth = {
+  width: 'fit-content',
+  minWidth: 'min(100%, calc(var(--container-size-xl) - 2 * var(--mantine-spacing-md)))',
+  maxWidth: '100%',
+  marginInline: 'auto',
+};
+const checkIcon = <IconCheck size={14} color="var(--mantine-color-green-6)" />;
 
 export function ScoringTab({ event }: { event: CompEvent }) {
   const { loading, segments, entries, markMap, result, standing, standingAfter } = useEventResult(event);
@@ -43,6 +55,7 @@ export function ScoringTab({ event }: { event: CompEvent }) {
   const activeId = segmentId ?? initialId;
   const segment = segments.find((s) => s.id === activeId) ?? segments[0];
   const segResult = result.segments.find((s) => s.segmentId === segment?.id);
+  const isComplete = (id: string) => result.segments.find((s) => s.segmentId === id)?.complete;
   const locked = event.status === 'final';
 
   const judges = event.judgeIds.map((id) => ({ id, name: judgeMap.get(id)?.name ?? '?' }));
@@ -98,25 +111,56 @@ export function ScoringTab({ event }: { event: CompEvent }) {
     });
   };
 
+  const confirmClear = () =>
+    modals.openConfirmModal({
+      title: 'Clear all marks',
+      children: (
+        <Text size="sm">
+          Delete all {entered} marks entered for this event, in every dance and from every judge? This can’t
+          be undone.
+        </Text>
+      ),
+      labels: { confirm: 'Clear marks', cancel: 'Cancel' },
+      confirmProps: { color: 'red' },
+      onConfirm: () => clearMarks(event.id),
+    });
+
   return (
-    <Stack>
+    // Centred and as wide as the mark grid needs: the usual page width for a typical panel,
+    // growing towards the window edges (then scrolling) as judges are added.
+    <Stack style={fitWidth}>
       <Group justify="space-between" align="flex-end">
-        <SegmentedControl
-          value={segment.id}
-          onChange={setSegmentId}
-          data={segments.map((s) => {
-            const r = result.segments.find((x) => x.segmentId === s.id);
-            return {
+        {segments.length > MAX_TABBED_DANCES ? (
+          // Too many dances to sit side by side: pick from a list instead.
+          <Select
+            w={260}
+            value={segment.id}
+            onChange={(v) => v && setSegmentId(v)}
+            allowDeselect={false}
+            leftSection={isComplete(segment.id) ? checkIcon : undefined}
+            data={segments.map((s) => ({ value: s.id, label: s.name }))}
+            renderOption={({ option }) => (
+              <Group gap={6} wrap="nowrap">
+                {isComplete(option.value) ? checkIcon : <Box w={14} />}
+                {option.label}
+              </Group>
+            )}
+          />
+        ) : (
+          <SegmentedControl
+            value={segment.id}
+            onChange={setSegmentId}
+            data={segments.map((s) => ({
               value: s.id,
               label: (
                 <Group gap={6} wrap="nowrap">
-                  {r?.complete && <IconCheck size={14} color="var(--mantine-color-green-6)" />}
+                  {isComplete(s.id) && checkIcon}
                   {s.name}
                 </Group>
               ),
-            };
-          })}
-        />
+            }))}
+          />
+        )}
         <Group>
           <SegmentedControl
             size="xs"
@@ -133,6 +177,15 @@ export function ScoringTab({ event }: { event: CompEvent }) {
             checked={autoAdvance}
             onChange={(e) => setAutoAdvance(e.currentTarget.checked)}
           />
+          <Button
+            variant="default"
+            color="red"
+            leftSection={<IconEraser size={16} />}
+            disabled={locked || entered === 0}
+            onClick={confirmClear}
+          >
+            Clear marks
+          </Button>
           <Button
             variant={locked ? 'light' : 'filled'}
             color={locked ? 'gray' : 'green'}
@@ -165,12 +218,15 @@ export function ScoringTab({ event }: { event: CompEvent }) {
         )}
       </Group>
 
-      <Grid gap="lg">
-        <Grid.Col span={{ base: 12, lg: 8 }}>
+      {/* The mark grid's card fits its columns (scrolling once it runs out of room) and the side panel
+          takes the rest; the panel stacks below on small screens. */}
+      <Flex gap="lg" direction={{ base: 'column', lg: 'row' }} align={{ base: 'stretch', lg: 'flex-start' }}>
+        <Box flex="0 1 auto" miw={0}>
           <Card withBorder p="sm">
             <MarkGrid
               focusKey={`${event.id}:${segment.id}`}
               rows={rows}
+              entryLabel={entryHeading[event.entryType]}
               judges={judges}
               markKeys={segment.markKeys}
               getValue={(k, j, e) => markMap.get(markKey(k, j, e))}
@@ -183,17 +239,24 @@ export function ScoringTab({ event }: { event: CompEvent }) {
               autoAdvance={autoAdvance}
               readOnly={locked}
             />
-            <Text size="xs" c="dimmed" mt="sm">
+            {/* Wraps to the grid's width rather than widening the page to fit on one line. */}
+            <Text size="xs" c="dimmed" mt="sm" style={{ contain: 'inline-size' }}>
               Type <Kbd>57</Kbd> for 5.7, <Kbd>100</Kbd> for 10.0, <Kbd>5</Kbd> <Kbd>Enter</Kbd> for 5.0.{' '}
               <Kbd>Enter</Kbd>/<Kbd>Tab</Kbd> next · <Kbd>Shift</Kbd> back · arrows move · <Kbd>Esc</Kbd> undo
               edit · empty + <Kbd>Enter</Kbd> keeps the value; delete the text to clear a mark.
             </Text>
           </Card>
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, lg: 4 }}>
-          <ProvisionalPanel result={result} standing={standing} standingAfter={standingAfter} rows={rows} />
-        </Grid.Col>
-      </Grid>
+        </Box>
+        <Box flex="1 0 380px">
+          <ProvisionalPanel
+            result={result}
+            standing={standing}
+            standingAfter={standingAfter}
+            rows={rows}
+            entryLabel={entryHeading[event.entryType]}
+          />
+        </Box>
+      </Flex>
     </Stack>
   );
 }

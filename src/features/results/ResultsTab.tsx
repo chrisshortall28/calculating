@@ -15,7 +15,7 @@ import { notifications } from '@mantine/notifications';
 import { IconFileText, IconPrinter } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useJudges, useSkaters } from '../../app/data';
-import { byId, entryClub, entryName } from '../../domain/entryName';
+import { byId, entryClub, entryHeading, entryName } from '../../domain/entryName';
 import { markKeyLabel } from '../../domain/segments';
 import type { CompEvent, Competition } from '../../domain/types';
 import { formatTenths } from '../../marks/parseMark';
@@ -111,7 +111,7 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
             <Table.Thead>
               <Table.Tr>
                 <Table.Th w={60}>Place</Table.Th>
-                <Table.Th>Entry</Table.Th>
+                <Table.Th>{entryHeading[event.entryType]}</Table.Th>
                 <Table.Th>Club</Table.Th>
                 <Table.Th ta="center" title="The CIPA rule that decided a tied place">
                   Rule
@@ -202,7 +202,7 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
                 <Table withColumnBorders fz="sm">
                   <Table.Thead>
                     <Table.Tr>
-                      <Table.Th>Entry</Table.Th>
+                      <Table.Th>{entryHeading[event.entryType]}</Table.Th>
                       {event.judgeIds.map((j, ji) => (
                         <Table.Th key={j} ta="center" colSpan={seg.markKeys.length}>
                           J{ji + 1} {judgeMap.get(j)?.name}
@@ -275,7 +275,7 @@ function VictoriesTable({
           <Table.Thead>
             <Table.Tr>
               <Table.Th w={30}>#</Table.Th>
-              <Table.Th>Entry</Table.Th>
+              <Table.Th>{entryHeading[event.entryType]}</Table.Th>
               {event.judgeIds.map((j, ji) => (
                 <Table.Th key={j} ta="center">
                   J{ji + 1}

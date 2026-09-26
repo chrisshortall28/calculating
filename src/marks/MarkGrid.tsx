@@ -19,6 +19,8 @@ export interface GridJudge {
 
 interface Props {
   rows: GridRow[];
+  /** Heading for the rows' column, e.g. "Skater" (default "Entry"). */
+  entryLabel?: string;
   judges: GridJudge[];
   markKeys: SegmentKey[];
   getValue: (key: SegmentKey, judgeId: Id, entryId: Id) => number | undefined;
@@ -37,8 +39,19 @@ interface Props {
  * mark key (one for a compulsory dance, A and B for the free dance).
  */
 export function MarkGrid(props: Props) {
-  const { rows, judges, markKeys, getValue, onCommit, ordinals, direction, autoAdvance, readOnly, focusKey } =
-    props;
+  const {
+    rows,
+    entryLabel = 'Entry',
+    judges,
+    markKeys,
+    getValue,
+    onCommit,
+    ordinals,
+    direction,
+    autoAdvance,
+    readOnly,
+    focusKey,
+  } = props;
   const cols = judges.length * markKeys.length;
   const refs = useRef(new Map<string, HTMLInputElement>());
   const [active, setActive] = useState<Cell | null>(null);
@@ -95,7 +108,7 @@ export function MarkGrid(props: Props) {
               #
             </th>
             <th className={classes.entryCell} rowSpan={multi ? 2 : 1}>
-              Entry
+              {entryLabel}
             </th>
             {judges.map((j, ji) => (
               <th

@@ -1,9 +1,9 @@
-import { Button, Card, Container, FileButton, Group, SimpleGrid, Stack, Text } from '@mantine/core';
+import { Anchor, Button, Card, Container, FileButton, Group, SimpleGrid, Stack, Text } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { IconFileImport, IconTrophy } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { PageHero } from '../../app/PageHero';
 import { db } from '../../db/db';
 import { importCompetition, parseCompetitionFile, type CompetitionFile } from '../../io/competitionFile';
@@ -92,6 +92,14 @@ export function CompetitionsPage() {
             </Text>
             <Text c="dimmed" size="sm">
               Create a competition, or import a competition file.
+            </Text>
+            <Text c="dimmed" size="sm" maw={520} mx="auto" mt="md">
+              Competitions are saved in this browser on this device, not online. To move one to another device
+              or browser, export it to a file there and import it here.{' '}
+              <Anchor component={Link} to="/guide#your-data" inherit>
+                Read more in the guide
+              </Anchor>
+              .
             </Text>
           </Card>
         )}

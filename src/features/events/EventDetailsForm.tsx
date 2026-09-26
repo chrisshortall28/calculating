@@ -5,6 +5,13 @@ import { MAX_COMPULSORY_DANCES, type CompEvent, type EntryType } from '../../dom
 
 export type EventDetails = Pick<CompEvent, 'name' | 'entryType' | 'compulsoryDanceIds' | 'hasFreeDance'>;
 
+/** How many compulsory dances an event of each entry type usually has, for the field's hint. */
+const TYPICAL_DANCES: Record<EntryType, string> = {
+  solo: 'Usually 1 or 2 for solo events. ',
+  duo: 'Usually 1 or 2 for duo events. ',
+  team: 'Usually 3 or 4 for team events. ',
+};
+
 export function EventDetailsForm({
   competitionId,
   initial,
@@ -44,11 +51,15 @@ export function EventDetailsForm({
           required
           {...form.getInputProps('name')}
         />
-        <Input.Wrapper label="Entry type">
+        <Input.Wrapper
+          label="Entry type"
+          description="Use ‘Team’ for team, super-team, quartet and show events"
+          inputWrapperOrder={['label', 'input', 'description', 'error']}
+        >
           <SegmentedControl
             display="flex"
             w="fit-content"
-            mt={4}
+            my={4}
             data={[
               { value: 'solo', label: 'Solo' },
               { value: 'duo', label: 'Duo' },
@@ -60,7 +71,7 @@ export function EventDetailsForm({
         </Input.Wrapper>
         <MultiSelect
           label="Compulsory dances"
-          description={`Up to ${MAX_COMPULSORY_DANCES}, in the order they are skated`}
+          description={`${TYPICAL_DANCES[form.values.entryType]}Up to ${MAX_COMPULSORY_DANCES}, in the order they are skated`}
           placeholder={
             form.values.compulsoryDanceIds.length < MAX_COMPULSORY_DANCES ? 'Choose dances' : undefined
           }

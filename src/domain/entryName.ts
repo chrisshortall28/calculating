@@ -1,4 +1,11 @@
-import type { Entry, Id, Skater } from './types';
+import type { Entry, EntryType, Id, Skater } from './types';
+
+/** What an event's entries are called in tab titles and column headings. */
+export const entryHeading: Record<EntryType, string> = {
+  solo: 'Skater',
+  duo: 'Skaters',
+  team: 'Team',
+};
 
 export function entryName(entry: Entry, skaters: Map<Id, Skater>): string {
   if (entry.teamName) return entry.teamName;

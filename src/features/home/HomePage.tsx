@@ -54,7 +54,7 @@ const ADVANTAGES = [
   {
     icon: <IconShieldCheck size={20} />,
     title: 'Scoring you can trust',
-    text: 'A suite of automated tests checks the calculations against the CIPA scoring system every time Podium changes.',
+    text: 'Results show the full breakdown of how the CIPA scoring system was applied, so every placing can be seen and checked.',
   },
   {
     icon: <IconFileTypePdf size={20} />,
@@ -103,7 +103,8 @@ export function HomePage() {
           <div className={classes.heroText}>
             <Text className={classes.eyebrow}>Artistic roller skating scoring</Text>
             <h1 className={classes.heroTitle}>
-              From first mark <span className={classes.accent}>to podium</span>
+              <span className={classes.lead}>From first mark to</span>{' '}
+              <span className={classes.accent}>podium</span>
             </h1>
             <Text className={classes.intro}>
               Podium is the Calculator’s companion for roller skating competitions. Set up the events, key in
