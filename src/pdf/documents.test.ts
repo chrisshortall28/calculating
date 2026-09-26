@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { TDocumentDefinitions } from 'pdfmake/interfaces';
 import type { SegmentKey } from '../domain/types';
 import { calculateEvent } from '../scoring';
 import { judgeSheets, judgeSheetsDocument, resultsDocument, resultsPages } from './documents';
@@ -150,7 +151,9 @@ describe('judgeSheets', () => {
     const t = texts((doc.content as unknown[])[0]); // J1's sheet
     expect(t.filter((s) => s.includes('Event'))).toEqual(['Event — Judge’s sheet']);
     expect(t.filter((s) => s.includes('Helen'))).toEqual(['J1  Helen']);
-    expect(doc.footer).toBeUndefined();
-    expect(resultsDocument([sampleEvent()], 'standard').footer).toBeDefined();
+    const footer = (d: TDocumentDefinitions) =>
+      (d.footer as (page: number, pages: number) => { text: string })(1, 2).text;
+    expect(footer(doc)).toBe('Created with Podium');
+    expect(footer(resultsDocument([sampleEvent()], 'standard'))).toBe('Created with Podium · page 1 of 2');
   });
 });

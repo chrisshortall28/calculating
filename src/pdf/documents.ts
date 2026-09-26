@@ -457,12 +457,16 @@ export function resultsDocument(events: EventData[], style: ResultsStyle): TDocu
 
 /** Judges' sheets are handed out loose, one or more per official, so they carry no page numbers. */
 export function judgeSheetsDocument(events: EventData[]): TDocumentDefinitions {
-  const { footer: _, ...doc } = document(judgeSheets(events), true);
-  return doc;
+  return document(judgeSheets(events), true, undefined, false);
 }
 
 /** `pageHeader` is repeated at the top of every page. */
-export function document(content: Content[], landscape = false, pageHeader?: string): TDocumentDefinitions {
+export function document(
+  content: Content[],
+  landscape = false,
+  pageHeader?: string,
+  pageNumbers = true,
+): TDocumentDefinitions {
   return {
     pageSize: 'A4',
     pageOrientation: landscape ? 'landscape' : 'portrait',
@@ -478,7 +482,7 @@ export function document(content: Content[], landscape = false, pageHeader?: str
     styles,
     content: content.length ? content : [{ text: 'Nothing to print.' }],
     footer: (page, pages) => ({
-      text: `Podium · page ${page} of ${pages}`,
+      text: 'Created with Podium' + (pageNumbers ? ` · page ${page} of ${pages}` : ''),
       alignment: 'center',
       fontSize: 8,
       color: '#888',
