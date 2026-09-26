@@ -9,10 +9,8 @@ import {
   SimpleGrid,
   Stack,
   Text,
-  TextInput,
   Title,
 } from '@mantine/core';
-import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
@@ -21,6 +19,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate } from 'react-router';
 import { db } from '../../db/db';
 import { createCompetition } from '../../db/repo';
+import { CompetitionDetailsForm, emptyCompetitionDetails } from './CompetitionDetailsForm';
 import { importCompetition, parseCompetitionFile, type CompetitionFile } from '../../io/competitionFile';
 
 export function CompetitionsPage() {
@@ -31,18 +30,6 @@ export function CompetitionsPage() {
     const counts = new Map<string, number>();
     await db.events.each((e) => counts.set(e.competitionId, (counts.get(e.competitionId) ?? 0) + 1));
     return counts;
-  });
-
-  const form = useForm({
-    initialValues: { name: '', date: new Date().toISOString().slice(0, 10), venue: '' },
-    validate: { name: (v) => (v.trim() ? null : 'Name is required') },
-  });
-
-  const submit = form.onSubmit(async (values) => {
-    const id = await createCompetition({ ...values, name: values.name.trim(), venue: values.venue.trim() });
-    close();
-    form.reset();
-    navigate(`/c/${id}`);
   });
 
   const doImport = async (file: CompetitionFile, mode: 'copy' | 'replace') => {
@@ -142,16 +129,15 @@ export function CompetitionsPage() {
       </SimpleGrid>
 
       <Modal opened={opened} onClose={close} title="New competition">
-        <form onSubmit={submit}>
-          <Stack>
-            <TextInput label="Name" data-autofocus required {...form.getInputProps('name')} />
-            <TextInput label="Date" type="date" {...form.getInputProps('date')} />
-            <TextInput label="Venue" {...form.getInputProps('venue')} />
-            <Group justify="flex-end">
-              <Button type="submit">Create</Button>
-            </Group>
-          </Stack>
-        </form>
+        <CompetitionDetailsForm
+          initial={emptyCompetitionDetails()}
+          submitLabel="Create"
+          onSubmit={async (values) => {
+            const id = await createCompetition(values);
+            close();
+            navigate(`/c/${id}`);
+          }}
+        />
       </Modal>
     </Container>
   );
