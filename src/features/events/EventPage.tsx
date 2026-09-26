@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { IconJudge } from '../../app/IconJudge';
 import { useCompetition, useDances, useEvent } from '../../app/data';
+import { clubColors } from '../../app/clubColors';
 import { HeroMeta, HeroTabs, PageHero } from '../../app/PageHero';
 import { entryTypeColor } from '../../app/theme';
 import { entryTypeLabel } from '../../db/repo';
@@ -48,6 +49,7 @@ export function EventPage() {
   return (
     <>
       <PageHero
+        colors={clubColors(competition)}
         size="xl"
         crumbs={[
           { label: 'Competitions', to: '/' },

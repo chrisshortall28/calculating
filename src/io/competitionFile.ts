@@ -4,6 +4,8 @@ import type { Id, SegmentKey } from '../domain/types';
 
 export const FORMAT_VERSION = 1;
 
+const hexColor = z.string().regex(/^#[0-9a-f]{6}$/i);
+
 const segmentKey = z.custom<SegmentKey>(
   (v) => typeof v === 'string' && (v === 'fd:A' || v === 'fd:B' || v.startsWith('cd:')),
 );
@@ -17,6 +19,8 @@ const fileSchema = z.object({
     name: z.string(),
     date: z.string(),
     venue: z.string(),
+    primaryColor: hexColor.optional(),
+    secondaryColor: hexColor.optional(),
     createdAt: z.number(),
     updatedAt: z.number(),
   }),

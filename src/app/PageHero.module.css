@@ -1,10 +1,15 @@
+/* Colours come from --club-* variables (see clubColors.ts); defaults are navy and gold. */
 .hero {
   /* Bleed to the AppShell edges, then re-pad the content. */
   margin: calc(var(--mantine-spacing-lg) * -1) calc(var(--mantine-spacing-lg) * -1) var(--mantine-spacing-lg);
   background:
-    radial-gradient(circle at 85% -40%, rgb(255 176 24 / 0.18), transparent 45%),
-    linear-gradient(100deg, #13305f 0%, var(--mantine-color-navy-9) 70%);
-  color: var(--mantine-color-white);
+    radial-gradient(
+      circle at 85% -40%,
+      color-mix(in srgb, var(--club-secondary) 18%, transparent),
+      transparent 45%
+    ),
+    linear-gradient(100deg, var(--club-primary-soft) 0%, var(--club-primary) 70%);
+  color: var(--club-on-primary);
 }
 
 .inner {
@@ -18,28 +23,29 @@
   min-width: 0;
 }
 
-.crumbLink {
-  color: rgb(255 255 255 / 0.7);
+.crumbLink,
+.crumbCurrent {
   font-size: var(--mantine-font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-weight: 600;
+}
+
+.crumbLink {
+  color: color-mix(in srgb, var(--club-on-primary) 70%, transparent);
 }
 
 .crumbLink:hover {
-  color: var(--mantine-color-medal-4);
+  color: var(--club-on-primary);
+  text-decoration-color: var(--club-secondary);
 }
 
 .crumbCurrent {
-  color: rgb(255 255 255 / 0.9);
-  font-size: var(--mantine-font-size-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-weight: 600;
+  color: color-mix(in srgb, var(--club-on-primary) 90%, transparent);
 }
 
 .sep {
-  color: rgb(255 255 255 / 0.35);
+  color: color-mix(in srgb, var(--club-on-primary) 35%, transparent);
 }
 
 .title {
@@ -55,12 +61,12 @@
 }
 
 .meta {
-  color: rgb(255 255 255 / 0.8);
+  color: color-mix(in srgb, var(--club-on-primary) 80%, transparent);
   font-size: var(--mantine-font-size-sm);
 }
 
 .metaItem svg {
-  color: var(--mantine-color-medal-4);
+  color: var(--club-secondary);
 }
 
 /* Tabs along the bottom of the band */
@@ -77,7 +83,7 @@
 }
 
 .tab {
-  color: rgb(255 255 255 / 0.7);
+  color: color-mix(in srgb, var(--club-on-primary) 70%, transparent);
   font-family: var(--mantine-headings-font-family);
   font-weight: 700;
   font-size: 17px;
@@ -91,17 +97,17 @@
 }
 
 .tab:hover {
-  background: rgb(255 255 255 / 0.08);
-  color: var(--mantine-color-white);
+  background: color-mix(in srgb, var(--club-on-primary) 8%, transparent);
+  color: var(--club-on-primary);
   border-bottom-color: transparent;
 }
 
 .tab[data-active] {
-  color: var(--mantine-color-white);
-  border-bottom-color: var(--mantine-color-medal-5);
-  background: rgb(255 255 255 / 0.06);
+  color: var(--club-on-primary);
+  border-bottom-color: var(--club-secondary);
+  background: color-mix(in srgb, var(--club-on-primary) 6%, transparent);
 }
 
 .tab[data-active]:hover {
-  border-bottom-color: var(--mantine-color-medal-5);
+  border-bottom-color: var(--club-secondary);
 }

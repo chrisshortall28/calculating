@@ -17,6 +17,7 @@ import { notifications } from '@mantine/notifications';
 import { IconFileImport, IconMapPin, IconPlus, IconTrophy } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useNavigate } from 'react-router';
+import { clubColors, clubVars } from '../../app/clubColors';
 import { dateTile } from '../../app/format';
 import { PageHero } from '../../app/PageHero';
 import classes from './CompetitionsPage.module.css';
@@ -139,7 +140,13 @@ export function CompetitionsPage() {
             const s = stats?.get(c.id) ?? { events: 0, final: 0, entries: 0 };
             const tile = dateTile(c.date);
             return (
-              <UnstyledButton key={c.id} component={Link} to={`/c/${c.id}`} className={classes.card}>
+              <UnstyledButton
+                key={c.id}
+                component={Link}
+                to={`/c/${c.id}`}
+                className={classes.card}
+                style={clubVars(clubColors(c))}
+              >
                 <div className={classes.band}>
                   <div className={classes.dateTile}>
                     {tile ? (

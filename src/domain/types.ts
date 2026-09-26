@@ -5,6 +5,9 @@ export interface Competition {
   name: string;
   date: string; // ISO yyyy-mm-dd
   venue: string;
+  /** Club colours (hex, e.g. "#0b1d3a") for the competition's card and title band; unset = defaults. */
+  primaryColor?: string;
+  secondaryColor?: string;
   createdAt: number;
   updatedAt: number;
 }

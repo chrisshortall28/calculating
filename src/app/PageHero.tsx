@@ -1,5 +1,6 @@
 import { Anchor, Container, Group, Stack, Tabs, Text, type MantineSize } from '@mantine/core';
 import type { ReactNode } from 'react';
+import { clubColors, clubVars, type ClubColors } from './clubColors';
 import { Link } from 'react-router';
 import classes from './PageHero.module.css';
 
@@ -8,7 +9,7 @@ export interface Crumb {
   to?: string;
 }
 
-/** Bold navy title band used at the top of competition and event pages. */
+/** Bold title band used at the top of pages; takes a competition's club colours (default navy and gold). */
 export function PageHero({
   crumbs,
   title,
@@ -18,6 +19,7 @@ export function PageHero({
   actions,
   children,
   size = 'lg',
+  colors = clubColors(),
 }: {
   crumbs: Crumb[];
   title: ReactNode;
@@ -29,9 +31,10 @@ export function PageHero({
   children?: ReactNode;
   /** Match the page Container size so the band content lines up with the page. */
   size?: MantineSize;
+  colors?: ClubColors;
 }) {
   return (
-    <div className={classes.hero}>
+    <div className={classes.hero} style={clubVars(colors)}>
       <Container size={size} className={classes.inner}>
         {crumbs.length > 0 && (
           <Group gap={6} className={classes.crumbs} wrap="nowrap">

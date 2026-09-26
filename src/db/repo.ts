@@ -42,7 +42,9 @@ async function competitionOfEvent(eventId: Id) {
 
 // ---------- Competitions ----------
 
-export async function createCompetition(data: Pick<Competition, 'name' | 'date' | 'venue'>) {
+export async function createCompetition(
+  data: Pick<Competition, 'name' | 'date' | 'venue' | 'primaryColor' | 'secondaryColor'>,
+) {
   const now = Date.now();
   const comp: Competition = { id: newId(), ...data, createdAt: now, updatedAt: now };
   await db.transaction('rw', db.competitions, db.dances, async () => {

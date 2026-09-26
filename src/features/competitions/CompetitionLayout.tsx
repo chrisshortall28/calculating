@@ -17,11 +17,12 @@ import { Outlet, useLocation, useNavigate, useParams } from 'react-router';
 import { IconJudge } from '../../app/IconJudge';
 import { useCompetition } from '../../app/data';
 import { formatLongDate } from '../../app/format';
+import { clubColors } from '../../app/clubColors';
 import { HeroMeta, HeroTabs, PageHero } from '../../app/PageHero';
 import { updateCompetition } from '../../db/repo';
 import { printJudgeSheets, printResults } from '../../pdf/actions';
 import type { ResultsStyle } from '../../pdf/documents';
-import { CompetitionDetailsForm } from './CompetitionDetailsForm';
+import { CompetitionDetailsForm, detailsOf } from './CompetitionDetailsForm';
 import { useExportCompetition } from './useExportCompetition';
 
 const TABS = [
@@ -44,6 +45,8 @@ export function CompetitionLayout() {
   if (competition === undefined) return <Loader />;
   if (competition === null) return <Text>Competition not found.</Text>;
 
+  const colors = clubColors(competition);
+
   const printAllResults = async (style: ResultsStyle) => {
     const { complete, total } = await printResults(
       { competitionId: competition.id },
@@ -57,13 +60,14 @@ export function CompetitionLayout() {
   return (
     <>
       <PageHero
+        colors={colors}
         crumbs={[{ label: 'Competitions', to: '/' }, { label: competition.name }]}
         title={competition.name}
         titleAddon={
           <Tooltip label="Edit competition details">
             <ActionIcon
               variant="subtle"
-              color="gray.0"
+              c="var(--club-on-primary)"
               onClick={openEdit}
               aria-label="Edit competition details"
             >
@@ -110,8 +114,8 @@ export function CompetitionLayout() {
               </Menu.Dropdown>
             </Menu>
             <Button
-              color="medal.5"
-              c="navy.9"
+              color={colors.secondary}
+              autoContrast
               leftSection={<IconDownload size={16} />}
               onClick={() => exportCompetition(competition.id)}
             >
@@ -131,7 +135,7 @@ export function CompetitionLayout() {
       </Container>
       <Modal opened={editing} onClose={closeEdit} title="Edit competition details">
         <CompetitionDetailsForm
-          initial={{ name: competition.name, date: competition.date, venue: competition.venue }}
+          initial={detailsOf(competition)}
           submitLabel="Save"
           onSubmit={async (values) => {
             await updateCompetition(competition.id, values);
