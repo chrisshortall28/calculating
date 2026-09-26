@@ -1,6 +1,6 @@
 import type { Id } from '../domain/types';
 import { fileNameFor } from '../io/competitionFile';
-import { document, judgeSheets, resultsDocument, type ResultsStyle } from './documents';
+import { judgeSheetsDocument, resultsDocument, type ResultsStyle } from './documents';
 import { loadCompetitionEvents, loadEventData, type EventData } from './loadEvent';
 import { openPdf } from './pdfmake';
 
@@ -11,10 +11,7 @@ const load = async (target: Target): Promise<EventData[]> =>
 
 /** Call directly from a click handler (the PDF tab must open before any await). */
 export function printJudgeSheets(target: Target, name: string) {
-  return openPdf(
-    load(target).then((events) => document(judgeSheets(events), true)),
-    fileNameFor(`${name} judge sheets`, 'pdf'),
-  );
+  return openPdf(load(target).then(judgeSheetsDocument), fileNameFor(`${name} judge sheets`, 'pdf'));
 }
 
 const resultsFileSuffix: Record<ResultsStyle, string> = {

@@ -124,23 +124,7 @@ function judgeSheetPage(
     ...subCols.map((s) => ({ text: s.label, style: 'th' })),
     ...(isLast ? [{}, {}] : []),
   ];
-  // Repeats at the top of every page, so a continuation page still says whose sheet it is.
-  const colCount = headRow2.length;
-  const official = [role, label, name].filter(Boolean).join(' ');
-  const noBorder: [boolean, boolean, boolean, boolean] = [false, false, false, false];
-  const captionRow: TableCell[] = [
-    {
-      text: `${d.event.name} · ${official}${partLabel}`,
-      colSpan: colCount,
-      style: 'small',
-      margin: [0, 0, 0, 2],
-      border: noBorder,
-    },
-    // Spanned cells draw their own borders too, so blank them as well.
-    ...Array.from({ length: colCount - 1 }, () => ({ text: '', border: noBorder })),
-  ];
   const body: TableCell[][] = [
-    captionRow,
     headRow1,
     headRow2,
     ...d.rows.map((r, i) => [
@@ -180,14 +164,12 @@ function judgeSheetPage(
     },
     {
       table: {
-        headerRows: 3,
+        headerRows: 2,
         dontBreakRows: true,
         // The Comments columns share the spare width.
         widths: [18, 130, ...subCols.map((s) => s.width), ...(isLast ? [44, 34] : [])],
         body,
       },
-      // The caption row's top edge comes from the table layout, not the cell borders.
-      layout: { hLineWidth: (i: number) => (i === 0 ? 0 : 1) },
     },
   ];
 }
@@ -471,6 +453,12 @@ export function resultsDocument(events: EventData[], style: ResultsStyle): TDocu
     false,
     sharesPages(style) && first ? compLine(first) : undefined,
   );
+}
+
+/** Judges' sheets are handed out loose, one or more per official, so they carry no page numbers. */
+export function judgeSheetsDocument(events: EventData[]): TDocumentDefinitions {
+  const { footer: _, ...doc } = document(judgeSheets(events), true);
+  return doc;
 }
 
 /** `pageHeader` is repeated at the top of every page. */
