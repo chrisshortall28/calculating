@@ -1,16 +1,17 @@
 import { Autocomplete, Button, Group, TagsInput, TextInput } from '@mantine/core';
 import { useRef, useState } from 'react';
 import { addSkater } from '../../db/repo';
+import { skatersPerEntry } from '../../domain/entryName';
 import type { Entry, EntryType, Id, Skater } from '../../domain/types';
 
 export interface EntryDraft {
-  names: string[]; // skater names (1 for solo, 2 for duo, any for team)
+  names: string[]; // skater names (1 for solo/single, 2 for duo/pairs, any for team)
   club: string;
   teamName: string;
 }
 
 export const emptyDraft = (type: EntryType): EntryDraft => ({
-  names: type === 'duo' ? ['', ''] : type === 'solo' ? [''] : [],
+  names: Array<string>(skatersPerEntry(type) ?? 0).fill(''),
   club: '',
   teamName: '',
 });
@@ -52,7 +53,7 @@ export async function draftToEntry(
 export function validateDraft(type: EntryType, d: EntryDraft): string | null {
   if (type === 'team') return d.teamName.trim() ? null : 'Team name is required';
   if (d.names.some((n) => !n.trim()))
-    return type === 'duo' ? 'Both skaters are required' : 'Skater name is required';
+    return skatersPerEntry(type) === 2 ? 'Both skaters are required' : 'Skater name is required';
   return null;
 }
 
@@ -122,8 +123,8 @@ export function EntryForm({
   return (
     <form onSubmit={submit}>
       <Group align="flex-start" wrap={inline ? 'wrap' : undefined}>
-        {type === 'solo' && nameField(0, 'Skater')}
-        {type === 'duo' && (
+        {skatersPerEntry(type) === 1 && nameField(0, 'Skater')}
+        {skatersPerEntry(type) === 2 && (
           <>
             {nameField(0, 'Skater 1')}
             {nameField(1, 'Skater 2')}

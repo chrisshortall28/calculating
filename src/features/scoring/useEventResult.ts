@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useDances, useEntries, useMarks } from '../../app/data';
-import { eventSegments } from '../../domain/segments';
+import { eventSegments, eventTieBreakMarks } from '../../domain/segments';
 import { indexMarks, markKey } from '../../domain/markIndex';
 import type { CompEvent, SegmentKey } from '../../domain/types';
 import { calculateEvent } from '../../scoring';
@@ -22,9 +22,10 @@ export function useEventResult(event: CompEvent) {
       judgeIds: event.judgeIds,
       segments,
       mark: (k: SegmentKey, j: string, e: string) => markMap.get(markKey(k, j, e)),
+      tieBreakMarks: eventTieBreakMarks(event),
     };
     const result = calculateEvent(input);
-    // Until every dance is in: the standing from the dances completed so far.
+    // Until every part is in: the standing from the parts completed so far.
     const done = segments.filter((_, i) => result.segments[i]!.complete);
     const standing =
       !result.complete && done.length > 0 ? calculateEvent({ ...input, segments: done }) : undefined;

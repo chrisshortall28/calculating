@@ -3,8 +3,8 @@ import type { MarkLookup, ScoringSegment } from './types';
 
 /**
  * Ranks one judge's marks for a dance (1 = best), for display while scoring. Totals are compared
- * first (A+B for the free dance) and equal free dance totals are split by the B mark, as in CIPA
- * rule 3; any remaining tie shares the better ranking (1, 2, 2, 4).
+ * first (A+B for a free dance or programme) and equal A+B totals are split by the B mark, as in
+ * CIPA rule 3; any remaining tie shares the better ranking (1, 2, 2, 4).
  */
 export function judgeOrdinals(
   segment: ScoringSegment,
@@ -16,7 +16,8 @@ export function judgeOrdinals(
   const keyOf = (entryId: Id): number[] => {
     const total = segment.markKeys.reduce((s, k) => s + (mark(k, judgeId, entryId) ?? 0), 0);
     totals.set(entryId, total);
-    return segment.kind === 'free' ? [-total, -(mark('fd:B', judgeId, entryId) ?? 0)] : [-total];
+    const b = segment.markKeys[1];
+    return segment.kind === 'free' && b ? [-total, -(mark(b, judgeId, entryId) ?? 0)] : [-total];
   };
 
   const keyed = entryIds.map((entryId) => ({ entryId, key: keyOf(entryId) }));

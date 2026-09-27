@@ -1,4 +1,5 @@
 import { Dexie, type EntityTable, type Table } from 'dexie';
+import { danceEventDefaults } from '../domain/segments';
 import type { CompEvent, Competition, Dance, Entry, Judge, Mark, Skater } from '../domain/types';
 
 export type MarkPK = [string, string, string, string]; // [eventId, segmentKey, judgeId, entryId]
@@ -23,6 +24,15 @@ export class PodiumDB extends Dexie {
       judges: 'id, competitionId',
       marks: '[eventId+segmentKey+judgeId+entryId], eventId, entryId, judgeId',
     });
+    // Figures & free events: existing events are dance events.
+    this.version(2)
+      .stores({})
+      .upgrade((tx) =>
+        tx
+          .table('events')
+          .toCollection()
+          .modify((ev: CompEvent) => Object.assign(ev, { ...danceEventDefaults(), ...ev })),
+      );
   }
 }
 

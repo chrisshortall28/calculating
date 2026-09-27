@@ -9,7 +9,7 @@ import type {
   SegmentKey,
   Skater,
 } from '../domain/types';
-import { cdKey } from '../domain/segments';
+import { cdKey, eventMarkKeys } from '../domain/segments';
 import { db, newId, type MarkPK } from './db';
 
 /** Dances a new competition starts with: the WorldSkate 2026 Dance Book's dances plus other
@@ -114,7 +114,18 @@ export async function deleteDance(id: Id) {
 
 export async function createEvent(
   competitionId: Id,
-  data: Pick<CompEvent, 'name' | 'entryType' | 'compulsoryDanceIds' | 'hasFreeDance'>,
+  data: Pick<
+    CompEvent,
+    | 'name'
+    | 'entryType'
+    | 'discipline'
+    | 'compulsoryDanceIds'
+    | 'hasFreeDance'
+    | 'figures'
+    | 'hasShort'
+    | 'hasLong'
+    | 'factors'
+  >,
 ) {
   const count = await db.events.where({ competitionId }).count();
   const id = newId();
@@ -123,15 +134,11 @@ export async function createEvent(
   return id;
 }
 
-/** Marks that would be removed if the event's dances/judges changed as given. */
+/** Marks that would be removed if the event's parts/judges changed as given. */
 export async function marksAffectedByEventChange(eventId: Id, next: Partial<CompEvent>) {
   const ev = await db.events.get(eventId);
   if (!ev) return 0;
-  const keys = new Set<SegmentKey>((next.compulsoryDanceIds ?? ev.compulsoryDanceIds).map(cdKey));
-  if (next.hasFreeDance ?? ev.hasFreeDance) {
-    keys.add('fd:A');
-    keys.add('fd:B');
-  }
+  const keys = eventMarkKeys({ ...ev, ...next });
   const judges = new Set(next.judgeIds ?? ev.judgeIds);
   return db.marks
     .where({ eventId })
@@ -143,11 +150,7 @@ export async function updateEvent(eventId: Id, data: Partial<Omit<CompEvent, 'id
   await db.transaction('rw', db.events, db.marks, db.competitions, async () => {
     await db.events.update(eventId, data);
     const ev = (await db.events.get(eventId))!;
-    const keys = new Set<string>(ev.compulsoryDanceIds.map(cdKey));
-    if (ev.hasFreeDance) {
-      keys.add('fd:A');
-      keys.add('fd:B');
-    }
+    const keys = eventMarkKeys(ev);
     const judges = new Set(ev.judgeIds);
     await db.marks
       .where({ eventId })
@@ -284,5 +287,8 @@ export async function clearMarks(eventId: Id) {
 export const entryTypeLabel: Record<EntryType, string> = {
   solo: 'Solo',
   duo: 'Duo',
+  couples: 'Couples',
   team: 'Team',
+  single: 'Single',
+  pairs: 'Pairs',
 };

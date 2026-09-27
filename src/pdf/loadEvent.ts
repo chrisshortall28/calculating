@@ -1,6 +1,6 @@
 import { db } from '../db/db';
 import { byId, entryClub, entryMembers, entryName } from '../domain/entryName';
-import { eventSegments, type Segment } from '../domain/segments';
+import { eventSegments, eventTieBreakMarks, type Segment } from '../domain/segments';
 import type { CompEvent, Competition, Id, Judge, SegmentKey } from '../domain/types';
 import { markKey, indexMarks } from '../domain/markIndex';
 import { calculateEvent, type EventResult } from '../scoring';
@@ -44,6 +44,7 @@ export async function loadEventData(eventId: Id): Promise<EventData> {
     judgeIds: event.judgeIds,
     segments,
     mark,
+    tieBreakMarks: eventTieBreakMarks(event),
   });
   return {
     competition,

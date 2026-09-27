@@ -32,21 +32,26 @@ serves the app from the `/calculating/` sub-path — build asset URLs from
 ## Architecture
 
 **Data flow.** `src/db/db.ts` is the Dexie schema (competitions → dances, events, skaters, judges;
-events → entries, marks). Marks are keyed by `[eventId, segmentKey, judgeId, entryId]`, where a
-`SegmentKey` is `cd:<danceId>` for a compulsory dance or `fd:A` / `fd:B` for the free dance's two
-marks (`src/domain/types.ts`, `src/domain/segments.ts`). All writes go through `src/db/repo.ts`,
+events → entries, marks). An event's `discipline` is `dance` (compulsory dances + free dance) or
+`figures` (Figures & Free: up to 4 compulsory figures from the built-in catalogue in
+`src/domain/figures.ts`, each left/right/unspecified, plus short and/or long programmes, with
+per-event `factors` in hundredths). Marks are keyed by `[eventId, segmentKey, judgeId, entryId]`,
+where a `SegmentKey` is `cd:<danceId>`, `fd:A` / `fd:B`, `cf:<figureId>:<L|R|->`, `sp:A` / `sp:B` or
+`lp:A` / `lp:B` (`src/domain/types.ts`; `src/domain/segments.ts` builds an event's segments,
+`eventMarkKeys` and `eventTieBreakMarks`). All writes go through `src/db/repo.ts`,
 which cascades deletes and touches the competition's `updatedAt`. Components read with
 `useLiveQuery` hooks in `src/app/data.ts`, so writes re-render automatically — there is no other
 state store.
 
 **Scoring engine (`src/scoring/`).** Pure functions with no React or DB imports.
-`calculateEvent({ entryIds, judgeIds, segments, mark })` is the single entry point, used both by
+`calculateEvent({ entryIds, judgeIds, segments, mark, tieBreakMarks })` is the single entry point, used both by
 the UI (`src/features/scoring/useEventResult.ts`) and, outside React, by the PDFs
 (`src/pdf/loadEvent.ts`). It implements the 2009 CIPA manual
 (`public/2009 - The CIPA System of Scoring.pdf`, rules on pages 4–13):
-judge sums over the whole event → table of victories (rules 2–3, equal sums split by the free
-dance B mark) → majority victories (rule 4) → placing (rule 5) → ties broken by 6A/6B, 7B, 7C, 7A,
-then shared (8). A rule that separates tied entries places all of them in its order; only entries
+judge sums over the whole event (each segment × its `factor`; sums are integers in thousandths,
+`SUM_PER_POINT`) → table of victories (rules 2–3, equal sums split by `tieBreakMarks` in order: the
+free dance B mark; long then short programme B; none with figures) → majority victories (rule 4) →
+placing (rule 5) → ties broken by 6A/6B, 7B (once per tie-break mark), 7C, 7A, then shared (8). A rule that separates tied entries places all of them in its order; only entries
 still level go to the next rule. The result carries the explanation data (`steps` with each rule's
 values, `judgeTies`, the victories table), and `src/scoring/rules.ts` turns it into text
 (`explainStep`, `explainJudgeTie`) and labels (`ruleLabel`: 6B shows as "6B (S.M.V.)"). The README's

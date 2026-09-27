@@ -83,7 +83,11 @@ export function ScoringTab({ event }: { event: CompEvent }) {
   if (loading) return null;
   if (!segment)
     return (
-      <Alert color="orange">This event has no dances. Add compulsory dances or a free dance in Setup.</Alert>
+      <Alert color="orange">
+        {event.discipline === 'figures'
+          ? 'This event has no figures or programmes. Add compulsory figures or a short or long programme in Setup.'
+          : 'This event has no dances. Add compulsory dances or a free dance in Setup.'}
+      </Alert>
     );
 
   const entered = result.totalMarks - result.missingMarks;
