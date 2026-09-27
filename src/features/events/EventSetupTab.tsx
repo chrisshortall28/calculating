@@ -12,10 +12,14 @@ export function EventSetupTab({ event }: { event: CompEvent }) {
 
   const save = async (values: Parameters<typeof updateEvent>[1]) => {
     const lost = await marksAffectedByEventChange(event.id, values);
-    confirmMarkLoss(lost, 'Removing dances', async () => {
-      await updateEvent(event.id, values);
-      notifications.show({ color: 'green', message: 'Event saved' });
-    });
+    confirmMarkLoss(
+      lost,
+      event.discipline === 'figures' ? 'Removing figures or programmes' : 'Removing dances',
+      async () => {
+        await updateEvent(event.id, values);
+        notifications.show({ color: 'green', message: 'Event saved' });
+      },
+    );
   };
 
   const remove = () =>
@@ -39,8 +43,13 @@ export function EventSetupTab({ event }: { event: CompEvent }) {
           initial={{
             name: event.name,
             entryType: event.entryType,
+            discipline: event.discipline,
             compulsoryDanceIds: event.compulsoryDanceIds,
             hasFreeDance: event.hasFreeDance,
+            figures: event.figures,
+            hasShort: event.hasShort,
+            hasLong: event.hasLong,
+            factors: event.factors,
           }}
           submitLabel="Save"
           onSubmit={save}

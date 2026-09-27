@@ -71,7 +71,13 @@ export const theme = createTheme({
 });
 
 /** Badge colours for each entry type. */
-export const entryTypeColor = { solo: 'podium', duo: 'grape', team: 'orange' } as const;
+export const entryTypeColor = {
+  solo: 'podium',
+  duo: 'grape',
+  team: 'orange',
+  single: 'podium',
+  pairs: 'grape',
+} as const;
 
 /** Colours for event status (stripes, badges, progress). */
 export const statusColor = { setup: 'gray', scoring: 'podium', final: 'teal' } as const;

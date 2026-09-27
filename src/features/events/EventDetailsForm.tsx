@@ -1,15 +1,91 @@
-import { Button, Group, Input, MultiSelect, SegmentedControl, Stack, Switch, TextInput } from '@mantine/core';
+import {
+  ActionIcon,
+  Button,
+  Group,
+  Input,
+  MultiSelect,
+  NumberInput,
+  SegmentedControl,
+  Select,
+  Stack,
+  Switch,
+  Text,
+  TextInput,
+} from '@mantine/core';
 import { useForm } from '@mantine/form';
+import type { ComponentProps } from 'react';
+import { IconPlus, IconX } from '@tabler/icons-react';
 import { useDances } from '../../app/data';
-import { MAX_COMPULSORY_DANCES, type CompEvent, type EntryType } from '../../domain/types';
+import { FIGURES } from '../../domain/figures';
+import { cfKey, danceEventDefaults, defaultFactors, NO_FACTORS } from '../../domain/segments';
+import {
+  MAX_COMPULSORY_DANCES,
+  MAX_FIGURES,
+  type CompEvent,
+  type EntryType,
+  type EventDiscipline,
+  type FigureSide,
+} from '../../domain/types';
 
-export type EventDetails = Pick<CompEvent, 'name' | 'entryType' | 'compulsoryDanceIds' | 'hasFreeDance'>;
+export type EventDetails = Pick<
+  CompEvent,
+  | 'name'
+  | 'entryType'
+  | 'discipline'
+  | 'compulsoryDanceIds'
+  | 'hasFreeDance'
+  | 'figures'
+  | 'hasShort'
+  | 'hasLong'
+  | 'factors'
+>;
+
+/** Factors as the Calculator types them (1.5), rather than as stored (150 hundredths). */
+type Factor = number | string; // NumberInput gives a string while a number is part-typed ("1.")
+type FormValues = Omit<EventDetails, 'factors'> & {
+  factors: { figures: Factor; short: Factor; long: Factor };
+};
 
 /** How many compulsory dances an event of each entry type usually has, for the field's hint. */
-const TYPICAL_DANCES: Record<EntryType, string> = {
+const TYPICAL_DANCES: Partial<Record<EntryType, string>> = {
   solo: 'Usually 1 or 2 for solo events. ',
   duo: 'Usually 1 or 2 for duo events. ',
   team: 'Usually 3 or 4 for team events. ',
+};
+
+const ENTRY_TYPES: Record<EventDiscipline, { value: EntryType; label: string }[]> = {
+  dance: [
+    { value: 'solo', label: 'Solo' },
+    { value: 'duo', label: 'Duo' },
+    { value: 'team', label: 'Team' },
+  ],
+  figures: [
+    { value: 'single', label: 'Single' },
+    { value: 'pairs', label: 'Pairs' },
+  ],
+};
+
+const FIGURE_OPTIONS = FIGURES.map((f) => ({ value: f.id, label: `${f.id}. ${f.name} ${f.direction}` }));
+
+const toDecimal = (f: CompEvent['factors']) => ({
+  figures: f.figures / 100,
+  short: f.short / 100,
+  long: f.long / 100,
+});
+const toHundredths = (f: FormValues['factors']) => ({
+  figures: Math.round(Number(f.figures) * 100),
+  short: Math.round(Number(f.short) * 100),
+  long: Math.round(Number(f.long) * 100),
+});
+
+const positive = (f: Factor) => (Number(f) >= 0.01 ? null : 'At least 0.01');
+
+const emptyEvent: EventDetails = {
+  name: '',
+  entryType: 'solo',
+  compulsoryDanceIds: [],
+  hasFreeDance: false,
+  ...danceEventDefaults(),
 };
 
 export function EventDetailsForm({
@@ -24,79 +100,249 @@ export function EventDetailsForm({
   onSubmit: (values: EventDetails) => unknown;
 }) {
   const dances = useDances(competitionId);
-  const form = useForm<EventDetails>({
-    initialValues: initial ?? { name: '', entryType: 'solo', compulsoryDanceIds: [], hasFreeDance: false },
+  const start = initial ?? emptyEvent;
+  const form = useForm<FormValues>({
+    initialValues: { ...start, factors: toDecimal(start.factors) },
     validate: {
       name: (v) => (v.trim() ? null : 'Name is required'),
       compulsoryDanceIds: (v, values) =>
-        v.length > MAX_COMPULSORY_DANCES
-          ? `At most ${MAX_COMPULSORY_DANCES} compulsory dances`
-          : v.length === 0 && !values.hasFreeDance
-            ? 'Choose at least one compulsory dance or the free dance'
-            : null,
+        values.discipline !== 'dance'
+          ? null
+          : v.length > MAX_COMPULSORY_DANCES
+            ? `At most ${MAX_COMPULSORY_DANCES} compulsory dances`
+            : v.length === 0 && !values.hasFreeDance
+              ? 'Choose at least one compulsory dance or the free dance'
+              : null,
+      figures: (v, values) => {
+        if (values.discipline !== 'figures') return null;
+        if (v.some((f) => !f.figureId)) return 'Choose each figure, or remove the empty row';
+        if (new Set(v.map(cfKey)).size < v.length) return 'The same figure is chosen twice on the same side';
+        if (v.length === 0 && !values.hasShort && !values.hasLong)
+          return 'Choose at least one figure or programme';
+        return null;
+      },
+      factors: {
+        figures: positive,
+        short: positive,
+        long: positive,
+      },
     },
+  });
+  const v = form.values;
+
+  /** Changes the figures or programmes, and puts the factors back to the defaults for the new mix. */
+  const setParts = (next: Partial<Pick<FormValues, 'figures' | 'hasShort' | 'hasLong'>>) => {
+    const parts = { figures: v.figures, hasShort: v.hasShort, hasLong: v.hasLong, ...next };
+    form.setValues({
+      ...parts,
+      factors: toDecimal(defaultFactors(parts.figures.length, parts.hasShort, parts.hasLong)),
+    });
+  };
+  const setFigure = (i: number, f: Partial<FormValues['figures'][number]>) =>
+    form.setFieldValue(
+      'figures',
+      v.figures.map((x, xi) => (xi === i ? { ...x, ...f } : x)),
+    );
+
+  const partTypes = (v.figures.length > 0 ? 1 : 0) + (v.hasShort ? 1 : 0) + (v.hasLong ? 1 : 0);
+
+  const submit = form.onSubmit(async (values) => {
+    const base = { ...values, name: values.name.trim() };
+    await onSubmit(
+      values.discipline === 'figures'
+        ? {
+            ...base,
+            compulsoryDanceIds: [],
+            hasFreeDance: false,
+            figures: values.figures.map(({ figureId, side }) => (side ? { figureId, side } : { figureId })),
+            factors: toHundredths(values.factors),
+          }
+        : { ...base, figures: [], hasShort: false, hasLong: false, factors: { ...NO_FACTORS } },
+    );
   });
 
   return (
-    <form
-      onSubmit={form.onSubmit(async (v) => {
-        await onSubmit({ ...v, name: v.name.trim() });
-      })}
-    >
+    <form onSubmit={submit}>
       <Stack>
         <TextInput
           label="Event name"
-          placeholder="e.g. Novice Girls Solo Dance"
+          placeholder={
+            v.discipline === 'figures' ? 'e.g. Novice Girls Figures & Free' : 'e.g. Novice Girls Solo Dance'
+          }
           data-autofocus
           required
           {...form.getInputProps('name')}
         />
+        <Input.Wrapper label="Event type">
+          <SegmentedControl
+            display="flex"
+            w="fit-content"
+            my={4}
+            data={[
+              { value: 'dance', label: 'Dance' },
+              { value: 'figures', label: 'Figures & Free' },
+            ]}
+            value={v.discipline}
+            onChange={(d) =>
+              form.setValues({
+                discipline: d as EventDiscipline,
+                entryType: ENTRY_TYPES[d as EventDiscipline][0]!.value,
+              })
+            }
+          />
+        </Input.Wrapper>
         <Input.Wrapper
           label="Entry type"
-          description="Use ‘Team’ for team, super-team, quartet and show events"
+          description={
+            v.discipline === 'dance' ? 'Use ‘Team’ for team, super-team, quartet and show events' : undefined
+          }
           inputWrapperOrder={['label', 'input', 'description', 'error']}
         >
           <SegmentedControl
             display="flex"
             w="fit-content"
             my={4}
-            data={[
-              { value: 'solo', label: 'Solo' },
-              { value: 'duo', label: 'Duo' },
-              { value: 'team', label: 'Team' },
-            ]}
-            value={form.values.entryType}
-            onChange={(v) => form.setFieldValue('entryType', v as EntryType)}
+            data={ENTRY_TYPES[v.discipline]}
+            value={v.entryType}
+            onChange={(t) => form.setFieldValue('entryType', t as EntryType)}
           />
         </Input.Wrapper>
-        <MultiSelect
-          label="Compulsory dances"
-          description={`${TYPICAL_DANCES[form.values.entryType]}Up to ${MAX_COMPULSORY_DANCES}, in the order they are skated`}
-          placeholder={
-            form.values.compulsoryDanceIds.length < MAX_COMPULSORY_DANCES ? 'Choose dances' : undefined
-          }
-          data={(dances ?? []).map((d) => ({ value: d.id, label: d.name }))}
-          maxValues={MAX_COMPULSORY_DANCES}
-          searchable
-          selectFirstOptionOnChange
-          clearable
-          {...form.getInputProps('compulsoryDanceIds')}
-        />
-        {/* Labelled like the compulsory dances field above, so the two dance choices read as a pair. */}
-        <Input.Wrapper
-          label="Free dance"
-          description="Marked by each judge with an A (technical) and B (artistic impression) mark"
-        >
-          <Switch
-            mt={6}
-            label="Includes a free dance"
-            {...form.getInputProps('hasFreeDance', { type: 'checkbox' })}
-          />
-        </Input.Wrapper>
+
+        {v.discipline === 'dance' ? (
+          <>
+            <MultiSelect
+              label="Compulsory dances"
+              description={`${TYPICAL_DANCES[v.entryType] ?? ''}Up to ${MAX_COMPULSORY_DANCES}, in the order they are skated`}
+              placeholder={v.compulsoryDanceIds.length < MAX_COMPULSORY_DANCES ? 'Choose dances' : undefined}
+              data={(dances ?? []).map((d) => ({ value: d.id, label: d.name }))}
+              maxValues={MAX_COMPULSORY_DANCES}
+              searchable
+              selectFirstOptionOnChange
+              clearable
+              {...form.getInputProps('compulsoryDanceIds')}
+            />
+            {/* Labelled like the compulsory dances field above, so the two dance choices read as a pair. */}
+            <Input.Wrapper
+              label="Free dance"
+              description="Marked by each judge with an A (technical) and B (artistic impression) mark"
+            >
+              <Switch
+                mt={6}
+                label="Includes a free dance"
+                {...form.getInputProps('hasFreeDance', { type: 'checkbox' })}
+              />
+            </Input.Wrapper>
+          </>
+        ) : (
+          <>
+            <Input.Wrapper
+              label="Compulsory figures"
+              description={`Up to ${MAX_FIGURES}, in the order they are skated; each on the left or right, or unspecified`}
+              error={form.errors.figures}
+            >
+              <Stack gap="xs" mt={6}>
+                {v.figures.map((f, i) => (
+                  <Group key={i} gap="xs" wrap="nowrap">
+                    <Select
+                      aria-label={`Figure ${i + 1}`}
+                      placeholder="Choose a figure"
+                      data={FIGURE_OPTIONS}
+                      value={f.figureId || null}
+                      onChange={(id) => setFigure(i, { figureId: id ?? '' })}
+                      searchable
+                      selectFirstOptionOnChange
+                      style={{ flex: 1 }}
+                    />
+                    <SegmentedControl
+                      aria-label={`Figure ${i + 1} side`}
+                      data={[
+                        { value: 'L', label: 'Left' },
+                        { value: '-', label: '–' },
+                        { value: 'R', label: 'Right' },
+                      ]}
+                      value={f.side ?? '-'}
+                      onChange={(s) => setFigure(i, { side: s === '-' ? undefined : (s as FigureSide) })}
+                    />
+                    <ActionIcon
+                      variant="subtle"
+                      color="gray"
+                      aria-label={`Remove figure ${i + 1}`}
+                      onClick={() => setParts({ figures: v.figures.filter((_, xi) => xi !== i) })}
+                    >
+                      <IconX size={16} />
+                    </ActionIcon>
+                  </Group>
+                ))}
+                {v.figures.length < MAX_FIGURES && (
+                  <Button
+                    variant="light"
+                    size="xs"
+                    w="fit-content"
+                    leftSection={<IconPlus size={14} />}
+                    onClick={() => setParts({ figures: [...v.figures, { figureId: '' }] })}
+                  >
+                    Add figure
+                  </Button>
+                )}
+              </Stack>
+            </Input.Wrapper>
+            <Input.Wrapper
+              label="Free skating"
+              description="Each programme is marked by each judge with an A (technical) and B (artistic impression) mark"
+            >
+              <Group mt={6}>
+                <Switch
+                  label="Short programme"
+                  checked={v.hasShort}
+                  onChange={(e) => setParts({ hasShort: e.currentTarget.checked })}
+                />
+                <Switch
+                  label="Long programme"
+                  checked={v.hasLong}
+                  onChange={(e) => setParts({ hasLong: e.currentTarget.checked })}
+                />
+              </Group>
+            </Input.Wrapper>
+            {partTypes > 1 && (
+              <Input.Wrapper
+                label="Factors"
+                description="Each judge’s sum multiplies each part’s marks by its factor. Set to the defaults whenever the parts change."
+                inputWrapperOrder={['label', 'input', 'description', 'error']}
+              >
+                <Group gap="xs" my={4} align="flex-start">
+                  {v.figures.length > 0 && (
+                    <FactorInput label="Figures" {...form.getInputProps('factors.figures')} />
+                  )}
+                  {v.hasShort && <FactorInput label="Short" {...form.getInputProps('factors.short')} />}
+                  {v.hasLong && <FactorInput label="Long" {...form.getInputProps('factors.long')} />}
+                </Group>
+              </Input.Wrapper>
+            )}
+          </>
+        )}
         <Group justify="flex-end">
           <Button type="submit">{submitLabel}</Button>
         </Group>
       </Stack>
     </form>
+  );
+}
+
+function FactorInput({ label, ...props }: { label: string } & ComponentProps<typeof NumberInput>) {
+  return (
+    <NumberInput
+      {...props}
+      aria-label={`${label} factor`}
+      leftSection={
+        <Text size="xs" c="dimmed" pl={6}>
+          {label} ×
+        </Text>
+      }
+      leftSectionWidth={68}
+      w={140}
+      min={0.01}
+      step={1}
+      decimalScale={2}
+    />
   );
 }

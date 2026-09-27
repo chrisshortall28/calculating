@@ -1,6 +1,7 @@
+import { skatersPerEntry } from './entryName';
 import type { EntryType } from './types';
 
-/** One line of a pasted list: skater names (solo/duo) or a team name, plus an optional club. */
+/** One line of a pasted list: skater names (one or two) or a team name, plus an optional club. */
 export interface PastedRow {
   names: string[];
   teamName: string;
@@ -11,7 +12,7 @@ export interface PastedRow {
 
 const tidy = (s: string) => s.replace(/\s+/g, ' ').trim();
 
-/** Duo partners may be written "A & B", "A / B", "A + B" or "A and B". */
+/** Duo and pairs partners may be written "A & B", "A / B", "A + B" or "A and B". */
 const PARTNER_SPLIT = /\s*[&/+]\s*|\s+and\s+/i;
 
 /**
@@ -29,7 +30,7 @@ export function parsePastedList(text: string, type: EntryType): PastedRow[] {
 
     if (type === 'team') {
       rows.push({ names: [], teamName: name, club, error: name ? undefined : 'Team name missing' });
-    } else if (type === 'duo') {
+    } else if (skatersPerEntry(type) === 2) {
       const names = name.split(PARTNER_SPLIT).map(tidy).filter(Boolean);
       rows.push({
         names,

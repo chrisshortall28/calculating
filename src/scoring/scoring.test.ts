@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { SegmentKey } from '../domain/types';
-import { calculateEvent, explainStep, ruleLabel, type ScoringSegment } from './index';
+import {
+  calculateEvent,
+  explainJudgeTie,
+  explainStep,
+  formatSum,
+  ruleLabel,
+  type ScoringSegment,
+  type TieBreakMark,
+} from './index';
 
 const CD: ScoringSegment = { id: 'cd:w', name: 'Glide Waltz', kind: 'compulsory', markKeys: ['cd:w'] };
 const CD2: ScoringSegment = { id: 'cd:t', name: 'Tango', kind: 'compulsory', markKeys: ['cd:t'] };
@@ -12,6 +20,7 @@ function input(
   judgeCount: number,
   segments: ScoringSegment[],
   marks: Partial<Record<SegmentKey, number[][]>>,
+  tieBreakMarks: TieBreakMark[] = [{ key: 'fd:B', label: 'free dance' }],
 ) {
   const judges = Array.from({ length: judgeCount }, (_, i) => `j${i + 1}`);
   return {
@@ -22,6 +31,7 @@ function input(
       const v = marks[key]?.[judges.indexOf(judgeId)]?.[entries.indexOf(entryId)];
       return v === undefined ? undefined : Math.round(v * 10);
     },
+    tieBreakMarks,
   };
 }
 
@@ -48,7 +58,7 @@ describe('table of victories and majority victories (rules 2–5)', () => {
     expect(r.victories.get('a')!.get('b')).toBe(2);
     expect(r.victories.get('b')!.get('a')).toBe(1);
     expect(placed(r)).toEqual({ a: '1:5', b: '2:5', c: '3:5' });
-    expect(row(r, 'a')).toMatchObject({ majorityVictories: 2, totalVictories: 5, totalTenths: 141 });
+    expect(row(r, 'a')).toMatchObject({ majorityVictories: 2, totalVictories: 5, totalSum: 14100 });
   });
 
   it('sums every dance per judge, without factoring (A+B for the free dance)', () => {
@@ -72,7 +82,7 @@ describe('table of victories and majority victories (rules 2–5)', () => {
         ],
       }),
     );
-    expect(row(r, 'b').judgeSums).toEqual([161, 161, 161]);
+    expect(row(r, 'b').judgeSums).toEqual([16100, 16100, 16100]);
     expect(placed(r)).toEqual({ b: '1:5', a: '2:5' });
   });
 
@@ -94,9 +104,27 @@ describe('table of victories and majority victories (rules 2–5)', () => {
     // j1: equal 10.2, a wins on B; j2: equal 10.0 and equal B, half each; j3: equal, a wins on B.
     expect(r.victories.get('a')!.get('b')).toBe(2.5);
     expect(r.judgeTies).toEqual([
-      { judgeId: 'j1', entryIds: ['a', 'b'], sum: 102, winner: 'a', bMarks: [52, 51] },
-      { judgeId: 'j2', entryIds: ['a', 'b'], sum: 100, winner: undefined, bMarks: [50, 50] },
-      { judgeId: 'j3', entryIds: ['a', 'b'], sum: 100, winner: 'a', bMarks: [50, 48] },
+      {
+        judgeId: 'j1',
+        entryIds: ['a', 'b'],
+        sum: 10200,
+        winner: 'a',
+        bMarks: [{ label: 'free dance', marks: [52, 51] }],
+      },
+      {
+        judgeId: 'j2',
+        entryIds: ['a', 'b'],
+        sum: 10000,
+        winner: undefined,
+        bMarks: [{ label: 'free dance', marks: [50, 50] }],
+      },
+      {
+        judgeId: 'j3',
+        entryIds: ['a', 'b'],
+        sum: 10000,
+        winner: 'a',
+        bMarks: [{ label: 'free dance', marks: [50, 48] }],
+      },
     ]);
     expect(placed(r)).toEqual({ a: '1:5', b: '2:5' });
   });
@@ -372,5 +400,187 @@ describe('completeness', () => {
     const r = calculateEvent(input(['a', 'b'], 1, [FD, CD2], { 'fd:A': [[5.0, 4.0]], 'fd:B': [[4.0, 5.0]] }));
     const ord = r.segments[0]!.ordinals.get('j1')!;
     expect([ord.get('b'), ord.get('a')]).toEqual([1, 2]);
+  });
+});
+
+describe('figures & free events', () => {
+  const FIG: ScoringSegment = {
+    id: 'cf:1:-',
+    name: '1. Eights FO - FO',
+    kind: 'compulsory',
+    markKeys: ['cf:1:-'],
+  };
+  const SP: ScoringSegment = { id: 'sp', name: 'Short Programme', kind: 'free', markKeys: ['sp:A', 'sp:B'] };
+  const LP: ScoringSegment = { id: 'lp', name: 'Long Programme', kind: 'free', markKeys: ['lp:A', 'lp:B'] };
+  const LONG_THEN_SHORT: TieBreakMark[] = [
+    { key: 'lp:B', label: 'long programme' },
+    { key: 'sp:B', label: 'short programme' },
+  ];
+  const names = (id: string) => id.toUpperCase();
+
+  it('figures: equal sums are half a victory each, and ties skip 7B', () => {
+    const r = calculateEvent(
+      input(
+        ['a', 'b'],
+        3,
+        [FIG],
+        {
+          'cf:1:-': [
+            [5, 5],
+            [6, 5],
+            [5, 6],
+          ],
+        },
+        [],
+      ),
+    );
+    expect(r.judgeTies).toEqual([{ judgeId: 'j1', entryIds: ['a', 'b'], sum: 5000, winner: undefined }]);
+    expect(r.victories.get('a')!.get('b')).toBe(1.5);
+    expect(r.steps[0]!.trail.map((t) => t.rule)).toEqual(['6B', '7C', '7A']);
+    expect(placed(r)).toEqual({ a: '1:8', b: '1:8' });
+  });
+
+  it('short and long: the long programme counts three times the short', () => {
+    // a is better on raw marks (28 v 24), b once the long programme is ×3 (48 v 52).
+    const same = (a: number, b: number) => [
+      [a, b],
+      [a, b],
+      [a, b],
+    ];
+    const r = calculateEvent(
+      input(
+        ['a', 'b'],
+        3,
+        [SP, { ...LP, factor: 300 }],
+        { 'sp:A': same(9, 5), 'sp:B': same(9, 5), 'lp:A': same(5, 7), 'lp:B': same(5, 7) },
+        LONG_THEN_SHORT,
+      ),
+    );
+    expect(row(r, 'b').judgeSums).toEqual([52000, 52000, 52000]);
+    expect(placed(r)).toEqual({ b: '1:5', a: '2:5' });
+  });
+
+  it('rule 3: equal sums go to the long, then the short programme B mark', () => {
+    const r = calculateEvent(
+      input(
+        ['a', 'b'],
+        1,
+        [SP, { ...LP, factor: 300 }],
+        { 'sp:A': [[5.0, 5.2]], 'sp:B': [[5.2, 5.0]], 'lp:A': [[5, 5]], 'lp:B': [[5, 5]] },
+        LONG_THEN_SHORT,
+      ),
+    );
+    const tie = r.judgeTies[0]!;
+    expect(tie).toEqual({
+      judgeId: 'j1',
+      entryIds: ['a', 'b'],
+      sum: 40200,
+      winner: 'a',
+      bMarks: [
+        { label: 'long programme', marks: [50, 50] },
+        { label: 'short programme', marks: [52, 50] },
+      ],
+    });
+    expect(explainJudgeTie(tie, names, () => 'J1')).toBe(
+      'J1 gave A and B equal sums (40.2) and equal long programme B marks: A takes that judge’s victory on the short programme B mark (5.2 v 5.0).',
+    );
+  });
+
+  it('rule 7B: the long programme B marks, then the short programme B marks', () => {
+    // j1 favours a, j2 favours b; long B totals are equal, short B totals favour b.
+    const r = calculateEvent(
+      input(
+        ['a', 'b'],
+        2,
+        [SP, { ...LP, factor: 300 }],
+        {
+          'sp:A': [
+            [6, 5],
+            [5, 5],
+          ],
+          'sp:B': [
+            [5, 5],
+            [5, 6],
+          ],
+          'lp:A': [
+            [5, 5],
+            [5, 5],
+          ],
+          'lp:B': [
+            [5, 5],
+            [5, 5],
+          ],
+        },
+        LONG_THEN_SHORT,
+      ),
+    );
+    expect(placed(r)).toEqual({ b: '1:7B', a: '2:7B' });
+    const step = r.steps[0]!;
+    expect(step.trail.map((t) => [t.rule, t.label])).toEqual([
+      ['6B', undefined],
+      ['7B', 'long programme'],
+      ['7B', 'short programme'],
+    ]);
+    expect(explainStep(step, names)).toEqual([
+      '6B (S.M.V.) Separate victories: A 1, B 1 — still tied.',
+      '7B Long programme B marks: A 10.0, B 10.0 — still tied.',
+      '7B Short programme B marks: A 10.0, B 11.0 — B takes 1st.',
+    ]);
+  });
+
+  it('figures with free skating: no 7B, and 7A totals the factored sums', () => {
+    // a leads on raw sums (51 v 50.8); with figures ×2 and long ×3, b leads (102 v 102.4).
+    const r = calculateEvent(
+      input(
+        ['a', 'b'],
+        2,
+        [{ ...FIG, factor: 200 }, SP, { ...LP, factor: 300 }],
+        {
+          'cf:1:-': [
+            [6, 5],
+            [5, 5],
+          ],
+          'sp:A': [
+            [5, 5],
+            [5, 5],
+          ],
+          'sp:B': [
+            [5, 5],
+            [5, 5],
+          ],
+          'lp:A': [
+            [5, 5],
+            [5, 5],
+          ],
+          'lp:B': [
+            [5, 5],
+            [5, 5.8],
+          ],
+        },
+        [],
+      ),
+    );
+    const step = r.steps[0]!;
+    expect(step.trail.map((t) => t.rule)).toEqual(['6B', '7C', '7A']);
+    expect(row(r, 'b').totalSum).toBe(102400);
+    expect(placed(r)).toEqual({ b: '1:7A', a: '2:7A' });
+  });
+
+  it('decimal factors give exact sums', () => {
+    const r = calculateEvent(
+      input(['a'], 1, [{ ...SP, factor: 125 }], { 'sp:A': [[4.0]], 'sp:B': [[4.5]] }, [
+        { key: 'sp:B', label: 'short programme' },
+      ]),
+    );
+    expect(row(r, 'a').judgeSums).toEqual([10625]);
+    expect(formatSum(10625)).toBe('10.625');
+    expect(formatSum(35700)).toBe('35.7');
+    expect(formatSum(35000)).toBe('35.0');
+    expect(formatSum(10620)).toBe('10.62');
+  });
+
+  it('ignores tie-break marks whose part is not being scored (standing so far)', () => {
+    const r = calculateEvent(input(['a'], 1, [SP], { 'sp:A': [[5]], 'sp:B': [[5]] }, LONG_THEN_SHORT));
+    expect(r.tieBreakMarks).toEqual([{ key: 'sp:B', label: 'short programme' }]);
   });
 });

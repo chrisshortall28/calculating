@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Competition, EntryType } from '../domain/types';
 import { calculateEvent } from '../scoring';
+import { danceEventDefaults } from '../domain/segments';
 import type { EventData } from './loadEvent';
 import { pdfBlob } from './pdfmake';
 import { defaultWelcome, entryCount, programmeDocument } from './programme';
@@ -32,6 +33,7 @@ function event(id: string, name: string, entryType: EntryType, skaters: string[]
       entryType,
       compulsoryDanceIds: ['w'],
       hasFreeDance: true,
+      ...danceEventDefaults(),
       judgeIds: ['j1'],
       refereeId: 'r',
       status: 'final',
@@ -41,7 +43,13 @@ function event(id: string, name: string, entryType: EntryType, skaters: string[]
     judges,
     referee: { id: 'r', competitionId: 'c', name: 'Kate Referee' },
     mark,
-    result: calculateEvent({ entryIds: rows.map((r) => r.id), judgeIds: ['j1'], segments, mark }),
+    result: calculateEvent({
+      entryIds: rows.map((r) => r.id),
+      judgeIds: ['j1'],
+      segments,
+      mark,
+      tieBreakMarks: [],
+    }),
   };
 }
 

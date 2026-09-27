@@ -5,7 +5,23 @@ export const entryHeading: Record<EntryType, string> = {
   solo: 'Skater',
   duo: 'Skaters',
   team: 'Team',
+  single: 'Skater',
+  pairs: 'Skaters',
 };
+
+/** Singular and plural nouns for an event's entries: "skater"/"skaters", "pair"/"pairs". */
+export const entryNoun: Record<EntryType, [string, string]> = {
+  solo: ['skater', 'skaters'],
+  duo: ['duo', 'duos'],
+  team: ['team', 'teams'],
+  single: ['skater', 'skaters'],
+  pairs: ['pair', 'pairs'],
+};
+
+/** Skaters per entry: 1 (solo, single), 2 (duo, pairs), or undefined for a team (any number). */
+export function skatersPerEntry(type: EntryType): 1 | 2 | undefined {
+  return type === 'team' ? undefined : type === 'duo' || type === 'pairs' ? 2 : 1;
+}
 
 export function entryName(entry: Entry, skaters: Map<Id, Skater>): string {
   if (entry.teamName) return entry.teamName;

@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../db/db';
+import { danceEventDefaults } from '../domain/segments';
 import * as repo from '../db/repo';
 import { exportCompetition, importCompetition, parseCompetitionFile } from './competitionFile';
 
@@ -13,6 +14,7 @@ async function seed() {
     entryType: 'solo',
     compulsoryDanceIds: [waltz.id],
     hasFreeDance: true,
+    ...danceEventDefaults(),
   });
   const s1 = await repo.addSkater(compId, { name: 'Ann', club: 'A' });
   const s2 = await repo.addSkater(compId, { name: 'Bea', club: 'B' });
@@ -142,5 +144,84 @@ describe('competition file round trip', () => {
     await repo.updateEvent(eventId, { hasFreeDance: false });
     const marks = await db.marks.toArray();
     expect(marks.map((m) => m.tenths)).toEqual([57]);
+  });
+});
+
+describe('figures & free events in files', () => {
+  beforeEach(async () => {
+    await db.delete();
+    await db.open();
+  });
+
+  it('round-trips a figures event with its figures, programmes and factors', async () => {
+    const compId = await repo.createCompetition({ name: 'Figures Open', date: '2026-10-01', venue: 'Rink' });
+    const eventId = await repo.createEvent(compId, {
+      name: 'Junior Figures & Free',
+      entryType: 'pairs',
+      compulsoryDanceIds: [],
+      hasFreeDance: false,
+      discipline: 'figures',
+      figures: [{ figureId: '8', side: 'L' }, { figureId: '12' }],
+      hasShort: true,
+      hasLong: true,
+      factors: { figures: 250, short: 100, long: 300 },
+    });
+    const j1 = await repo.addJudge(compId, 'Judge One');
+    const s1 = await repo.addSkater(compId, { name: 'Ann', club: 'A' });
+    const e1 = await repo.addEntry(eventId, { skaterIds: [s1] });
+    await repo.updateEvent(eventId, { judgeIds: [j1] });
+    await repo.setMark({ eventId, segmentKey: 'cf:8:L', judgeId: j1, entryId: e1 }, 55);
+    await repo.setMark({ eventId, segmentKey: 'lp:B', judgeId: j1, entryId: e1 }, 72);
+
+    const file = parseCompetitionFile(JSON.parse(JSON.stringify(await exportCompetition(compId))));
+    expect(file.formatVersion).toBe(2);
+    const copy = await exportCompetition(await importCompetition(file, 'copy'));
+    expect(copy.events[0]).toMatchObject({
+      discipline: 'figures',
+      entryType: 'pairs',
+      figures: [{ figureId: '8', side: 'L' }, { figureId: '12' }],
+      factors: { figures: 250, short: 100, long: 300 },
+    });
+    expect(copy.marks.map((m) => m.segmentKey).sort()).toEqual(['cf:8:L', 'lp:B']);
+  });
+
+  it('removing a figure or programme removes only its marks', async () => {
+    const compId = await repo.createCompetition({ name: 'F', date: '', venue: '' });
+    const eventId = await repo.createEvent(compId, {
+      name: 'F',
+      entryType: 'single',
+      compulsoryDanceIds: [],
+      hasFreeDance: false,
+      discipline: 'figures',
+      figures: [{ figureId: '1' }, { figureId: '2', side: 'R' }],
+      hasShort: true,
+      hasLong: false,
+      factors: { figures: 100, short: 100, long: 100 },
+    });
+    const j1 = await repo.addJudge(compId, 'J');
+    const e1 = await repo.addEntry(eventId, { skaterIds: [] });
+    await repo.updateEvent(eventId, { judgeIds: [j1] });
+    for (const segmentKey of ['cf:1:-', 'cf:2:R', 'sp:A'] as const)
+      await repo.setMark({ eventId, segmentKey, judgeId: j1, entryId: e1 }, 50);
+    const next = { figures: [{ figureId: '2', side: 'R' as const }], hasShort: false };
+    expect(await repo.marksAffectedByEventChange(eventId, next)).toBe(2);
+    await repo.updateEvent(eventId, next);
+    expect((await db.marks.toArray()).map((m) => m.segmentKey)).toEqual(['cf:2:R']);
+  });
+
+  it('reads version 1 files as dance events', async () => {
+    const { compId } = await seed();
+    const v1 = JSON.parse(JSON.stringify(await exportCompetition(compId)));
+    v1.formatVersion = 1;
+    for (const e of v1.events)
+      for (const k of ['discipline', 'figures', 'hasShort', 'hasLong', 'factors']) delete e[k];
+    const file = parseCompetitionFile(v1);
+    expect(file.events[0]).toMatchObject({
+      discipline: 'dance',
+      figures: [],
+      hasShort: false,
+      hasLong: false,
+      factors: { figures: 100, short: 100, long: 100 },
+    });
   });
 });

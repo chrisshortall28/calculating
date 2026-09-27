@@ -8,6 +8,14 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.1.0',
+    date: '2026-09-27',
+    changes: [
+      'Run Figures & Free events for singles and pairs: up to four compulsory figures (each on the left, the right or unspecified), and a short and/or long programme with A and B marks.',
+      'Figures & Free events are scored by the CIPA rules for figures and free skating, with factors for each part that you can change per event (by default the long programme counts three times the short).',
+    ],
+  },
+  {
     version: '1.0.1',
     date: '2026-09-26',
     changes: [

@@ -1,6 +1,7 @@
 import { Button, Group, Modal, ScrollArea, Stack, Table, Text, Textarea } from '@mantine/core';
 import { useState } from 'react';
 import { parsePastedList, type PastedRow } from '../../domain/pasteList';
+import { entryNoun, skatersPerEntry } from '../../domain/entryName';
 import type { EntryType } from '../../domain/types';
 
 const rowKey = (r: PastedRow) => [r.teamName, ...[...r.names].sort()].join('|').toLowerCase();
@@ -9,6 +10,8 @@ const examples: Record<EntryType, string> = {
   solo: 'Jane Smith, Riverside RSC\nAmy Jones, Riverside RSC\nLucy Brown',
   duo: 'Jane Smith & Tom Smith, Riverside RSC\nAmy Jones & Ben Jones',
   team: 'Riverside Stars, Riverside RSC\nCity Flyers',
+  single: 'Jane Smith, Riverside RSC\nAmy Jones, Riverside RSC\nLucy Brown',
+  pairs: 'Jane Smith & Tom Smith, Riverside RSC\nAmy Jones & Ben Jones',
 };
 
 /**
@@ -65,9 +68,9 @@ export function PasteListModal({
     <Modal opened={opened} onClose={close} title={title} size="lg">
       <Stack>
         <Text size="sm" c="dimmed">
-          One {type === 'solo' ? 'skater' : type} per line. Add the club after a comma if you like — or paste
-          name and club columns straight from a spreadsheet.
-          {type === 'duo' && ' Separate partners with “&”.'}
+          One {entryNoun[type][0]} per line. Add the club after a comma if you like — or paste name and club
+          columns straight from a spreadsheet.
+          {skatersPerEntry(type) === 2 && ' Separate partners with “&”.'}
         </Text>
         <Textarea
           value={text}

@@ -1,11 +1,12 @@
 import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { clubColors, onColor } from '../app/clubColors';
 import { entryHeading } from '../domain/entryName';
-import { markKeyLabel } from '../domain/segments';
+import { factorSummary, markKeyLabel } from '../domain/segments';
 import { formatTenths } from '../marks/parseMark';
 import {
   explainJudgeTie,
   explainStep,
+  formatSum,
   formatVictories,
   ordinalLabel,
   RULES,
@@ -255,7 +256,7 @@ function resultsTable(d: EventData, placingsOnly: boolean): Content {
         ...(placingsOnly
           ? []
           : [
-              { text: formatTenths(o.totalTenths), alignment: center },
+              { text: formatSum(o.totalSum), alignment: center },
               { text: formatVictories(o.majorityVictories), bold: true, alignment: center },
               { text: o.rule === '5' ? '' : ruleLabel(o.rule), alignment: center, color: '#555' },
               ...o.judgeRanks.map((rank) => ({ text: String(rank), alignment: center, color: '#555' })),
@@ -279,9 +280,14 @@ function ruleKey(d: EventData): Content[] {
   if (used.length === 0) return [];
   const order: PlacementRule[] = ['6A', '6B', '7B', '7C', '7A', '8'];
   used.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  // 7B names whose B marks: "free dance B marks", "long programme, then short programme B marks".
+  const keyName = (r: PlacementRule) =>
+    r === '7B'
+      ? `${d.result.tieBreakMarks.map((t) => t.label).join(', then ')} B marks`
+      : RULES[r].name.toLowerCase();
   return [
     {
-      text: `CIPA tie-break rules: ${used.map((r) => `${ruleLabel(r)} ${RULES[r].name.toLowerCase()}`).join(' · ')}`,
+      text: `CIPA tie-break rules: ${used.map((r) => `${ruleLabel(r)} ${keyName(r)}`).join(' · ')}`,
       style: 'small',
       margin: [0, 3, 0, 0],
     },
@@ -310,8 +316,8 @@ function victoriesTable(d: EventData): Content[] {
     return [
       { text: String(i + 1), alignment: center, color: '#555' },
       r.name,
-      ...o.judgeSums.map((s) => ({ text: formatTenths(s), alignment: center })),
-      { text: formatTenths(o.totalTenths), alignment: center, bold: true },
+      ...o.judgeSums.map((s) => ({ text: formatSum(s), alignment: center })),
+      { text: formatSum(o.totalSum), alignment: center, bold: true },
       ...d.rows.map((other) => {
         const v = result.victories.get(r.id)!.get(other.id);
         return v === undefined
@@ -328,8 +334,18 @@ function victoriesTable(d: EventData): Content[] {
       { text: `${o.place}${o.tied ? '=' : ''}`, alignment: center, bold: true },
     ];
   });
+  const factors = factorSummary(d.event);
   return [
     { text: 'Summary of scores and table of victories', style: 'h2' },
+    ...(factors
+      ? [
+          {
+            text: `Each judge’s sum multiplies each part’s marks by its factor: ${factors}.`,
+            style: 'small',
+            margin: [0, 0, 0, 3],
+          } as Content,
+        ]
+      : []),
     {
       table: {
         headerRows: 1,

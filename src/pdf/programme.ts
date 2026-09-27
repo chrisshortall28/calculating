@@ -2,7 +2,7 @@ import { isLightColor, luminance } from '@mantine/core';
 import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { clubColors, DEFAULT_PRIMARY, onColor } from '../app/clubColors';
 import { formatLongDate } from '../app/format';
-import { entryHeading } from '../domain/entryName';
+import { entryHeading, entryNoun } from '../domain/entryName';
 import type { Competition, EntryType } from '../domain/types';
 import type { EventData } from './loadEvent';
 import { coverSwooshes } from './coverSwooshes';
@@ -25,15 +25,9 @@ export function defaultWelcome(c: Competition): string {
   ].join('\n\n');
 }
 
-const plural: Record<EntryType, [string, string]> = {
-  solo: ['skater', 'skaters'],
-  duo: ['duo', 'duos'],
-  team: ['team', 'teams'],
-};
-
 /** "8 skaters", "1 duo", "3 teams" */
 export function entryCount(type: EntryType, count: number): string {
-  return `${count} ${plural[type][count === 1 ? 0 : 1]}`;
+  return `${count} ${entryNoun[type][count === 1 ? 0 : 1]}`;
 }
 
 const danceNames = (d: EventData) => d.segments.map((s) => s.name);
@@ -210,7 +204,16 @@ function eventSection(c: Competition, d: EventData, number: number): Content {
   const dances: Content = d.segments.length
     ? {
         text: [
-          { text: d.segments.length === 1 ? 'Dance  ' : 'Dances  ', bold: true, color: ink },
+          {
+            text:
+              d.event.discipline === 'figures'
+                ? 'Figures & free  '
+                : d.segments.length === 1
+                  ? 'Dance  '
+                  : 'Dances  ',
+            bold: true,
+            color: ink,
+          },
           danceNames(d).join('  ·  '),
         ],
         margin: [0, 8, 0, 6],

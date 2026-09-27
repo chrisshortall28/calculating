@@ -103,7 +103,7 @@ export function EventsTab() {
                       ))
                     ) : (
                       <Text size="xs" c="orange.7">
-                        No dances
+                        {ev.discipline === 'figures' ? 'No figures or programmes' : 'No dances'}
                       </Text>
                     )}
                   </Group>

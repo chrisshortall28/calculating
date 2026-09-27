@@ -16,12 +16,12 @@ import { IconFileText, IconPrinter } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useJudges, useSkaters } from '../../app/data';
 import { byId, entryClub, entryHeading, entryName } from '../../domain/entryName';
-import { markKeyLabel } from '../../domain/segments';
+import { factorSummary, markKeyLabel } from '../../domain/segments';
 import type { CompEvent, Competition } from '../../domain/types';
 import { formatTenths } from '../../marks/parseMark';
 import { printJudgeSheets, printResults } from '../../pdf/actions';
 import { officialsLine } from '../../pdf/documents';
-import { explainJudgeTie, formatVictories, type EventResult } from '../../scoring';
+import { explainJudgeTie, formatSum, formatVictories, type EventResult } from '../../scoring';
 import { markKey, useEventResult } from '../scoring/useEventResult';
 import { RuleBadge, TieExplanations } from './PlacementRule';
 
@@ -142,7 +142,7 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
                     <Table.Td ta="center" fw={600}>
                       {formatVictories(o.majorityVictories)}
                     </Table.Td>
-                    <Table.Td ta="right">{formatTenths(o.totalTenths)}</Table.Td>
+                    <Table.Td ta="right">{formatSum(o.totalSum)}</Table.Td>
                     {o.judgeRanks.map((rank, i) => (
                       <Table.Td key={i} ta="center" c="dimmed">
                         {rank}
@@ -263,12 +263,14 @@ function VictoriesTable({
 }) {
   const rowOf = new Map(result.overall.map((o) => [o.entryId, o]));
   const judgeCount = event.judgeIds.length;
+  const factors = factorSummary(event);
   return (
     <Stack>
       <Text size="sm" c="dimmed">
-        A judge’s sum is the total of all their marks for an entry. Each “v” column shows how many judges gave
-        the entry a higher sum than that opponent; <b>bold</b> is a majority victory (more than half the
-        judges, {result.majority} of {judgeCount}).
+        A judge’s sum is the total of all their marks for an entry
+        {factors && `, each part multiplied by its factor (${factors})`}. Each “v” column shows how many
+        judges gave the entry a higher sum than that opponent; <b>bold</b> is a majority victory (more than
+        half the judges, {result.majority} of {judgeCount}).
       </Text>
       <Table.ScrollContainer minWidth={400}>
         <Table withColumnBorders fz="sm">
@@ -305,11 +307,11 @@ function VictoriesTable({
                   <Table.Td>{label(e)}</Table.Td>
                   {o.judgeSums.map((s, ji) => (
                     <Table.Td key={ji} ta="center">
-                      {formatTenths(s)}
+                      {formatSum(s)}
                     </Table.Td>
                   ))}
                   <Table.Td ta="center" fw={600}>
-                    {formatTenths(o.totalTenths)}
+                    {formatSum(o.totalSum)}
                   </Table.Td>
                   {entryIds.map((other) => {
                     const v = result.victories.get(e)!.get(other);

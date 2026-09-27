@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { TDocumentDefinitions } from 'pdfmake/interfaces';
-import type { SegmentKey } from '../domain/types';
+import { defaultFactors, eventSegments, eventTieBreakMarks } from '../domain/segments';
+import type { CompEvent, SegmentKey } from '../domain/types';
+import { danceEventDefaults } from '../domain/segments';
 import { calculateEvent } from '../scoring';
 import { judgeSheets, judgeSheetsDocument, resultsDocument, resultsPages } from './documents';
 import type { EventData } from './loadEvent';
@@ -22,6 +24,7 @@ function sampleEvent(): EventData {
       entryType: 'solo',
       compulsoryDanceIds: ['w'],
       hasFreeDance: false,
+      ...danceEventDefaults(),
       judgeIds: judges.map((j) => j.id),
       refereeId: 'r',
       status: 'final',
@@ -31,7 +34,13 @@ function sampleEvent(): EventData {
     judges,
     referee: { id: 'r', competitionId: 'c', name: 'Kate' },
     mark,
-    result: calculateEvent({ entryIds: ['e0', 'e1'], judgeIds: judges.map((j) => j.id), segments, mark }),
+    result: calculateEvent({
+      entryIds: ['e0', 'e1'],
+      judgeIds: judges.map((j) => j.id),
+      segments,
+      mark,
+      tieBreakMarks: [],
+    }),
   };
 }
 
@@ -109,6 +118,7 @@ describe('resultsPages', () => {
         judgeIds: d.judges.map((j) => j.id),
         segments: d.segments,
         mark,
+        tieBreakMarks: [],
       }),
     };
     for (const style of ['standard', 'withMarks'] as const) {
@@ -186,5 +196,71 @@ describe('judgeSheets', () => {
       (d.footer as (page: number, pages: number) => { text: string })(1, 2).text;
     expect(footer(doc)).toBe('Created with Podium');
     expect(footer(resultsDocument([sampleEvent()], 'standard'))).toBe('Created with Podium · page 1 of 2');
+  });
+});
+
+describe('figures & free events', () => {
+  /** Two pairs entries level on everything but the programme B marks, so rule 7B decides. */
+  function figuresEvent(figures: CompEvent['figures']): EventData {
+    const d = sampleEvent();
+    const event: CompEvent = {
+      ...d.event,
+      entryType: 'pairs',
+      compulsoryDanceIds: [],
+      discipline: 'figures',
+      figures,
+      hasShort: true,
+      hasLong: true,
+      factors: defaultFactors(figures.length, true, true),
+    };
+    const segments = eventSegments(event, []);
+    // j0 favours e0 on the short programme A mark; j1 favours e1; the long B totals are equal and
+    // the short B totals favour e1.
+    const mark = (k: SegmentKey, j: string, e: string) =>
+      k === 'sp:A'
+        ? j === 'j0' && e === 'e0'
+          ? 60
+          : 50
+        : k === 'sp:B'
+          ? j === 'j1' && e === 'e1'
+            ? 60
+            : 50
+          : 50;
+    const judgeIds = ['j0', 'j1'];
+    return {
+      ...d,
+      event: { ...event, judgeIds },
+      judges: d.judges.slice(0, 2),
+      segments,
+      mark,
+      result: calculateEvent({
+        entryIds: ['e0', 'e1'],
+        judgeIds,
+        segments,
+        mark,
+        tieBreakMarks: eventTieBreakMarks(event),
+      }),
+    };
+  }
+
+  it('shows the parts, the 7B rule key and the factors', () => {
+    const t = texts(resultsPages([figuresEvent([])], 'withMarks'));
+    expect(t).toEqual(
+      expect.arrayContaining([
+        'Short Programme',
+        'Long Programme',
+        'CIPA tie-break rules: 7B long programme, then short programme B marks',
+        'Each judge’s sum multiplies each part’s marks by its factor: short programme ×1, long programme ×3.',
+        '7B Short programme B marks: Amy 10.0, Beth 11.0 — Beth takes 1st.',
+      ]),
+    );
+  });
+
+  it('with figures, equal programme B marks do not decide, and judge sheets list the figures', () => {
+    const d = figuresEvent([{ figureId: '8', side: 'L' }]);
+    expect(d.result.overall.map((o) => o.rule)).toEqual(['8', '8']);
+    expect(texts(judgeSheets([d]))).toEqual(
+      expect.arrayContaining(['8. Threes FO - BI (Left)', 'Short Programme', 'A', 'B']),
+    );
   });
 });

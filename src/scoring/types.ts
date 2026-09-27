@@ -5,7 +5,22 @@ export interface ScoringSegment {
   name: string;
   kind: 'compulsory' | 'free';
   markKeys: SegmentKey[];
+  /** Multiplies the segment's marks in a judge's sum, in hundredths (default 100 = ×1). */
+  factor?: number;
 }
+
+/** A B (artistic impression) mark that splits equal sums (rule 3) and breaks ties (rule 7B). */
+export interface TieBreakMark {
+  key: SegmentKey;
+  /** e.g. "free dance", "long programme" */
+  label: string;
+}
+
+/**
+ * Judge sums are integers in thousandths of a mark: tenths × a factor in hundredths, so factored
+ * sums (e.g. 8.5 × 1.25 = 10.625) stay exact.
+ */
+export const SUM_PER_POINT = 1000;
 
 /** Returns the mark in tenths, or undefined if not entered. */
 export type MarkLookup = (markKey: SegmentKey, judgeId: Id, entryId: Id) => number | undefined;
@@ -15,13 +30,18 @@ export interface ScoringInput {
   judgeIds: Id[];
   segments: ScoringSegment[];
   mark: MarkLookup;
+  /**
+   * B marks that split equal sums and break ties, in the order applied (one 7B step each). Those
+   * whose segment isn't among `segments` are ignored.
+   */
+  tieBreakMarks: TieBreakMark[];
 }
 
 /**
  * CIPA placement rules, numbered as in the CIPA scoring manual:
  *  - `5`  most majority victories (no tie)
  *  - `6A` / `6B` separate victories between the tied entries (3 or more tied / 2 tied)
- *  - `7B` total free dance B (artistic impression) marks
+ *  - `7B` total B (artistic impression) marks of one part (free dance, long or short programme)
  *  - `7C` total victories
  *  - `7A` total sums
  *  - `8`  still equal: the place is shared
@@ -33,6 +53,8 @@ export interface RuleApplication {
   rule: Exclude<PlacementRule, '5' | '8'>;
   /** Each contender's value under the rule; the highest value stays in contention. */
   values: { entryId: Id; value: number }[];
+  /** 7B: whose B marks were totalled, e.g. "long programme". */
+  label?: string;
 }
 
 /** How one place (or a shared place) was awarded. */
@@ -54,10 +76,12 @@ export interface PlacementStep {
 export interface JudgeTie {
   judgeId: Id;
   entryIds: [Id, Id];
+  /** The equal sum, in thousandths (see SUM_PER_POINT). */
   sum: number;
-  /** Winner on the free dance B mark, or undefined for a half victory each. */
+  /** Winner on a B mark, or undefined for a half victory each. */
   winner?: Id;
-  bMarks?: [number, number];
+  /** The B marks compared, in order, until one differed (tenths). */
+  bMarks?: { label: string; marks: [number, number] }[];
 }
 
 export interface SegmentResult {
@@ -82,9 +106,9 @@ export interface OverallRow {
   majorityVictories: number;
   /** Total victories: every judge victory over every other entry (halves possible). */
   totalVictories: number;
-  /** Total sums: all judges' sums, in tenths. */
-  totalTenths: number;
-  /** Each judge's sum for the event, in tenths (same order as judgeIds). */
+  /** Total sums: all judges' sums, in thousandths (see SUM_PER_POINT). */
+  totalSum: number;
+  /** Each judge's (factored) sum for the event, in thousandths (same order as judgeIds). */
   judgeSums: number[];
   /** Each judge's ranking of this entry for the event, by sum (same order as judgeIds). */
   judgeRanks: number[];
@@ -95,8 +119,8 @@ export interface EventResult {
   missingMarks: number;
   totalMarks: number;
   majority: number;
-  /** The event has a free dance, so its B marks break ties (rules 3 and 7B). */
-  usesFreeDanceB: boolean;
+  /** The B marks that split equal sums and break ties (rules 3 and 7B), in order. */
+  tieBreakMarks: TieBreakMark[];
   segments: SegmentResult[];
   /** Table of victories: entryId -> opponent entryId -> judge victories (halves possible). */
   victories: Map<Id, Map<Id, number>>;

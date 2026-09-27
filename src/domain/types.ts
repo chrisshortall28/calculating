@@ -21,7 +21,10 @@ export interface Dance {
   name: string;
 }
 
-export type EntryType = 'solo' | 'duo' | 'team';
+/** Dance events are skated by solos, duos or teams; figures & free events by singles or pairs. */
+export type EntryType = 'solo' | 'duo' | 'team' | 'single' | 'pairs';
+/** Dance: compulsory dances + free dance. Figures: compulsory figures + short/long programmes. */
+export type EventDiscipline = 'dance' | 'figures';
 export type EventStatus = 'setup' | 'scoring' | 'final';
 
 export interface CompEvent {
@@ -33,11 +36,33 @@ export interface CompEvent {
   /** Ordered list of compulsory dance ids (0–10; usually 1–2 for solo, 3–4 for team). */
   compulsoryDanceIds: Id[];
   hasFreeDance: boolean;
+  discipline: EventDiscipline;
+  /** Ordered compulsory figures (0–4; figures events only). */
+  figures: EventFigure[];
+  /** Short and long programmes (A + B marks; figures events only). */
+  hasShort: boolean;
+  hasLong: boolean;
+  /** Factors applied to each part's marks in a judge's sum, in hundredths (300 = ×3). */
+  factors: Factors;
   /** Ordered judge panel; may be empty until the day. */
   judgeIds: Id[];
   /** The event's referee (a person from the judges roster; may also sit on the panel). Gives no marks. */
   refereeId?: Id;
   status: EventStatus;
+}
+
+export type FigureSide = 'L' | 'R';
+
+/** A compulsory figure from the catalogue (`src/domain/figures.ts`), optionally on one side. */
+export interface EventFigure {
+  figureId: string;
+  side?: FigureSide;
+}
+
+export interface Factors {
+  figures: number;
+  short: number;
+  long: number;
 }
 
 export interface Skater {
@@ -68,8 +93,11 @@ export interface Judge {
  * Segment keys identify what a mark is for:
  *  - `cd:<danceId>` compulsory dance (one mark)
  *  - `fd:A` / `fd:B` free dance A and B marks
+ *  - `cf:<figureId>:<L|R|->` compulsory figure (one mark)
+ *  - `sp:A` / `sp:B`, `lp:A` / `lp:B` short and long programme A and B marks
  */
-export type SegmentKey = `cd:${string}` | 'fd:A' | 'fd:B';
+export type SegmentKey =
+  `cd:${string}` | 'fd:A' | 'fd:B' | `cf:${string}` | 'sp:A' | 'sp:B' | 'lp:A' | 'lp:B';
 
 export interface Mark {
   eventId: Id;
@@ -81,3 +109,4 @@ export interface Mark {
 }
 
 export const MAX_COMPULSORY_DANCES = 10;
+export const MAX_FIGURES = 4;

@@ -1,18 +1,23 @@
 import { z } from 'zod';
 import { db, newId } from '../db/db';
-import { MAX_COMPULSORY_DANCES, type Id, type SegmentKey } from '../domain/types';
+import { NO_FACTORS } from '../domain/segments';
+import { MAX_COMPULSORY_DANCES, MAX_FIGURES, type Id, type SegmentKey } from '../domain/types';
 
-export const FORMAT_VERSION = 1;
+/** 2: figures & free events. Version 1 files are read as having only dance events. */
+export const FORMAT_VERSION = 2;
 
 const hexColor = z.string().regex(/^#[0-9a-f]{6}$/i);
 
 const segmentKey = z.custom<SegmentKey>(
-  (v) => typeof v === 'string' && (v === 'fd:A' || v === 'fd:B' || v.startsWith('cd:')),
+  (v) => typeof v === 'string' && (/^(fd|sp|lp):[AB]$/.test(v) || v.startsWith('cd:') || v.startsWith('cf:')),
 );
+
+/** In hundredths: 1–100000 (0.01–1000). */
+const factor = z.number().int().min(1).max(100_000);
 
 const fileSchema = z.object({
   app: z.literal('podium'),
-  formatVersion: z.literal(FORMAT_VERSION),
+  formatVersion: z.union([z.literal(1), z.literal(FORMAT_VERSION)]),
   exportedAt: z.string(),
   competition: z.object({
     id: z.string(),
@@ -36,9 +41,17 @@ const fileSchema = z.object({
       competitionId: z.string(),
       name: z.string(),
       order: z.number(),
-      entryType: z.enum(['solo', 'duo', 'team']),
+      entryType: z.enum(['solo', 'duo', 'team', 'single', 'pairs']),
       compulsoryDanceIds: z.array(z.string()).max(MAX_COMPULSORY_DANCES),
       hasFreeDance: z.boolean(),
+      discipline: z.enum(['dance', 'figures']).default('dance'),
+      figures: z
+        .array(z.object({ figureId: z.string(), side: z.enum(['L', 'R']).optional() }))
+        .max(MAX_FIGURES)
+        .default([]),
+      hasShort: z.boolean().default(false),
+      hasLong: z.boolean().default(false),
+      factors: z.object({ figures: factor, short: factor, long: factor }).default(() => ({ ...NO_FACTORS })),
       judgeIds: z.array(z.string()),
       refereeId: z.string().optional(),
       status: z.enum(['setup', 'scoring', 'final']),
