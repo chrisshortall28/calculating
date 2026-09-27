@@ -133,3 +133,13 @@ export function bTotalsUsed(steps: PlacementStep[]): Map<Id, { label: string; va
     }
   return totals;
 }
+
+/** Each entry's separate majority victories (rules 6A / 6B), for entries a tie put through rule 6. */
+export function smvUsed(steps: PlacementStep[]): Map<Id, number> {
+  const smv = new Map<Id, number>();
+  for (const step of steps)
+    for (const a of step.trail)
+      if (a.rule === '6A' || a.rule === '6B')
+        for (const { entryId, value } of a.values) smv.set(entryId, value);
+  return smv;
+}

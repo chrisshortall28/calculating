@@ -3,6 +3,7 @@ import type { SegmentKey } from '../domain/types';
 import {
   bTotalsUsed,
   calculateEvent,
+  smvUsed,
   explainJudgeTie,
   explainStep,
   formatSum,
@@ -527,6 +528,7 @@ describe('figures & free events', () => {
       '7B Long programme B marks: A 10.0, B 10.0 — still tied.',
       '7B Short programme B marks: A 10.0, B 11.0 — B takes 1st.',
     ]);
+    expect(Object.fromEntries(smvUsed(r.steps))).toEqual({ a: 1, b: 1 });
     expect(Object.fromEntries(bTotalsUsed(r.steps))).toEqual({
       a: [
         { label: 'long programme', value: 100 },
@@ -609,5 +611,6 @@ describe('total B scores', () => {
       ),
     );
     expect(bTotalsUsed(r.steps).size).toBe(0);
+    expect(smvUsed(r.steps).size).toBe(0);
   });
 });

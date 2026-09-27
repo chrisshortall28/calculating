@@ -14,6 +14,7 @@ import type {
 export * from './types';
 export {
   bTotalsUsed,
+  smvUsed,
   RULES,
   ruleLabel,
   ruleName,

@@ -6,6 +6,7 @@ import { formatTenths } from '../marks/parseMark';
 import {
   bTotalsUsed,
   explainJudgeTie,
+  smvUsed,
   explainStep,
   formatRuleValue,
   formatSum,
@@ -302,6 +303,7 @@ function victoriesTable(d: EventData): Content[] {
   const rowOf = new Map(result.overall.map((o) => [o.entryId, o]));
   const judgeCount = d.judges.length;
   const bTotals = bTotalsUsed(result.steps);
+  const smv = smvUsed(result.steps);
   const { th, layout } = clubTable(d);
   const center = 'center' as const;
   const head: TableCell[] = [
@@ -311,6 +313,7 @@ function victoriesTable(d: EventData): Content[] {
     th('Total'),
     ...d.rows.map((_, i) => th(`v${i + 1}`)),
     th('MV'),
+    th('S.M.V.'),
     th('Total B scores'),
     th('TV'),
     th('Pl'),
@@ -334,6 +337,7 @@ function victoriesTable(d: EventData): Content[] {
             };
       }),
       { text: formatVictories(o.majorityVictories), alignment: center, bold: true },
+      { text: smv.has(r.id) ? formatVictories(smv.get(r.id)!) : '', alignment: center },
       {
         text: (bTotals.get(r.id) ?? []).map((b) => formatRuleValue('7B', b.value)).join(' / '),
         alignment: center,
@@ -357,7 +361,7 @@ function victoriesTable(d: EventData): Content[] {
     {
       table: {
         headerRows: 1,
-        widths: [12, '*', ...d.judges.map(() => 26), 30, ...d.rows.map(() => 16), 20, 42, 20, 18],
+        widths: [12, '*', ...d.judges.map(() => 26), 30, ...d.rows.map(() => 16), 20, 26, 42, 20, 18],
         body: [head, ...rows],
       },
       layout,

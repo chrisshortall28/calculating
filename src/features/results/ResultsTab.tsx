@@ -24,6 +24,7 @@ import { officialsLine } from '../../pdf/documents';
 import {
   bTotalsUsed,
   explainJudgeTie,
+  smvUsed,
   formatRuleValue,
   formatSum,
   formatVictories,
@@ -272,6 +273,7 @@ function VictoriesTable({
   const judgeCount = event.judgeIds.length;
   const factors = factorSummary(event);
   const bTotals = bTotalsUsed(result.steps);
+  const smv = smvUsed(result.steps);
   return (
     <Stack>
       <Text size="sm" c="dimmed">
@@ -299,6 +301,12 @@ function VictoriesTable({
               ))}
               <Table.Th ta="center" title="Majority victories">
                 MV
+              </Table.Th>
+              <Table.Th
+                ta="center"
+                title="Separate majority victories: victories between tied entries only (rules 6A / 6B)"
+              >
+                S.M.V.
               </Table.Th>
               <Table.Th
                 ta="center"
@@ -344,6 +352,7 @@ function VictoriesTable({
                   <Table.Td ta="center" fw={600}>
                     {formatVictories(o.majorityVictories)}
                   </Table.Td>
+                  <Table.Td ta="center">{smv.has(e) ? formatVictories(smv.get(e)!) : ''}</Table.Td>
                   <Table.Td
                     ta="center"
                     title={bTotals
