@@ -252,6 +252,9 @@ describe('figures & free events', () => {
         'CIPA tie-break rules: 7B long programme, then short programme B marks',
         'Each judge’s sum multiplies each part’s marks by its factor: short programme ×1, long programme ×3.',
         '7B Short programme B marks: Amy 10.0, Beth 11.0 — Beth takes 1st.',
+        'Total B scores',
+        '10.0 / 10.0',
+        '10.0 / 11.0',
       ]),
     );
   });
