@@ -42,7 +42,9 @@ export type EventDetails = Pick<
 
 /** Factors as the Calculator types them (1.5), rather than as stored (150 hundredths). */
 type Factor = number | string; // NumberInput gives a string while a number is part-typed ("1.")
-type FormValues = Omit<EventDetails, 'factors'> & {
+type FormValues = Omit<EventDetails, 'discipline' | 'factors'> & {
+  /** Blank until the Calculator chooses, when creating an event. */
+  discipline: EventDiscipline | '';
   factors: { figures: Factor; short: Factor; long: Factor };
 };
 
@@ -80,12 +82,14 @@ const toHundredths = (f: FormValues['factors']) => ({
 
 const positive = (f: Factor) => (Number(f) >= 0.01 ? null : 'At least 0.01');
 
-const emptyEvent: EventDetails = {
+const emptyEvent: FormValues = {
   name: '',
   entryType: 'solo',
   compulsoryDanceIds: [],
   hasFreeDance: false,
   ...danceEventDefaults(),
+  discipline: '',
+  factors: toDecimal(NO_FACTORS),
 };
 
 export function EventDetailsForm({
@@ -100,11 +104,11 @@ export function EventDetailsForm({
   onSubmit: (values: EventDetails) => unknown;
 }) {
   const dances = useDances(competitionId);
-  const start = initial ?? emptyEvent;
   const form = useForm<FormValues>({
-    initialValues: { ...start, factors: toDecimal(start.factors) },
+    initialValues: initial ? { ...initial, factors: toDecimal(initial.factors) } : emptyEvent,
     validate: {
       name: (v) => (v.trim() ? null : 'Name is required'),
+      discipline: (v) => (v ? null : 'Choose the event type'),
       compulsoryDanceIds: (v, values) =>
         values.discipline !== 'dance'
           ? null
@@ -147,7 +151,7 @@ export function EventDetailsForm({
   const partTypes = (v.figures.length > 0 ? 1 : 0) + (v.hasShort ? 1 : 0) + (v.hasLong ? 1 : 0);
 
   const submit = form.onSubmit(async (values) => {
-    const base = { ...values, name: values.name.trim() };
+    const base = { ...values, discipline: values.discipline as EventDiscipline, name: values.name.trim() };
     await onSubmit(
       values.discipline === 'figures'
         ? {
@@ -173,7 +177,12 @@ export function EventDetailsForm({
           required
           {...form.getInputProps('name')}
         />
-        <Input.Wrapper label="Event type">
+        <Input.Wrapper
+          label="Event type"
+          withAsterisk
+          error={form.errors.discipline}
+          inputWrapperOrder={['label', 'input', 'error']}
+        >
           <SegmentedControl
             display="flex"
             w="fit-content"
@@ -191,24 +200,28 @@ export function EventDetailsForm({
             }
           />
         </Input.Wrapper>
-        <Input.Wrapper
-          label="Entry type"
-          description={
-            v.discipline === 'dance' ? 'Use ‘Team’ for team, super-team, quartet and show events' : undefined
-          }
-          inputWrapperOrder={['label', 'input', 'description', 'error']}
-        >
-          <SegmentedControl
-            display="flex"
-            w="fit-content"
-            my={4}
-            data={ENTRY_TYPES[v.discipline]}
-            value={v.entryType}
-            onChange={(t) => form.setFieldValue('entryType', t as EntryType)}
-          />
-        </Input.Wrapper>
+        {v.discipline && (
+          <Input.Wrapper
+            label="Entry type"
+            description={
+              v.discipline === 'dance'
+                ? 'Use ‘Team’ for team, super-team, quartet and show events'
+                : undefined
+            }
+            inputWrapperOrder={['label', 'input', 'description', 'error']}
+          >
+            <SegmentedControl
+              display="flex"
+              w="fit-content"
+              my={4}
+              data={ENTRY_TYPES[v.discipline]}
+              value={v.entryType}
+              onChange={(t) => form.setFieldValue('entryType', t as EntryType)}
+            />
+          </Input.Wrapper>
+        )}
 
-        {v.discipline === 'dance' ? (
+        {v.discipline === 'dance' && (
           <>
             <MultiSelect
               label="Compulsory dances"
@@ -233,7 +246,8 @@ export function EventDetailsForm({
               />
             </Input.Wrapper>
           </>
-        ) : (
+        )}
+        {v.discipline === 'figures' && (
           <>
             <Input.Wrapper
               label="Compulsory figures"
