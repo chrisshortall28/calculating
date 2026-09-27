@@ -52,6 +52,7 @@ type FormValues = Omit<EventDetails, 'discipline' | 'factors'> & {
 const TYPICAL_DANCES: Partial<Record<EntryType, string>> = {
   solo: 'Usually 1 or 2 for solo events. ',
   duo: 'Usually 1 or 2 for duo events. ',
+  couples: 'Usually 1 or 2 for couples events. ',
   team: 'Usually 3 or 4 for team events. ',
 };
 
@@ -59,6 +60,7 @@ const ENTRY_TYPES: Record<EventDiscipline, { value: EntryType; label: string }[]
   dance: [
     { value: 'solo', label: 'Solo' },
     { value: 'duo', label: 'Duo' },
+    { value: 'couples', label: 'Couples' },
     { value: 'team', label: 'Team' },
   ],
   figures: [

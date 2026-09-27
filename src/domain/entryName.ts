@@ -4,6 +4,7 @@ import type { Entry, EntryType, Id, Skater } from './types';
 export const entryHeading: Record<EntryType, string> = {
   solo: 'Skater',
   duo: 'Skaters',
+  couples: 'Skaters',
   team: 'Team',
   single: 'Skater',
   pairs: 'Skaters',
@@ -13,14 +14,15 @@ export const entryHeading: Record<EntryType, string> = {
 export const entryNoun: Record<EntryType, [string, string]> = {
   solo: ['skater', 'skaters'],
   duo: ['duo', 'duos'],
+  couples: ['couple', 'couples'],
   team: ['team', 'teams'],
   single: ['skater', 'skaters'],
   pairs: ['pair', 'pairs'],
 };
 
-/** Skaters per entry: 1 (solo, single), 2 (duo, pairs), or undefined for a team (any number). */
+/** Skaters per entry: 1 (solo, single), 2 (duo, couples, pairs), or undefined for a team (any number). */
 export function skatersPerEntry(type: EntryType): 1 | 2 | undefined {
-  return type === 'team' ? undefined : type === 'duo' || type === 'pairs' ? 2 : 1;
+  return type === 'team' ? undefined : type === 'duo' || type === 'couples' || type === 'pairs' ? 2 : 1;
 }
 
 export function entryName(entry: Entry, skaters: Map<Id, Skater>): string {

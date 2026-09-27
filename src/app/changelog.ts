@@ -13,6 +13,7 @@ export const CHANGELOG: Release[] = [
     changes: [
       'Run Figures & Free events for singles and pairs: up to four compulsory figures (each on the left, the right or unspecified), and a short and/or long programme with A and B marks.',
       'Figures & Free events are scored by the CIPA rules for figures and free skating, with factors for each part that you can change per event (by default the long programme counts three times the short).',
+      'Dance events can now be for couples, as well as solos, duos and teams.',
       'The table of victories, in the Results tab and the results with marks PDF, now shows each tied entry’s separate majority victories (S.M.V.) and total B scores when those rules were used to resolve its tie.',
     ],
   },

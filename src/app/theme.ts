@@ -74,6 +74,7 @@ export const theme = createTheme({
 export const entryTypeColor = {
   solo: 'podium',
   duo: 'grape',
+  couples: 'pink',
   team: 'orange',
   single: 'podium',
   pairs: 'grape',

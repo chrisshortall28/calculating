@@ -21,8 +21,8 @@ export interface Dance {
   name: string;
 }
 
-/** Dance events are skated by solos, duos or teams; figures & free events by singles or pairs. */
-export type EntryType = 'solo' | 'duo' | 'team' | 'single' | 'pairs';
+/** Dance events are skated by solos, duos, couples or teams; figures & free events by singles or pairs. */
+export type EntryType = 'solo' | 'duo' | 'couples' | 'team' | 'single' | 'pairs';
 /** Dance: compulsory dances + free dance. Figures: compulsory figures + short/long programmes. */
 export type EventDiscipline = 'dance' | 'figures';
 export type EventStatus = 'setup' | 'scoring' | 'final';

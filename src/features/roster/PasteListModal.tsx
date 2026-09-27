@@ -9,6 +9,7 @@ const rowKey = (r: PastedRow) => [r.teamName, ...[...r.names].sort()].join('|').
 const examples: Record<EntryType, string> = {
   solo: 'Jane Smith, Riverside RSC\nAmy Jones, Riverside RSC\nLucy Brown',
   duo: 'Jane Smith & Tom Smith, Riverside RSC\nAmy Jones & Ben Jones',
+  couples: 'Jane Smith & Tom Smith, Riverside RSC\nAmy Jones & Ben Jones',
   team: 'Riverside Stars, Riverside RSC\nCity Flyers',
   single: 'Jane Smith, Riverside RSC\nAmy Jones, Riverside RSC\nLucy Brown',
   pairs: 'Jane Smith & Tom Smith, Riverside RSC\nAmy Jones & Ben Jones',

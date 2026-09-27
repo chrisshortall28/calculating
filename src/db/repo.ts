@@ -287,6 +287,7 @@ export async function clearMarks(eventId: Id) {
 export const entryTypeLabel: Record<EntryType, string> = {
   solo: 'Solo',
   duo: 'Duo',
+  couples: 'Couples',
   team: 'Team',
   single: 'Single',
   pairs: 'Pairs',

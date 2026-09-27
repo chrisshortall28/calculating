@@ -39,3 +39,11 @@ describe('parsePastedList', () => {
     expect(parsePastedList(', Riverside', 'solo')[0]!.error).toBeTruthy();
   });
 });
+
+describe('couples', () => {
+  it('needs two skaters per line, like duos', () => {
+    const [ok, bad] = parsePastedList('Ann Lee & Bob Ray, Club\nCat Day', 'couples');
+    expect(ok).toMatchObject({ names: ['Ann Lee', 'Bob Ray'], club: 'Club', error: undefined });
+    expect(bad!.error).toMatch(/two skaters/);
+  });
+});

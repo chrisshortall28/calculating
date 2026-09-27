@@ -41,7 +41,7 @@ const fileSchema = z.object({
       competitionId: z.string(),
       name: z.string(),
       order: z.number(),
-      entryType: z.enum(['solo', 'duo', 'team', 'single', 'pairs']),
+      entryType: z.enum(['solo', 'duo', 'couples', 'team', 'single', 'pairs']),
       compulsoryDanceIds: z.array(z.string()).max(MAX_COMPULSORY_DANCES),
       hasFreeDance: z.boolean(),
       discipline: z.enum(['dance', 'figures']).default('dance'),

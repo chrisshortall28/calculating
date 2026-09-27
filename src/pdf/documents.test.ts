@@ -67,6 +67,7 @@ describe('resultsPages', () => {
     for (const [entryType, heading] of [
       ['solo', 'Skater'],
       ['duo', 'Skaters'],
+      ['couples', 'Skaters'],
       ['team', 'Team'],
     ] as const) {
       const d = sampleEvent();
