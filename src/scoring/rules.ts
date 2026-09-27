@@ -115,3 +115,21 @@ export function explainJudgeTie(t: JudgeTie, name: (id: Id) => string, judge: (i
     return `${start}${equalText}: ${name(t.winner)} takes that judge’s victory on the ${decider.label} B mark (${fmtTenths(decider.marks[0])} v ${fmtTenths(decider.marks[1])}).`;
   return `${start}${equalText}: half a victory each.`;
 }
+
+/**
+ * The total B marks each entry was compared on under rule 7B, in the order applied (e.g. the long,
+ * then the short programme). Entries no 7B step compared are absent.
+ */
+export function bTotalsUsed(steps: PlacementStep[]): Map<Id, { label: string; value: number }[]> {
+  const totals = new Map<Id, { label: string; value: number }[]>();
+  for (const step of steps)
+    for (const a of step.trail) {
+      if (a.rule !== '7B') continue;
+      for (const { entryId, value } of a.values) {
+        const list = totals.get(entryId) ?? [];
+        if (!list.some((t) => t.label === a.label)) list.push({ label: a.label ?? '', value });
+        totals.set(entryId, list);
+      }
+    }
+  return totals;
+}

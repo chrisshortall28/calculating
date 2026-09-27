@@ -21,7 +21,14 @@ import type { CompEvent, Competition } from '../../domain/types';
 import { formatTenths } from '../../marks/parseMark';
 import { printJudgeSheets, printResults } from '../../pdf/actions';
 import { officialsLine } from '../../pdf/documents';
-import { explainJudgeTie, formatSum, formatVictories, type EventResult } from '../../scoring';
+import {
+  bTotalsUsed,
+  explainJudgeTie,
+  formatRuleValue,
+  formatSum,
+  formatVictories,
+  type EventResult,
+} from '../../scoring';
 import { markKey, useEventResult } from '../scoring/useEventResult';
 import { RuleBadge, TieExplanations } from './PlacementRule';
 
@@ -264,6 +271,7 @@ function VictoriesTable({
   const rowOf = new Map(result.overall.map((o) => [o.entryId, o]));
   const judgeCount = event.judgeIds.length;
   const factors = factorSummary(event);
+  const bTotals = bTotalsUsed(result.steps);
   return (
     <Stack>
       <Text size="sm" c="dimmed">
@@ -291,6 +299,12 @@ function VictoriesTable({
               ))}
               <Table.Th ta="center" title="Majority victories">
                 MV
+              </Table.Th>
+              <Table.Th
+                ta="center"
+                title="Total B scores: the B marks totalled under rule 7B to resolve a tie"
+              >
+                Total B scores
               </Table.Th>
               <Table.Th ta="center" title="Total victories">
                 TV
@@ -329,6 +343,18 @@ function VictoriesTable({
                   })}
                   <Table.Td ta="center" fw={600}>
                     {formatVictories(o.majorityVictories)}
+                  </Table.Td>
+                  <Table.Td
+                    ta="center"
+                    title={bTotals
+                      .get(e)
+                      ?.map((b) => `${b.label} ${formatRuleValue('7B', b.value)}`)
+                      .join(', ')}
+                  >
+                    {bTotals
+                      .get(e)
+                      ?.map((b) => formatRuleValue('7B', b.value))
+                      .join(' / ')}
                   </Table.Td>
                   <Table.Td ta="center">{formatVictories(o.totalVictories)}</Table.Td>
                   <Table.Td ta="center" fw={700}>

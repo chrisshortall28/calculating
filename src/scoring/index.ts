@@ -13,6 +13,7 @@ import type {
 
 export * from './types';
 export {
+  bTotalsUsed,
   RULES,
   ruleLabel,
   ruleName,

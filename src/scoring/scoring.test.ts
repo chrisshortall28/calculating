@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SegmentKey } from '../domain/types';
 import {
+  bTotalsUsed,
   calculateEvent,
   explainJudgeTie,
   explainStep,
@@ -526,6 +527,16 @@ describe('figures & free events', () => {
       '7B Long programme B marks: A 10.0, B 10.0 — still tied.',
       '7B Short programme B marks: A 10.0, B 11.0 — B takes 1st.',
     ]);
+    expect(Object.fromEntries(bTotalsUsed(r.steps))).toEqual({
+      a: [
+        { label: 'long programme', value: 100 },
+        { label: 'short programme', value: 100 },
+      ],
+      b: [
+        { label: 'long programme', value: 100 },
+        { label: 'short programme', value: 110 },
+      ],
+    });
   });
 
   it('figures with free skating: no 7B, and 7A totals the factored sums', () => {
@@ -582,5 +593,21 @@ describe('figures & free events', () => {
   it('ignores tie-break marks whose part is not being scored (standing so far)', () => {
     const r = calculateEvent(input(['a'], 1, [SP], { 'sp:A': [[5]], 'sp:B': [[5]] }, LONG_THEN_SHORT));
     expect(r.tieBreakMarks).toEqual([{ key: 'sp:B', label: 'short programme' }]);
+  });
+});
+
+describe('total B scores', () => {
+  it('are absent when no 7B step was needed', () => {
+    const r = calculateEvent(
+      bySums(
+        ['a', 'b'],
+        [
+          [5, 4],
+          [5, 4],
+          [5, 4],
+        ],
+      ),
+    );
+    expect(bTotalsUsed(r.steps).size).toBe(0);
   });
 });
