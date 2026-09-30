@@ -23,7 +23,7 @@ export interface Dance {
 
 /** Dance events are skated by solos, duos, couples or teams; figures & free events by singles or pairs. */
 export type EntryType = 'solo' | 'duo' | 'couples' | 'team' | 'single' | 'pairs';
-/** Dance: compulsory dances + free dance. Figures: compulsory figures + short/long programmes. */
+/** Dance: compulsory dances + free dance. Figures: compulsory figures + short/free programmes. */
 export type EventDiscipline = 'dance' | 'figures';
 export type EventStatus = 'setup' | 'scoring' | 'final';
 
@@ -39,7 +39,7 @@ export interface CompEvent {
   discipline: EventDiscipline;
   /** Ordered compulsory figures (0–4; figures events only). */
   figures: EventFigure[];
-  /** Short and long programmes (A + B marks; figures events only). */
+  /** Short and free programmes (A + B marks; figures events only). */
   hasShort: boolean;
   hasLong: boolean;
   /** Factors applied to each part's marks in a judge's sum, in hundredths (300 = ×3). */
@@ -94,7 +94,7 @@ export interface Judge {
  *  - `cd:<danceId>` compulsory dance (one mark)
  *  - `fd:A` / `fd:B` free dance A and B marks
  *  - `cf:<figureId>:<L|R|->` compulsory figure (one mark)
- *  - `sp:A` / `sp:B`, `lp:A` / `lp:B` short and long programme A and B marks
+ *  - `sp:A` / `sp:B`, `lp:A` / `lp:B` short and free programme A and B marks
  */
 export type SegmentKey =
   `cd:${string}` | 'fd:A' | 'fd:B' | `cf:${string}` | 'sp:A' | 'sp:B' | 'lp:A' | 'lp:B';

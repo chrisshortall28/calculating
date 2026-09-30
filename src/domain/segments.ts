@@ -4,7 +4,7 @@ import type { CompEvent, Dance, EventFigure, Factors, Id, SegmentKey } from './t
 
 /**
  * A scored part of an event: a compulsory dance or figure (one mark), or the free dance, short
- * programme or long programme (A + B marks).
+ * programme or free programme (A + B marks).
  */
 export interface Segment {
   id: string; // `cd:<danceId>`, `fd`, `cf:<figureId>:<side>`, `sp` or `lp`
@@ -39,7 +39,7 @@ export function eventFigureLabel(figure: EventFigure): string {
 }
 
 /**
- * Default factors for a figures event: the long programme counts three times the short when both
+ * Default factors for a figures event: the free programme counts three times the short when both
  * are skated, and with both programmes the figures count once per figure (2 figures: 2:1:3).
  */
 export function defaultFactors(figureCount: number, hasShort: boolean, hasLong: boolean): Factors {
@@ -72,7 +72,7 @@ export function eventSegments(event: CompEvent, dances: Map<Id, Dance> | Dance[]
       segments.push({
         id: 'lp',
         kind: 'free',
-        name: 'Long Programme',
+        name: 'Free Programme',
         markKeys: ['lp:A', 'lp:B'],
         factor: event.factors.long,
       });
@@ -113,14 +113,14 @@ export function eventMarkKeys(event: EventParts): Set<SegmentKey> {
 
 /**
  * The B marks that break ties, in the order the CIPA manual applies them (rules 3 and 7B):
- * dance events use the free dance B mark; singles and pairs the long, then the short programme B
+ * dance events use the free dance B mark; singles and pairs the free, then the short programme B
  * mark. Figures (alone or combined with free skating) have none: equal sums are half a victory each.
  */
 export function eventTieBreakMarks(event: EventParts): TieBreakMark[] {
   if (event.discipline === 'figures') {
     if (event.figures.length > 0) return [];
     return [
-      ...(event.hasLong ? [{ key: 'lp:B' as const, label: 'long programme' }] : []),
+      ...(event.hasLong ? [{ key: 'lp:B' as const, label: 'free programme' }] : []),
       ...(event.hasShort ? [{ key: 'sp:B' as const, label: 'short programme' }] : []),
     ];
   }
@@ -134,7 +134,7 @@ export function markKeyLabel(key: SegmentKey): string {
 }
 
 /**
- * The factors a figures event's sums use, e.g. "figures ×2, short programme ×1, long programme ×3";
+ * The factors a figures event's sums use, e.g. "figures ×2, short programme ×1, free programme ×3";
  * blank when there is nothing to multiply (dance events, or a single kind of part).
  */
 export function factorSummary(
@@ -144,7 +144,7 @@ export function factorSummary(
   const parts: [string, number][] = [
     ...(event.figures.length > 0 ? [['figures', event.factors.figures] as [string, number]] : []),
     ...(event.hasShort ? [['short programme', event.factors.short] as [string, number]] : []),
-    ...(event.hasLong ? [['long programme', event.factors.long] as [string, number]] : []),
+    ...(event.hasLong ? [['free programme', event.factors.long] as [string, number]] : []),
   ];
   if (parts.length < 2) return '';
   return parts.map(([name, f]) => `${name} ×${f / 100}`).join(', ');

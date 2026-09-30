@@ -85,7 +85,7 @@ export function ScoringTab({ event }: { event: CompEvent }) {
     return (
       <Alert color="orange">
         {event.discipline === 'figures'
-          ? 'This event has no figures or programmes. Add compulsory figures or a short or long programme in Setup.'
+          ? 'This event has no figures or programmes. Add compulsory figures or a short or free programme in Setup.'
           : 'This event has no dances. Add compulsory dances or a free dance in Setup.'}
       </Alert>
     );

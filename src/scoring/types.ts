@@ -12,7 +12,7 @@ export interface ScoringSegment {
 /** A B (artistic impression) mark that splits equal sums (rule 3) and breaks ties (rule 7B). */
 export interface TieBreakMark {
   key: SegmentKey;
-  /** e.g. "free dance", "long programme" */
+  /** e.g. "free dance", "free programme" */
   label: string;
 }
 
@@ -41,7 +41,7 @@ export interface ScoringInput {
  * CIPA placement rules, numbered as in the CIPA scoring manual:
  *  - `5`  most majority victories (no tie)
  *  - `6A` / `6B` separate victories between the tied entries (3 or more tied / 2 tied)
- *  - `7B` total B (artistic impression) marks of one part (free dance, long or short programme)
+ *  - `7B` total B (artistic impression) marks of one part (free dance, free or short programme)
  *  - `7C` total victories
  *  - `7A` total sums
  *  - `8`  still equal: the place is shared
@@ -53,7 +53,7 @@ export interface RuleApplication {
   rule: Exclude<PlacementRule, '5' | '8'>;
   /** Each contender's value under the rule; the highest value stays in contention. */
   values: { entryId: Id; value: number }[];
-  /** 7B: whose B marks were totalled, e.g. "long programme". */
+  /** 7B: whose B marks were totalled, e.g. "free programme". */
   label?: string;
 }
 

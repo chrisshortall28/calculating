@@ -33,10 +33,10 @@ export const majorityOf = (judgeCount: number) => Math.floor(judgeCount / 2) + 1
  * Scores an event by the CIPA system (majority rule):
  *  1. Each judge's SUM for an entry is the total of all their marks for it (every dance or figure;
  *     A+B for the free dance and programmes), each part multiplied by its factor (dance: none;
- *     singles and pairs: e.g. long programme ×3).
+ *     singles and pairs: e.g. free programme ×3).
  *  2. Rule 2/3 — every pair of entries is compared judge by judge: the higher sum wins that judge's
  *     victory. Equal sums go to the higher B mark (`tieBreakMarks` in order: the free dance; the
- *     long, then short programme; none with figures); still equal, half a victory each.
+ *     free, then short programme; none with figures); still equal, half a victory each.
  *  3. Rule 4 — an entry that wins more than half the judges' victories against another has a
  *     majority victory over it (exactly half: half a majority victory each).
  *  4. Rule 5 — most majority victories takes the highest open place; entries tied on majority

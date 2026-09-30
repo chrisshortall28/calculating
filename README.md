@@ -97,17 +97,17 @@ Implemented in `src/scoring/index.ts` from the 2009 CIPA scoring manual (pages 4
 the worked examples C-1 to D-4 are on pages 24–31). Rule numbers are the manual's.
 
 Events are **Dance** (compulsory dances and a free dance) or **Figures & Free** (up to four
-compulsory figures, and a short and/or long programme). Compulsory dances and figures get one mark
+compulsory figures, and a short and/or free programme). Compulsory dances and figures get one mark
 per judge; the free dance and each programme an A and a B (artistic impression) mark.
 
 1. **Sums**: each judge's sum for an entry is the total of all their marks in the event (A+B for
    the free dance and programmes). Dance marks are not factored. In a Figures & Free event each
    part's marks are multiplied by the event's factor for it (to two decimal places, editable in
-   Setup). The defaults: short and long programmes 1 : 3; figures with both programmes one per
+   Setup). The defaults: short and free programmes 1 : 3; figures with both programmes one per
    figure, 1, 3 (two figures: 2 : 1 : 3); any other mix, all 1.
 2. **Table of victories** (rules 2–3): every pair of entries is compared judge by judge; the
    higher sum wins that judge's victory. Equal sums go to the higher B mark — the free dance's;
-   in singles and pairs free skating, the long then the short programme's; with figures, none —
+   in singles and pairs free skating, the free then the short programme's; with figures, none —
    and are still equal, half a victory each.
 3. **Majority victories** (rule 4): an entry has a majority victory over another when more than
    half the judges' victories are its own (exactly half: half a majority victory each).
@@ -116,7 +116,7 @@ per judge; the free dance and each programme an A and a B (artistic impression) 
    - **6A / 6B** separate victories — judges' victories between the tied entries only
      (6A three or more tied, 6B two tied)
    - **7B** total of all judges' B marks: the free dance's (dance events with a free dance); the
-     long, then the short programme's (Figures & Free events without figures, one 7B step each).
+     free, then the short programme's (Figures & Free events without figures, one 7B step each).
      Events with figures skip 7B.
    - **7C** total victories against every entry
    - **7A** total sums (factored)

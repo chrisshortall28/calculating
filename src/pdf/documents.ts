@@ -283,7 +283,7 @@ function ruleKey(d: EventData): Content[] {
   if (used.length === 0) return [];
   const order: PlacementRule[] = ['6A', '6B', '7B', '7C', '7A', '8'];
   used.sort((a, b) => order.indexOf(a) - order.indexOf(b));
-  // 7B names whose B marks: "free dance B marks", "long programme, then short programme B marks".
+  // 7B names whose B marks: "free dance B marks", "free programme, then short programme B marks".
   const keyName = (r: PlacementRule) =>
     r === '7B'
       ? `${d.result.tieBreakMarks.map((t) => t.label).join(', then ')} B marks`
