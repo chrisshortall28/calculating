@@ -305,8 +305,9 @@ function VictoriesTable({
   entryIds: string[];
   label: (id: string) => string;
 }) {
-  // The v cell under the pointer: its two entries' judge rankings are highlighted.
-  const [hover, setHover] = useState<{ a: string; b: string } | null>(null);
+  // The v or MV cell under the pointer: the judge rankings of the entry and the entries it is
+  // being compared with are highlighted.
+  const [hover, setHover] = useState<{ focus: string; others: string[]; showFocus: boolean } | null>(null);
   const rowOf = new Map(result.overall.map((o) => [o.entryId, o]));
   const judgeCount = event.judgeIds.length;
   const factors = factorSummary(event);
@@ -366,16 +367,23 @@ function VictoriesTable({
                   <Table.Td c="dimmed">{i + 1}</Table.Td>
                   <Table.Td>{label(e)}</Table.Td>
                   {o.judgeRanks.map((r, ji) => {
-                    const involved = hover && (hover.a === e || hover.b === e);
-                    const opponent = hover && (hover.a === e ? hover.b : hover.a);
-                    // The better (lower) ranking of the pair wins that judge's victory.
-                    const wins = involved && r < rowOf.get(opponent!)!.judgeRanks[ji]!;
+                    const isFocus = hover?.focus === e;
+                    const isOther = !!hover?.others.includes(e);
+                    // The chosen entry is highlighted only when it is one of the comparison (a v cell, or an
+                    // MV with half a victory), not when it simply beat the highlighted entries.
+                    const lit = isOther || (isFocus && hover.showFocus);
+                    // The better (lower) ranking wins that judge's victory: bold the chosen entry's
+                    // ranking if it beats all the others', and an opponent's if it beats the chosen entry's.
+                    const rankOf = (id: string) => rowOf.get(id)!.judgeRanks[ji]!;
+                    const wins = isFocus
+                      ? hover.others.every((x) => r < rankOf(x))
+                      : isOther && r < rankOf(hover!.focus);
                     return (
                       <Table.Td
                         key={ji}
                         ta="center"
-                        bg={involved ? RANK_HIGHLIGHT_BG : undefined}
-                        fw={wins ? 700 : undefined}
+                        bg={lit ? RANK_HIGHLIGHT_BG : undefined}
+                        fw={lit && wins ? 700 : undefined}
                       >
                         {r}
                       </Table.Td>
@@ -391,7 +399,7 @@ function VictoriesTable({
                         ta="center"
                         bg={VICTORY_BG}
                         style={VICTORY_BORDER}
-                        onMouseEnter={() => other !== e && setHover({ a: e, b: other })}
+                        onMouseEnter={() => other !== e && setHover({ focus: e, others: [other], showFocus: true })}
                         onMouseLeave={() => setHover(null)}
                         fw={majority ? 700 : undefined}
                         c={majority ? undefined : 'dimmed'}
@@ -400,7 +408,19 @@ function VictoriesTable({
                       </Table.Td>
                     );
                   })}
-                  <Table.Td ta="center" fw={600}>
+                  <Table.Td
+                    ta="center"
+                    fw={600}
+                    onMouseEnter={() => {
+                      // The entries beaten by a majority, and those level with it (half a majority victory).
+                      const others = entryIds.filter((x) => {
+                        const v = result.victories.get(e)!.get(x);
+                        return v !== undefined && v * 2 >= judgeCount;
+                      });
+                      setHover(others.length ? { focus: e, others, showFocus: o.majorityVictories % 1 !== 0 } : null);
+                    }}
+                    onMouseLeave={() => setHover(null)}
+                  >
                     {formatVictories(o.majorityVictories)}
                   </Table.Td>
                   <Table.Td ta="center">{smv.has(e) ? formatVictories(smv.get(e)!) : ''}</Table.Td>
