@@ -24,8 +24,6 @@ and results PDFs ready to print.
   rule (6A/6B, 7B, 7C, 7A, 8) are applied automatically.
 - 🔍 **Every tie explained.** The Results tab shows which rule decided each tied place and the
   numbers behind it, with a link to the CIPA manual.
-- 📊 **Standings while you score.** A live provisional standing updates as each dance is
-  completed.
 - 🖨️ **PDFs in one click.** Judge sheets; standard, with-marks and guest-judges results; and a
   programme for spectators with a club-coloured cover and each event's skating order.
 - 📴 **Works offline.** Podium is an installable app that runs entirely in the browser, with no
@@ -38,7 +36,7 @@ and results PDFs ready to print.
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/images/scoring.png" alt="Scoring tab: the mark-entry grid with a provisional standing"><br><sub><b>Scoring:</b> key in marks, with the standing so far alongside.</sub></td>
+    <td width="50%"><img src="docs/images/scoring.png" alt="Scoring tab: the mark-entry grid "><br><sub><b>Scoring:</b> key in marks.</sub></td>
     <td width="50%"><img src="docs/images/results.png" alt="Results tab: final placings with the tie-break rules used"><br><sub><b>Results:</b> placings, with each tie-break rule explained.</sub></td>
   </tr>
   <tr>
@@ -133,8 +131,6 @@ per judge; the free dance and each programme an A and a B (artistic impression) 
 - **Results PDFs**: a short Rule column with a key to the rules used; "Results with marks" adds
   the tie explanations and the table of victories. The guest judges PDF shows placings only (tied
   places marked `=`), with no rules.
-- **Scoring tab**: the event result once every mark is in, and before that the standing from the
-  dances or figures completed so far (CIPA has no per-dance places).
 
 Rule 6B is shown as "6B (S.M.V.)" (separate majority victories); labels come from `ruleLabel()`
 in `src/scoring/rules.ts`.

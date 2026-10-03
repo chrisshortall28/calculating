@@ -17,26 +17,19 @@ export function useEventResult(event: CompEvent) {
     const segments = eventSegments(event, dances ?? []);
     const markMap = indexMarks(marks);
     const entryIds = (entries ?? []).map((e) => e.id);
-    const input = {
+    const result = calculateEvent({
       entryIds,
       judgeIds: event.judgeIds,
       segments,
       mark: (k: SegmentKey, j: string, e: string) => markMap.get(markKey(k, j, e)),
       tieBreakMarks: eventTieBreakMarks(event),
-    };
-    const result = calculateEvent(input);
-    // Until every part is in: the standing from the parts completed so far.
-    const done = segments.filter((_, i) => result.segments[i]!.complete);
-    const standing =
-      !result.complete && done.length > 0 ? calculateEvent({ ...input, segments: done }) : undefined;
+    });
     return {
       loading: !dances || !entries || !marks,
       segments,
       entries: entries ?? [],
       markMap,
       result,
-      standing,
-      standingAfter: done.map((s) => s.name),
     };
   }, [event, dances, entries, marks]);
 }

@@ -4,7 +4,6 @@ import {
   Box,
   Button,
   Card,
-  Flex,
   Group,
   Kbd,
   Progress,
@@ -24,7 +23,6 @@ import { byId, entryClub, entryHeading, entryName } from '../../domain/entryName
 import type { CompEvent } from '../../domain/types';
 import type { Direction } from '../../marks/gridNav';
 import { MarkGrid } from '../../marks/MarkGrid';
-import { ProvisionalPanel } from './ProvisionalPanel';
 import { markKey, useEventResult } from './useEventResult';
 
 /** More dances than this switch with a dropdown rather than side-by-side tabs. */
@@ -38,7 +36,7 @@ const fitWidth = {
 const checkIcon = <IconCheck size={14} color="var(--mantine-color-green-6)" />;
 
 export function ScoringTab({ event }: { event: CompEvent }) {
-  const { loading, segments, entries, markMap, result, standing, standingAfter } = useEventResult(event);
+  const { loading, segments, entries, markMap, result } = useEventResult(event);
   const skaters = byId(useSkaters(event.competitionId));
   const judgeMap = byId(useJudges(event.competitionId));
   const [direction, setDirection] = useLocalStorage<Direction>({
@@ -222,45 +220,33 @@ export function ScoringTab({ event }: { event: CompEvent }) {
         )}
       </Group>
 
-      {/* The mark grid's card fits its columns (scrolling once it runs out of room) and the side panel
-          takes the rest; the panel stacks below on small screens. */}
-      <Flex gap="lg" direction={{ base: 'column', lg: 'row' }} align={{ base: 'stretch', lg: 'flex-start' }}>
-        <Box flex="0 1 auto" miw={0}>
-          <Card withBorder p="sm">
-            <MarkGrid
-              focusKey={`${event.id}:${segment.id}`}
-              rows={rows}
-              entryLabel={entryHeading[event.entryType]}
-              judges={judges}
-              markKeys={segment.markKeys}
-              getValue={(k, j, e) => markMap.get(markKey(k, j, e))}
-              onCommit={(segmentKey, judgeId, entryId, tenths) => {
-                void setMark({ eventId: event.id, segmentKey, judgeId, entryId }, tenths);
-                if (event.status === 'setup') void setEventStatus(event.id, 'scoring');
-              }}
-              ordinals={ordinals}
-              direction={direction}
-              autoAdvance={autoAdvance}
-              readOnly={locked}
-            />
-            {/* Wraps to the grid's width rather than widening the page to fit on one line. */}
-            <Text size="xs" c="dimmed" mt="sm" style={{ contain: 'inline-size' }}>
-              Type <Kbd>57</Kbd> for 5.7, <Kbd>100</Kbd> for 10.0, <Kbd>5</Kbd> <Kbd>Enter</Kbd> for 5.0.{' '}
-              <Kbd>Enter</Kbd>/<Kbd>Tab</Kbd> next · <Kbd>Shift</Kbd> back · arrows move · <Kbd>Esc</Kbd> undo
-              edit · empty + <Kbd>Enter</Kbd> keeps the value; delete the text to clear a mark.
-            </Text>
-          </Card>
-        </Box>
-        <Box flex="1 0 380px">
-          <ProvisionalPanel
-            result={result}
-            standing={standing}
-            standingAfter={standingAfter}
+      {/* The mark grid's card fits its columns, scrolling once it runs out of room. */}
+      <Box w="fit-content" maw="100%" miw={0}>
+        <Card withBorder p="sm">
+          <MarkGrid
+            focusKey={`${event.id}:${segment.id}`}
             rows={rows}
             entryLabel={entryHeading[event.entryType]}
+            judges={judges}
+            markKeys={segment.markKeys}
+            getValue={(k, j, e) => markMap.get(markKey(k, j, e))}
+            onCommit={(segmentKey, judgeId, entryId, tenths) => {
+              void setMark({ eventId: event.id, segmentKey, judgeId, entryId }, tenths);
+              if (event.status === 'setup') void setEventStatus(event.id, 'scoring');
+            }}
+            ordinals={ordinals}
+            direction={direction}
+            autoAdvance={autoAdvance}
+            readOnly={locked}
           />
-        </Box>
-      </Flex>
+          {/* Wraps to the grid's width rather than widening the page to fit on one line. */}
+          <Text size="xs" c="dimmed" mt="sm" style={{ contain: 'inline-size' }}>
+            Type <Kbd>57</Kbd> for 5.7, <Kbd>100</Kbd> for 10.0, <Kbd>5</Kbd> <Kbd>Enter</Kbd> for 5.0.{' '}
+            <Kbd>Enter</Kbd>/<Kbd>Tab</Kbd> next · <Kbd>Shift</Kbd> back · arrows move · <Kbd>Esc</Kbd> undo
+            edit · empty + <Kbd>Enter</Kbd> keeps the value; delete the text to clear a mark.
+          </Text>
+        </Card>
+      </Box>
     </Stack>
   );
 }
