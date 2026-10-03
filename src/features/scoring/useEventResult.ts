@@ -17,19 +17,23 @@ export function useEventResult(event: CompEvent) {
     const segments = eventSegments(event, dances ?? []);
     const markMap = indexMarks(marks);
     const entryIds = (entries ?? []).map((e) => e.id);
-    const result = calculateEvent({
+    const input = {
       entryIds,
       judgeIds: event.judgeIds,
       segments,
       mark: (k: SegmentKey, j: string, e: string) => markMap.get(markKey(k, j, e)),
       tieBreakMarks: eventTieBreakMarks(event),
-    });
+    };
+    const result = calculateEvent(input);
+    // Each part scored on its own (for display only: CIPA places the whole event, not each part).
+    const segmentResults = segments.map((seg) => calculateEvent({ ...input, segments: [seg] }));
     return {
       loading: !dances || !entries || !marks,
       segments,
       entries: entries ?? [],
       markMap,
       result,
+      segmentResults,
     };
   }, [event, dances, entries, marks]);
 }
