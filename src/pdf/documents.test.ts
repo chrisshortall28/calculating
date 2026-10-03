@@ -133,7 +133,7 @@ describe('resultsPages', () => {
     expect(guest).not.toContain('CIPA tie-break rules: 8 tie');
     const detail = texts(resultsPages([tied], 'withMarks'));
     expect(detail).toEqual(
-      expect.arrayContaining(['How ties were resolved', 'Summary of scores and table of victories']),
+      expect.arrayContaining(['How ties were resolved', 'Table of Victories']),
     );
     expect(texts(resultsPages([sampleEvent()], 'standard'))).not.toContain('CIPA tie-break rules: 8 tie');
   });

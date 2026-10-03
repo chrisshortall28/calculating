@@ -181,7 +181,7 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
         {result.complete && (
           <Accordion.Item value="victories">
             <Accordion.Control>
-              <Text fw={600}>Summary of scores and table of victories</Text>
+              <Text fw={600}>Table of Victories</Text>
             </Accordion.Control>
             <Accordion.Panel>
               <VictoriesTable
@@ -280,8 +280,16 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
   );
 }
 
+/** Subtle tint for the “v” columns, and dark grey for an entry's own (empty) cell. */
+const VICTORY_BG = 'var(--mantine-color-blue-light)';
+const VICTORY_SELF_BG = 'light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-4))';
+/** A clearer border than the table's default, so the grid reads against the tint. */
+const VICTORY_BORDER = {
+  border: '1px solid light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2))',
+};
+
 /**
- * The CIPA master chart: each judge's sum per entry (summary of scores), then the judges'
+ * The CIPA master chart: each judge's ranking per entry, then the judges'
  * victories of each entry over every other (table of victories).
  */
 function VictoriesTable({
@@ -303,8 +311,8 @@ function VictoriesTable({
   return (
     <Stack>
       <Text size="sm" c="dimmed">
-        A judge’s sum is the total of all their marks for an entry
-        {factors && `, each part multiplied by its factor (${factors})`}. Each “v” column shows how many
+        Each judge column shows that judge’s ranking of the entry, by their sum: the total of all their marks
+        for an entry{factors && `, each part multiplied by its factor (${factors})`}. Each “v” column shows how many
         judges gave the entry a higher sum than that opponent; <b>bold</b> is a majority victory (more than
         half the judges, {result.majority} of {judgeCount}).
       </Text>
@@ -319,9 +327,8 @@ function VictoriesTable({
                   J{ji + 1}
                 </Table.Th>
               ))}
-              <Table.Th ta="center">Total sums</Table.Th>
               {entryIds.map((e, i) => (
-                <Table.Th key={e} ta="center" title={label(e)}>
+                <Table.Th key={e} ta="center" title={label(e)} bg={VICTORY_BG} style={VICTORY_BORDER}>
                   v{i + 1}
                 </Table.Th>
               ))}
@@ -343,6 +350,7 @@ function VictoriesTable({
               <Table.Th ta="center" title="Total victories">
                 TV
               </Table.Th>
+              <Table.Th ta="center">Total sums</Table.Th>
               <Table.Th ta="center">Place</Table.Th>
             </Table.Tr>
           </Table.Thead>
@@ -353,25 +361,25 @@ function VictoriesTable({
                 <Table.Tr key={e}>
                   <Table.Td c="dimmed">{i + 1}</Table.Td>
                   <Table.Td>{label(e)}</Table.Td>
-                  {o.judgeSums.map((s, ji) => (
+                  {o.judgeRanks.map((r, ji) => (
                     <Table.Td key={ji} ta="center">
-                      {formatSum(s)}
+                      {r}
                     </Table.Td>
                   ))}
-                  <Table.Td ta="center" fw={600}>
-                    {formatSum(o.totalSum)}
-                  </Table.Td>
                   {entryIds.map((other) => {
                     const v = result.victories.get(e)!.get(other);
-                    const majority = v !== undefined && v * 2 > judgeCount;
+                    if (v === undefined) return <Table.Td key={other} bg={VICTORY_SELF_BG} style={VICTORY_BORDER} />;
+                    const majority = v * 2 > judgeCount;
                     return (
                       <Table.Td
                         key={other}
                         ta="center"
+                        bg={VICTORY_BG}
+                        style={VICTORY_BORDER}
                         fw={majority ? 700 : undefined}
                         c={majority ? undefined : 'dimmed'}
                       >
-                        {v === undefined ? '—' : formatVictories(v)}
+                        {formatVictories(v)}
                       </Table.Td>
                     );
                   })}
@@ -392,6 +400,9 @@ function VictoriesTable({
                       .join(' / ')}
                   </Table.Td>
                   <Table.Td ta="center">{formatVictories(o.totalVictories)}</Table.Td>
+                  <Table.Td ta="center" fw={600}>
+                    {formatSum(o.totalSum)}
+                  </Table.Td>
                   <Table.Td ta="center" fw={700}>
                     {o.place}
                     {o.tied && '='}
