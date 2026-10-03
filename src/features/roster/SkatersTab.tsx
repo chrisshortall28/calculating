@@ -85,13 +85,13 @@ export function SkatersTab() {
               label="Skater name"
               value={name}
               onChange={(e) => setName(e.currentTarget.value)}
-              style={{ flex: 2 }}
+              style={{ flex: '2 1 200px' }}
             />
             <TextInput
               label="Club"
               value={club}
               onChange={(e) => setClub(e.currentTarget.value)}
-              style={{ flex: 1 }}
+              style={{ flex: '1 1 140px' }}
             />
             <Button type="submit">Add skater</Button>
             <Button
