@@ -1,5 +1,6 @@
 import { Badge, Button, Card, Group, Modal, RingProgress, Stack, Text, Tooltip } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { useDisclosure, useLocalStorage } from '@mantine/hooks';
+import { notifications } from '@mantine/notifications';
 import { IconListNumbers, IconPlayerPlayFilled, IconPlus, IconUsers } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useNavigate, useParams } from 'react-router';
@@ -22,6 +23,10 @@ export function EventsTab() {
   const events = useEvents(compId);
   const dances = byId(useDances(compId));
   const [opened, { open, close }] = useDisclosure(false);
+  const [keepAdding, setKeepAdding] = useLocalStorage({
+    key: 'podium.keepAddingEvents',
+    defaultValue: false,
+  });
 
   const counts = useLiveQuery(async () => {
     const eventIds = await db.events.where({ competitionId: compId }).primaryKeys();
@@ -152,8 +157,13 @@ export function EventsTab() {
         <EventDetailsForm
           competitionId={compId}
           submitLabel="Create event"
+          keepAdding={{ checked: keepAdding, onChange: setKeepAdding }}
           onSubmit={async (values) => {
             const id = await createEvent(compId, values);
+            if (keepAdding) {
+              notifications.show({ color: 'green', message: `Added “${values.name}”` });
+              return;
+            }
             close();
             navigate(`/c/${compId}/e/${id}/entries`);
           }}

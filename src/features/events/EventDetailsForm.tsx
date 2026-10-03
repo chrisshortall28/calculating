@@ -13,7 +13,7 @@ import {
   TextInput,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import type { ComponentProps } from 'react';
+import { useRef, type ComponentProps } from 'react';
 import { IconPlus, IconX } from '@tabler/icons-react';
 import { useDances } from '../../app/data';
 import { FIGURES } from '../../domain/figures';
@@ -99,12 +99,19 @@ export function EventDetailsForm({
   initial,
   submitLabel,
   onSubmit,
+  keepAdding,
 }: {
   competitionId: string;
   initial?: EventDetails;
   submitLabel: string;
   onSubmit: (values: EventDetails) => unknown;
+  /**
+   * Shows a switch beside the submit button. While it is on, the form stays open after a submit with
+   * the same settings and a blank name, ready for the next event.
+   */
+  keepAdding?: { checked: boolean; onChange: (checked: boolean) => void };
 }) {
+  const nameRef = useRef<HTMLInputElement>(null);
   const dances = useDances(competitionId);
   const form = useForm<FormValues>({
     initialValues: initial ? { ...initial, factors: toDecimal(initial.factors) } : emptyEvent,
@@ -165,6 +172,11 @@ export function EventDetailsForm({
           }
         : { ...base, figures: [], hasShort: false, hasLong: false, factors: { ...NO_FACTORS } },
     );
+    if (keepAdding?.checked) {
+      form.setFieldValue('name', '');
+      form.clearErrors();
+      nameRef.current?.focus();
+    }
   });
 
   return (
@@ -176,6 +188,7 @@ export function EventDetailsForm({
             v.discipline === 'figures' ? 'e.g. Novice Ladies Figures & Free' : 'e.g. Novice Ladies Solo Dance'
           }
           data-autofocus
+          ref={nameRef}
           required
           {...form.getInputProps('name')}
         />
@@ -337,6 +350,13 @@ export function EventDetailsForm({
           </>
         )}
         <Group justify="flex-end">
+          {keepAdding && (
+            <Switch
+              label="Keep adding events"
+              checked={keepAdding.checked}
+              onChange={(e) => keepAdding.onChange(e.currentTarget.checked)}
+            />
+          )}
           <Button type="submit">{submitLabel}</Button>
         </Group>
       </Stack>
