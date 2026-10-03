@@ -308,8 +308,8 @@ function VictoriesTable({
   // The v or MV cell under the pointer: the judge rankings of the entry and the entries it is
   // being compared with are highlighted.
   const [hover, setHover] = useState<{ focus: string; others: string[]; showFocus: boolean } | null>(null);
-  // The entry whose TV cell is under the pointer: the non-zero v cells in its row are highlighted.
-  const [tvRow, setTvRow] = useState<string | null>(null);
+  // The TV or S.M.V. cell under the pointer: the v cells in that row which add up to it are highlighted.
+  const [sumRow, setSumRow] = useState<{ row: string; cols: Set<string> } | null>(null);
   const rowOf = new Map(result.overall.map((o) => [o.entryId, o]));
   const judgeCount = event.judgeIds.length;
   const factors = factorSummary(event);
@@ -400,7 +400,7 @@ function VictoriesTable({
                       <Table.Td
                         key={other}
                         ta="center"
-                        bg={tvRow === e && v > 0 ? RANK_HIGHLIGHT_BG : VICTORY_BG}
+                        bg={sumRow?.row === e && sumRow.cols.has(other) ? RANK_HIGHLIGHT_BG : VICTORY_BG}
                         style={VICTORY_BORDER}
                         onMouseEnter={() =>
                           other !== e && setHover({ focus: e, others: [other], showFocus: true })
@@ -430,7 +430,20 @@ function VictoriesTable({
                   >
                     {formatVictories(o.majorityVictories)}
                   </Table.Td>
-                  <Table.Td ta="center">{smv.has(e) ? formatVictories(smv.get(e)!) : ''}</Table.Td>
+                  <Table.Td
+                    ta="center"
+                    onMouseEnter={() => {
+                      // Rule 6 sums the entry's victories over the entries it was tied with.
+                      const tied = result.steps.find(
+                        (s) =>
+                          s.entryIds.includes(e) && s.trail.some((a) => a.rule === '6A' || a.rule === '6B'),
+                      )?.contenders;
+                      if (tied) setSumRow({ row: e, cols: new Set(tied.filter((x) => x !== e)) });
+                    }}
+                    onMouseLeave={() => setSumRow(null)}
+                  >
+                    {smv.has(e) ? formatVictories(smv.get(e)!) : ''}
+                  </Table.Td>
                   <Table.Td
                     ta="center"
                     title={bTotals
@@ -443,7 +456,16 @@ function VictoriesTable({
                       ?.map((b) => formatRuleValue('7B', b.value))
                       .join(' / ')}
                   </Table.Td>
-                  <Table.Td ta="center" onMouseEnter={() => setTvRow(e)} onMouseLeave={() => setTvRow(null)}>
+                  <Table.Td
+                    ta="center"
+                    onMouseEnter={() =>
+                      setSumRow({
+                        row: e,
+                        cols: new Set(entryIds.filter((x) => (result.victories.get(e)!.get(x) ?? 0) > 0)),
+                      })
+                    }
+                    onMouseLeave={() => setSumRow(null)}
+                  >
                     {formatVictories(o.totalVictories)}
                   </Table.Td>
                   <Table.Td ta="center" fw={600}>
