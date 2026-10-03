@@ -283,7 +283,7 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
 /** Subtle tint for the “v” columns, and dark grey for an entry's own (empty) cell. */
 const VICTORY_BG = 'var(--mantine-color-blue-light)';
 const VICTORY_SELF_BG = 'light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-4))';
-/** Highlight for the judge rankings of the two entries in the hovered v cell. */
+/** Highlight for the hovered v cell's judge rankings, and for the v cells a hovered TV sums. */
 const RANK_HIGHLIGHT_BG = 'var(--mantine-color-yellow-light)';
 /** A clearer border than the table's default, so the grid reads against the tint. */
 const VICTORY_BORDER = {
@@ -308,6 +308,8 @@ function VictoriesTable({
   // The v or MV cell under the pointer: the judge rankings of the entry and the entries it is
   // being compared with are highlighted.
   const [hover, setHover] = useState<{ focus: string; others: string[]; showFocus: boolean } | null>(null);
+  // The entry whose TV cell is under the pointer: the non-zero v cells in its row are highlighted.
+  const [tvRow, setTvRow] = useState<string | null>(null);
   const rowOf = new Map(result.overall.map((o) => [o.entryId, o]));
   const judgeCount = event.judgeIds.length;
   const factors = factorSummary(event);
@@ -317,9 +319,9 @@ function VictoriesTable({
     <Stack>
       <Text size="sm" c="dimmed">
         Each judge column shows that judge’s ranking of the entry, by their sum: the total of all their marks
-        for an entry{factors && `, each part multiplied by its factor (${factors})`}. Each “v” column shows how many
-        judges gave the entry a higher sum than that opponent; <b>bold</b> is a majority victory (more than
-        half the judges, {result.majority} of {judgeCount}).
+        for an entry{factors && `, each part multiplied by its factor (${factors})`}. Each “v” column shows
+        how many judges gave the entry a higher sum than that opponent; <b>bold</b> is a majority victory
+        (more than half the judges, {result.majority} of {judgeCount}).
       </Text>
       <Table.ScrollContainer minWidth={400}>
         <Table withColumnBorders fz="sm">
@@ -391,15 +393,18 @@ function VictoriesTable({
                   })}
                   {entryIds.map((other) => {
                     const v = result.victories.get(e)!.get(other);
-                    if (v === undefined) return <Table.Td key={other} bg={VICTORY_SELF_BG} style={VICTORY_BORDER} />;
+                    if (v === undefined)
+                      return <Table.Td key={other} bg={VICTORY_SELF_BG} style={VICTORY_BORDER} />;
                     const majority = v * 2 > judgeCount;
                     return (
                       <Table.Td
                         key={other}
                         ta="center"
-                        bg={VICTORY_BG}
+                        bg={tvRow === e && v > 0 ? RANK_HIGHLIGHT_BG : VICTORY_BG}
                         style={VICTORY_BORDER}
-                        onMouseEnter={() => other !== e && setHover({ focus: e, others: [other], showFocus: true })}
+                        onMouseEnter={() =>
+                          other !== e && setHover({ focus: e, others: [other], showFocus: true })
+                        }
                         onMouseLeave={() => setHover(null)}
                         fw={majority ? 700 : undefined}
                         c={majority ? undefined : 'dimmed'}
@@ -417,7 +422,9 @@ function VictoriesTable({
                         const v = result.victories.get(e)!.get(x);
                         return v !== undefined && v * 2 >= judgeCount;
                       });
-                      setHover(others.length ? { focus: e, others, showFocus: o.majorityVictories % 1 !== 0 } : null);
+                      setHover(
+                        others.length ? { focus: e, others, showFocus: o.majorityVictories % 1 !== 0 } : null,
+                      );
                     }}
                     onMouseLeave={() => setHover(null)}
                   >
@@ -436,7 +443,9 @@ function VictoriesTable({
                       ?.map((b) => formatRuleValue('7B', b.value))
                       .join(' / ')}
                   </Table.Td>
-                  <Table.Td ta="center">{formatVictories(o.totalVictories)}</Table.Td>
+                  <Table.Td ta="center" onMouseEnter={() => setTvRow(e)} onMouseLeave={() => setTvRow(null)}>
+                    {formatVictories(o.totalVictories)}
+                  </Table.Td>
                   <Table.Td ta="center" fw={600}>
                     {formatSum(o.totalSum)}
                   </Table.Td>
