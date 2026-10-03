@@ -1,13 +1,21 @@
 import { ActionIcon, Button, Card, Group, Modal, Paper, Stack, Text, Tooltip } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
-import { IconArrowDown, IconArrowUp, IconClipboardList, IconPencil, IconTrash } from '@tabler/icons-react';
+import {
+  IconArrowDown,
+  IconArrowUp,
+  IconClipboardList,
+  IconDice5,
+  IconPencil,
+  IconTrash,
+} from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { useEntries, useSkaters } from '../../app/data';
 import { SortableList } from '../../app/SortableList';
 import { db } from '../../db/db';
 import { addEntry, deleteEntry, entryTypeLabel, reorderEntries, updateEntry } from '../../db/repo';
+import { shuffled } from '../../domain/shuffle';
 import { byId, entryClub, entryMembers, entryName } from '../../domain/entryName';
 import type { PastedRow } from '../../domain/pasteList';
 import type { CompEvent, Entry } from '../../domain/types';
@@ -104,14 +112,25 @@ export function EntriesTab({ event }: { event: CompEvent }) {
         <Text size="sm" c="dimmed">
           {entries.length} entries in start order · drag, or use the arrows, to reorder
         </Text>
-        <Button
-          variant="light"
-          size="xs"
-          leftSection={<IconClipboardList size={16} />}
-          onClick={() => setPasting(true)}
-        >
-          Paste list
-        </Button>
+        <Group gap="xs">
+          <Button
+            variant="light"
+            size="xs"
+            leftSection={<IconDice5 size={16} />}
+            disabled={entries.length < 2}
+            onClick={() => void reorderEntries(shuffled(entries.map((e) => e.id)))}
+          >
+            Randomise order
+          </Button>
+          <Button
+            variant="light"
+            size="xs"
+            leftSection={<IconClipboardList size={16} />}
+            onClick={() => setPasting(true)}
+          >
+            Paste list
+          </Button>
+        </Group>
       </Group>
 
       <div>
