@@ -29,7 +29,8 @@ and results PDFs ready to print.
 - 📴 **Works offline.** Podium is an installable app that runs entirely in the browser, with no
   server and no sign-in. Your data stays on your device.
 - 💾 **Backup and transfer.** Export a competition to a `.pod` file and import it on another
-  device (older `.json` backups still import).
+  device (older `.json` backups still import). [`examples/podium-demo.pod`](examples/podium-demo.pod) is a
+  fictional competition to try: it has events with no ties and events showing each tie-break rule.
 - 🌙 **Light and dark themes**, and competitions can take their club colours.
 
 ## 📸 Screenshots
