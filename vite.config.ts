@@ -18,6 +18,9 @@ export default defineConfig({
         theme_color: '#0b1d3a',
         background_color: '#ffffff',
         display: 'standalone',
+        // Lets the installed app open .pod files (double-click / "Open with"); see OpenedFileHandler.
+        file_handlers: [{ action: '.', accept: { 'application/json': ['.pod'] } }],
+        launch_handler: { client_mode: 'focus-existing' },
         // PNGs generated from favicon.svg by `npm run generate-icons` (pwa-assets.config.ts).
         icons: [
           { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },

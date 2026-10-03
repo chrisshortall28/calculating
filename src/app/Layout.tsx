@@ -11,6 +11,7 @@ import {
 } from '@mantine/core';
 import { IconHelpCircle, IconMoon, IconSun, IconTrophyFilled } from '@tabler/icons-react';
 import { Link, Outlet } from 'react-router';
+import { OpenedFileHandler } from './OpenedFileHandler';
 import classes from './Layout.module.css';
 import { PwaUpdatePrompt } from './PwaUpdatePrompt';
 import { StatusBar } from './StatusBar';
@@ -72,6 +73,7 @@ export function Layout() {
         </Group>
       </AppShell.Header>
       <AppShell.Main>
+        <OpenedFileHandler />
         <Outlet />
         <PwaUpdatePrompt />
       </AppShell.Main>
