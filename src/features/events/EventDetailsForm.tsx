@@ -173,7 +173,7 @@ export function EventDetailsForm({
         <TextInput
           label="Event name"
           placeholder={
-            v.discipline === 'figures' ? 'e.g. Novice Girls Figures & Free' : 'e.g. Novice Girls Solo Dance'
+            v.discipline === 'figures' ? 'e.g. Novice Ladies Figures & Free' : 'e.g. Novice Ladies Solo Dance'
           }
           data-autofocus
           required
