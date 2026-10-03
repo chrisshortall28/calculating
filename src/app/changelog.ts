@@ -8,6 +8,20 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.2.0',
+    date: '2026-10-03',
+    changes: [
+      'Open .pod files straight from your computer: double-click one, or choose Open with Podium, in the installed app (Chrome or Edge). If the competition is already on the device, you can replace it or add a copy.',
+      '.pod files now show the Podium icon.',
+      'In Figures & Free events, the “Long” programme is now called the “Free” programme.',
+      'Each part’s table in the Results tab now lists the entries in that part’s placing order, with a Place column and each judge’s rank.',
+      'Add a Randomise order button to an event’s skater list.',
+      'Add several events in a row: turn on “Keep adding events” in the New event dialog to stay in it after each one is created.',
+      'Event cards now fit on phone screens, and the skater and judge lists show that their names and clubs can be edited.',
+      'The Scoring tab no longer shows the event result panel; the Results tab has the placings.',
+    ],
+  },
+  {
     version: '1.1.0',
     date: '2026-09-27',
     changes: [
