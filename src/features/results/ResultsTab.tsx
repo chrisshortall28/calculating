@@ -283,6 +283,8 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
 /** Subtle tint for the “v” columns, and dark grey for an entry's own (empty) cell. */
 const VICTORY_BG = 'var(--mantine-color-blue-light)';
 const VICTORY_SELF_BG = 'light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-4))';
+/** Highlight for the judge rankings of the two entries in the hovered v cell. */
+const RANK_HIGHLIGHT_BG = 'var(--mantine-color-yellow-light)';
 /** A clearer border than the table's default, so the grid reads against the tint. */
 const VICTORY_BORDER = {
   border: '1px solid light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2))',
@@ -303,6 +305,8 @@ function VictoriesTable({
   entryIds: string[];
   label: (id: string) => string;
 }) {
+  // The v cell under the pointer: its two entries' judge rankings are highlighted.
+  const [hover, setHover] = useState<{ a: string; b: string } | null>(null);
   const rowOf = new Map(result.overall.map((o) => [o.entryId, o]));
   const judgeCount = event.judgeIds.length;
   const factors = factorSummary(event);
@@ -361,11 +365,22 @@ function VictoriesTable({
                 <Table.Tr key={e}>
                   <Table.Td c="dimmed">{i + 1}</Table.Td>
                   <Table.Td>{label(e)}</Table.Td>
-                  {o.judgeRanks.map((r, ji) => (
-                    <Table.Td key={ji} ta="center">
-                      {r}
-                    </Table.Td>
-                  ))}
+                  {o.judgeRanks.map((r, ji) => {
+                    const involved = hover && (hover.a === e || hover.b === e);
+                    const opponent = hover && (hover.a === e ? hover.b : hover.a);
+                    // The better (lower) ranking of the pair wins that judge's victory.
+                    const wins = involved && r < rowOf.get(opponent!)!.judgeRanks[ji]!;
+                    return (
+                      <Table.Td
+                        key={ji}
+                        ta="center"
+                        bg={involved ? RANK_HIGHLIGHT_BG : undefined}
+                        fw={wins ? 700 : undefined}
+                      >
+                        {r}
+                      </Table.Td>
+                    );
+                  })}
                   {entryIds.map((other) => {
                     const v = result.victories.get(e)!.get(other);
                     if (v === undefined) return <Table.Td key={other} bg={VICTORY_SELF_BG} style={VICTORY_BORDER} />;
@@ -376,6 +391,8 @@ function VictoriesTable({
                         ta="center"
                         bg={VICTORY_BG}
                         style={VICTORY_BORDER}
+                        onMouseEnter={() => other !== e && setHover({ a: e, b: other })}
+                        onMouseLeave={() => setHover(null)}
                         fw={majority ? 700 : undefined}
                         c={majority ? undefined : 'dimmed'}
                       >
