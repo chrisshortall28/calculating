@@ -63,13 +63,13 @@ describe('figures & free segments', () => {
       ['cf:8:R', '8. Threes FO - BI (Right)', 300],
       ['cf:1:-', '1. Eights FO - FO', 300],
       ['sp', 'Short Programme', 100],
-      ['lp', 'Long Programme', 300],
+      ['lp', 'Free Programme', 300],
     ]);
     expect([...eventMarkKeys(ev)]).toEqual(['cf:8:L', 'cf:8:R', 'cf:1:-', 'sp:A', 'sp:B', 'lp:A', 'lp:B']);
     expect(['sp:A', 'lp:B', 'cf:8:L'].map((k) => markKeyLabel(k as never))).toEqual(['A', 'B', '']);
   });
 
-  it('breaks ties on B marks only without figures: long, then short', () => {
+  it('breaks ties on B marks only without figures: free, then short', () => {
     expect(eventTieBreakMarks(ev)).toEqual([]);
     expect(eventTieBreakMarks({ ...ev, figures: [] }).map((t) => t.key)).toEqual(['lp:B', 'sp:B']);
     expect(eventTieBreakMarks({ ...ev, figures: [], hasLong: false }).map((t) => t.key)).toEqual(['sp:B']);

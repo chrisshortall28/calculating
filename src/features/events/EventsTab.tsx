@@ -1,5 +1,6 @@
 import { Badge, Button, Card, Group, Modal, RingProgress, Stack, Text, Tooltip } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { useDisclosure, useLocalStorage } from '@mantine/hooks';
+import { notifications } from '@mantine/notifications';
 import { IconListNumbers, IconPlayerPlayFilled, IconPlus, IconUsers } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useNavigate, useParams } from 'react-router';
@@ -22,6 +23,10 @@ export function EventsTab() {
   const events = useEvents(compId);
   const dances = byId(useDances(compId));
   const [opened, { open, close }] = useDisclosure(false);
+  const [keepAdding, setKeepAdding] = useLocalStorage({
+    key: 'podium.keepAddingEvents',
+    defaultValue: false,
+  });
 
   const counts = useLiveQuery(async () => {
     const eventIds = await db.events.where({ competitionId: compId }).primaryKeys();
@@ -78,8 +83,8 @@ export function EventsTab() {
             return (
               <div className={classes.row} style={{ ['--stripe-color' as string]: stripe }}>
                 {handle}
-                <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
-                  <Group gap="xs" wrap="nowrap">
+                <Stack gap={4} className={classes.info}>
+                  <Group gap="xs">
                     <Text component={Link} to={`/c/${compId}/e/${ev.id}`} className={classes.name} truncate>
                       {ev.name}
                     </Text>
@@ -108,41 +113,40 @@ export function EventsTab() {
                     )}
                   </Group>
                 </Stack>
-                <Tooltip label="Entries">
-                  <div className={classes.stat} style={{ width: 60 }}>
-                    <IconUsers size={18} />
-                    <span className={classes.statValue}>{entryCount}</span>
-                  </div>
-                </Tooltip>
-                <Tooltip label={ev.judgeIds.length ? 'Judges' : 'No judges assigned yet'}>
-                  <div
-                    className={`${classes.stat} ${ev.judgeIds.length ? '' : classes.warn}`}
-                    style={{ width: 60 }}
+                <div className={classes.actions}>
+                  <Tooltip label="Entries">
+                    <div className={classes.stat}>
+                      <IconUsers size={18} />
+                      <span className={classes.statValue}>{entryCount}</span>
+                    </div>
+                  </Tooltip>
+                  <Tooltip label={ev.judgeIds.length ? 'Judges' : 'No judges assigned yet'}>
+                    <div className={`${classes.stat} ${ev.judgeIds.length ? '' : classes.warn}`}>
+                      <IconJudge size={18} />
+                      <span className={classes.statValue}>{ev.judgeIds.length}</span>
+                    </div>
+                  </Tooltip>
+                  <Tooltip label={`${markCount} of ${expected} marks entered`}>
+                    <RingProgress
+                      size={60}
+                      thickness={5}
+                      roundCaps
+                      sections={[{ value: pct, color: pct === 100 ? 'teal' : 'podium' }]}
+                      label={
+                        <Text ta="center" size="xs" fw={700}>
+                          {pct}%
+                        </Text>
+                      }
+                    />
+                  </Tooltip>
+                  <Button
+                    size="sm"
+                    leftSection={<IconPlayerPlayFilled size={14} />}
+                    onClick={() => navigate(`/c/${compId}/e/${ev.id}/scoring`)}
                   >
-                    <IconJudge size={18} />
-                    <span className={classes.statValue}>{ev.judgeIds.length}</span>
-                  </div>
-                </Tooltip>
-                <Tooltip label={`${markCount} of ${expected} marks entered`}>
-                  <RingProgress
-                    size={60}
-                    thickness={5}
-                    roundCaps
-                    sections={[{ value: pct, color: pct === 100 ? 'teal' : 'podium' }]}
-                    label={
-                      <Text ta="center" size="xs" fw={700}>
-                        {pct}%
-                      </Text>
-                    }
-                  />
-                </Tooltip>
-                <Button
-                  size="sm"
-                  leftSection={<IconPlayerPlayFilled size={14} />}
-                  onClick={() => navigate(`/c/${compId}/e/${ev.id}/scoring`)}
-                >
-                  View
-                </Button>
+                    View
+                  </Button>
+                </div>
               </div>
             );
           }}
@@ -153,8 +157,13 @@ export function EventsTab() {
         <EventDetailsForm
           competitionId={compId}
           submitLabel="Create event"
+          keepAdding={{ checked: keepAdding, onChange: setKeepAdding }}
           onSubmit={async (values) => {
             const id = await createEvent(compId, values);
+            if (keepAdding) {
+              notifications.show({ color: 'green', message: `Added “${values.name}”` });
+              return;
+            }
             close();
             navigate(`/c/${compId}/e/${id}/entries`);
           }}

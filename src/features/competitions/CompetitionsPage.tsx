@@ -1,68 +1,17 @@
-import { Anchor, Button, Card, Container, FileButton, Group, SimpleGrid, Stack, Text } from '@mantine/core';
-import { modals } from '@mantine/modals';
-import { notifications } from '@mantine/notifications';
+import { Anchor, Button, Card, Container, FileButton, SimpleGrid, Text } from '@mantine/core';
 import { IconFileImport, IconTrophy } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import { PageHero } from '../../app/PageHero';
 import { db } from '../../db/db';
-import { importCompetition, parseCompetitionFile, type CompetitionFile } from '../../io/competitionFile';
+import { useImportCompetitionFile } from './useImportCompetitionFile';
 import { CompetitionCard, NewCompetitionButton, useCompetitionStats } from './CompetitionCard';
 
 export function CompetitionsPage() {
-  const navigate = useNavigate();
   const competitions = useLiveQuery(() => db.competitions.orderBy('updatedAt').reverse().toArray());
   const stats = useCompetitionStats();
 
-  const doImport = async (file: CompetitionFile, mode: 'copy' | 'replace') => {
-    const id = await importCompetition(file, mode);
-    notifications.show({ color: 'green', message: `Imported “${file.competition.name}”` });
-    navigate(`/c/${id}`);
-  };
-
-  const onFile = async (f: File | null) => {
-    if (!f) return;
-    let file: CompetitionFile;
-    try {
-      file = parseCompetitionFile(JSON.parse(await f.text()));
-    } catch (e) {
-      notifications.show({ color: 'red', title: 'Import failed', message: (e as Error).message });
-      return;
-    }
-    const existing = await db.competitions.get(file.competition.id);
-    if (!existing) return doImport(file, 'replace');
-    modals.open({
-      title: 'Competition already exists',
-      children: (
-        <Stack>
-          <Text size="sm">
-            “{existing.name}” is already on this device. Replace it with the file’s contents, or import the
-            file as a separate copy?
-          </Text>
-          <Group justify="flex-end">
-            <Button
-              variant="default"
-              onClick={() => {
-                modals.closeAll();
-                void doImport(file, 'copy');
-              }}
-            >
-              Import as copy
-            </Button>
-            <Button
-              color="red"
-              onClick={() => {
-                modals.closeAll();
-                void doImport(file, 'replace');
-              }}
-            >
-              Replace
-            </Button>
-          </Group>
-        </Stack>
-      ),
-    });
-  };
+  const onFile = useImportCompetitionFile();
 
   return (
     <>

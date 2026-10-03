@@ -215,7 +215,7 @@ describe('figures & free events', () => {
       factors: defaultFactors(figures.length, true, true),
     };
     const segments = eventSegments(event, []);
-    // j0 favours e0 on the short programme A mark; j1 favours e1; the long B totals are equal and
+    // j0 favours e0 on the short programme A mark; j1 favours e1; the free B totals are equal and
     // the short B totals favour e1.
     const mark = (k: SegmentKey, j: string, e: string) =>
       k === 'sp:A'
@@ -249,9 +249,9 @@ describe('figures & free events', () => {
     expect(t).toEqual(
       expect.arrayContaining([
         'Short Programme',
-        'Long Programme',
-        'CIPA tie-break rules: 7B long programme, then short programme B marks',
-        'Each judge’s sum multiplies each part’s marks by its factor: short programme ×1, long programme ×3.',
+        'Free Programme',
+        'CIPA tie-break rules: 7B free programme, then short programme B marks',
+        'Each judge’s sum multiplies each part’s marks by its factor: short programme ×1, free programme ×3.',
         '7B Short programme B marks: Amy 10.0, Beth 11.0 — Beth takes 1st.',
         'S.M.V.',
         'Total B scores',

@@ -13,7 +13,7 @@ import {
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconFileText, IconPrinter } from '@tabler/icons-react';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useJudges, useSkaters } from '../../app/data';
 import { byId, entryClub, entryHeading, entryName } from '../../domain/entryName';
 import { factorSummary, markKeyLabel } from '../../domain/segments';
@@ -34,7 +34,7 @@ import { markKey, useEventResult } from '../scoring/useEventResult';
 import { RuleBadge, TieExplanations } from './PlacementRule';
 
 export function ResultsTab({ event }: { event: CompEvent; competition: Competition }) {
-  const { loading, segments, entries, markMap, result } = useEventResult(event);
+  const { loading, segments, entries, markMap, result, segmentResults } = useEventResult(event);
   const skaters = byId(useSkaters(event.competitionId));
   const judgeMap = byId(useJudges(event.competitionId));
   const [busy, setBusy] = useState<string | null>(null);
@@ -195,7 +195,10 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
         )}
         {segments.map((seg, si) => {
           const sr = result.segments[si]!;
-          const multiKey = seg.markKeys.length > 1;
+          // This part scored on its own, so its places and ranks can be shown (once its marks are in).
+          const own = segmentResults[si]!;
+          const placeOf = new Map(own.overall.map((o) => [o.entryId, o]));
+          const rows = sr.complete ? own.overall.map((o) => entryMap.get(o.entryId)!) : entries;
           return (
             <Accordion.Item key={seg.id} value={seg.id}>
               <Accordion.Control>
@@ -207,44 +210,67 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
                 </Group>
               </Accordion.Control>
               <Accordion.Panel>
-                <Table withColumnBorders fz="sm">
-                  <Table.Thead>
-                    <Table.Tr>
-                      <Table.Th>{entryHeading[event.entryType]}</Table.Th>
-                      {event.judgeIds.map((j, ji) => (
-                        <Table.Th key={j} ta="center" colSpan={seg.markKeys.length}>
-                          J{ji + 1} {judgeMap.get(j)?.name}
-                        </Table.Th>
-                      ))}
-                    </Table.Tr>
-                    {multiKey && (
+                <Table.ScrollContainer minWidth={400}>
+                  <Table withColumnBorders fz="sm">
+                    <Table.Thead>
                       <Table.Tr>
-                        <Table.Th />
-                        {event.judgeIds.map((j) =>
-                          seg.markKeys.map((k) => (
-                            <Table.Th key={j + k} ta="center">
-                              {markKeyLabel(k)}
-                            </Table.Th>
-                          )),
-                        )}
+                        {sr.complete && <Table.Th rowSpan={2}>Place</Table.Th>}
+                        <Table.Th rowSpan={2}>{entryHeading[event.entryType]}</Table.Th>
+                        {event.judgeIds.map((j, ji) => (
+                          <Table.Th key={j} ta="center" colSpan={seg.markKeys.length + (sr.complete ? 1 : 0)}>
+                            J{ji + 1} {judgeMap.get(j)?.name}
+                          </Table.Th>
+                        ))}
                       </Table.Tr>
-                    )}
-                  </Table.Thead>
-                  <Table.Tbody>
-                    {entries.map((e) => (
-                      <Table.Tr key={e.id}>
-                        <Table.Td>{entryName(e, skaters)}</Table.Td>
-                        {event.judgeIds.map((j) =>
-                          seg.markKeys.map((k) => (
-                            <Table.Td key={j + k} ta="center">
-                              {formatTenths(markMap.get(markKey(k, j, e.id))) || '—'}
-                            </Table.Td>
-                          )),
-                        )}
+                      <Table.Tr>
+                        {event.judgeIds.map((j) => (
+                          <Fragment key={j}>
+                            {seg.markKeys.map((k) => (
+                              <Table.Th key={k} ta="center">
+                                {seg.markKeys.length > 1 ? markKeyLabel(k) : 'Mark'}
+                              </Table.Th>
+                            ))}
+                            {sr.complete && (
+                              <Table.Th ta="center" title="This judge’s ranking for this part, by sum">
+                                Rank
+                              </Table.Th>
+                            )}
+                          </Fragment>
+                        ))}
                       </Table.Tr>
-                    ))}
-                  </Table.Tbody>
-                </Table>
+                    </Table.Thead>
+                    <Table.Tbody>
+                      {rows.map((e) => {
+                        const o = placeOf.get(e.id);
+                        return (
+                          <Table.Tr key={e.id}>
+                            {sr.complete && (
+                              <Table.Td fw={700}>
+                                {o?.place}
+                                {o?.tied && '='}
+                              </Table.Td>
+                            )}
+                            <Table.Td>{entryName(e, skaters)}</Table.Td>
+                            {event.judgeIds.map((j) => (
+                              <Fragment key={j}>
+                                {seg.markKeys.map((k) => (
+                                  <Table.Td key={k} ta="center">
+                                    {formatTenths(markMap.get(markKey(k, j, e.id))) || '—'}
+                                  </Table.Td>
+                                ))}
+                                {sr.complete && (
+                                  <Table.Td ta="center" c="dimmed">
+                                    {sr.ordinals.get(j)?.get(e.id)}
+                                  </Table.Td>
+                                )}
+                              </Fragment>
+                            ))}
+                          </Table.Tr>
+                        );
+                      })}
+                    </Table.Tbody>
+                  </Table>
+                </Table.ScrollContainer>
               </Accordion.Panel>
             </Accordion.Item>
           );

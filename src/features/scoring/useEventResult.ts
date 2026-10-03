@@ -25,18 +25,15 @@ export function useEventResult(event: CompEvent) {
       tieBreakMarks: eventTieBreakMarks(event),
     };
     const result = calculateEvent(input);
-    // Until every part is in: the standing from the parts completed so far.
-    const done = segments.filter((_, i) => result.segments[i]!.complete);
-    const standing =
-      !result.complete && done.length > 0 ? calculateEvent({ ...input, segments: done }) : undefined;
+    // Each part scored on its own (for display only: CIPA places the whole event, not each part).
+    const segmentResults = segments.map((seg) => calculateEvent({ ...input, segments: [seg] }));
     return {
       loading: !dances || !entries || !marks,
       segments,
       entries: entries ?? [],
       markMap,
       result,
-      standing,
-      standingAfter: done.map((s) => s.name),
+      segmentResults,
     };
   }, [event, dances, entries, marks]);
 }

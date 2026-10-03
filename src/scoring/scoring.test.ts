@@ -413,9 +413,9 @@ describe('figures & free events', () => {
     markKeys: ['cf:1:-'],
   };
   const SP: ScoringSegment = { id: 'sp', name: 'Short Programme', kind: 'free', markKeys: ['sp:A', 'sp:B'] };
-  const LP: ScoringSegment = { id: 'lp', name: 'Long Programme', kind: 'free', markKeys: ['lp:A', 'lp:B'] };
+  const LP: ScoringSegment = { id: 'lp', name: 'Free Programme', kind: 'free', markKeys: ['lp:A', 'lp:B'] };
   const LONG_THEN_SHORT: TieBreakMark[] = [
-    { key: 'lp:B', label: 'long programme' },
+    { key: 'lp:B', label: 'free programme' },
     { key: 'sp:B', label: 'short programme' },
   ];
   const names = (id: string) => id.toUpperCase();
@@ -442,8 +442,8 @@ describe('figures & free events', () => {
     expect(placed(r)).toEqual({ a: '1:8', b: '1:8' });
   });
 
-  it('short and long: the long programme counts three times the short', () => {
-    // a is better on raw marks (28 v 24), b once the long programme is ×3 (48 v 52).
+  it('short and long: the free programme counts three times the short', () => {
+    // a is better on raw marks (28 v 24), b once the free programme is ×3 (48 v 52).
     const same = (a: number, b: number) => [
       [a, b],
       [a, b],
@@ -462,7 +462,7 @@ describe('figures & free events', () => {
     expect(placed(r)).toEqual({ b: '1:5', a: '2:5' });
   });
 
-  it('rule 3: equal sums go to the long, then the short programme B mark', () => {
+  it('rule 3: equal sums go to the free, then the short programme B mark', () => {
     const r = calculateEvent(
       input(
         ['a', 'b'],
@@ -479,17 +479,17 @@ describe('figures & free events', () => {
       sum: 40200,
       winner: 'a',
       bMarks: [
-        { label: 'long programme', marks: [50, 50] },
+        { label: 'free programme', marks: [50, 50] },
         { label: 'short programme', marks: [52, 50] },
       ],
     });
     expect(explainJudgeTie(tie, names, () => 'J1')).toBe(
-      'J1 gave A and B equal sums (40.2) and equal long programme B marks: A takes that judge’s victory on the short programme B mark (5.2 v 5.0).',
+      'J1 gave A and B equal sums (40.2) and equal free programme B marks: A takes that judge’s victory on the short programme B mark (5.2 v 5.0).',
     );
   });
 
-  it('rule 7B: the long programme B marks, then the short programme B marks', () => {
-    // j1 favours a, j2 favours b; long B totals are equal, short B totals favour b.
+  it('rule 7B: the free programme B marks, then the short programme B marks', () => {
+    // j1 favours a, j2 favours b; free B totals are equal, short B totals favour b.
     const r = calculateEvent(
       input(
         ['a', 'b'],
@@ -520,29 +520,29 @@ describe('figures & free events', () => {
     const step = r.steps[0]!;
     expect(step.trail.map((t) => [t.rule, t.label])).toEqual([
       ['6B', undefined],
-      ['7B', 'long programme'],
+      ['7B', 'free programme'],
       ['7B', 'short programme'],
     ]);
     expect(explainStep(step, names)).toEqual([
       '6B (S.M.V.) Separate victories: A 1, B 1 — still tied.',
-      '7B Long programme B marks: A 10.0, B 10.0 — still tied.',
+      '7B Free programme B marks: A 10.0, B 10.0 — still tied.',
       '7B Short programme B marks: A 10.0, B 11.0 — B takes 1st.',
     ]);
     expect(Object.fromEntries(smvUsed(r.steps))).toEqual({ a: 1, b: 1 });
     expect(Object.fromEntries(bTotalsUsed(r.steps))).toEqual({
       a: [
-        { label: 'long programme', value: 100 },
+        { label: 'free programme', value: 100 },
         { label: 'short programme', value: 100 },
       ],
       b: [
-        { label: 'long programme', value: 100 },
+        { label: 'free programme', value: 100 },
         { label: 'short programme', value: 110 },
       ],
     });
   });
 
   it('figures with free skating: no 7B, and 7A totals the factored sums', () => {
-    // a leads on raw sums (51 v 50.8); with figures ×2 and long ×3, b leads (102 v 102.4).
+    // a leads on raw sums (51 v 50.8); with figures ×2 and free ×3, b leads (102 v 102.4).
     const r = calculateEvent(
       input(
         ['a', 'b'],

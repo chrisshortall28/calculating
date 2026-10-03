@@ -25,7 +25,7 @@ export const RULES: Record<PlacementRule, { name: string; description: string }>
   '7B': {
     name: 'B marks',
     description:
-      'Highest total of all judges’ B (artistic impression) marks takes the place: the free dance’s, or the long then the short programme’s.',
+      'Highest total of all judges’ B (artistic impression) marks takes the place: the free dance’s, or the free then the short programme’s.',
   },
   '7C': {
     name: 'Total victories',
@@ -65,7 +65,7 @@ export function formatRuleValue(rule: RuleApplication['rule'], value: number): s
   return rule === '7B' ? fmtTenths(value) : rule === '7A' ? formatSum(value) : formatVictories(value);
 }
 
-/** "B marks", or "Long programme B marks" for a 7B step. */
+/** "B marks", or "Free programme B marks" for a 7B step. */
 export function ruleName(a: Pick<RuleApplication, 'rule' | 'label'>): string {
   return a.label
     ? `${a.label[0]!.toUpperCase()}${a.label.slice(1)} ${RULES[a.rule].name}`
@@ -102,7 +102,7 @@ export function explainStep(step: PlacementStep, name: (id: Id) => string): stri
 
 /**
  * Rule 3, e.g. "J2 gave Amy and Beth equal sums (15.2): Amy takes that judge’s victory on the free
- * dance B mark (7.8 v 7.6)." — or "…and equal long programme B marks, on the short programme B mark…".
+ * dance B mark (7.8 v 7.6)." — or "…and equal free programme B marks, on the short programme B mark…".
  */
 export function explainJudgeTie(t: JudgeTie, name: (id: Id) => string, judge: (id: Id) => string): string {
   const [a, b] = t.entryIds;
@@ -117,7 +117,7 @@ export function explainJudgeTie(t: JudgeTie, name: (id: Id) => string, judge: (i
 }
 
 /**
- * The total B marks each entry was compared on under rule 7B, in the order applied (e.g. the long,
+ * The total B marks each entry was compared on under rule 7B, in the order applied (e.g. the free,
  * then the short programme). Entries no 7B step compared are absent.
  */
 export function bTotalsUsed(steps: PlacementStep[]): Map<Id, { label: string; value: number }[]> {
