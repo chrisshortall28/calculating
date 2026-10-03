@@ -14,6 +14,18 @@
     transform 120ms ease;
 }
 
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Entry/judge counts, progress ring and the View button */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+}
+
 .row:hover {
   box-shadow: var(--mantine-shadow-md);
   transform: translateY(-1px);
@@ -48,6 +60,7 @@
   color: var(--mantine-color-dimmed);
   font-size: var(--mantine-font-size-sm);
   white-space: nowrap;
+  min-width: 60px;
 }
 
 .statValue {
@@ -60,4 +73,29 @@
 .warn .statValue,
 .warn {
   color: var(--mantine-color-orange-7);
+}
+
+/* Phones: the title and badges get the full row; the counts and button drop to a line below. */
+@media (max-width: 36em) {
+  .row {
+    flex-wrap: wrap;
+    padding-right: 10px;
+  }
+
+  .actions {
+    flex-basis: 100%;
+    justify-content: space-between;
+  }
+
+  .stat {
+    min-width: 0;
+  }
+
+  /* Let long names wrap instead of truncating to nothing */
+  .name {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    overflow-wrap: anywhere;
+  }
 }
