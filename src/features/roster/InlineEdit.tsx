@@ -1,7 +1,8 @@
 import { TextInput } from '@mantine/core';
 import { useEffect, useState } from 'react';
+import classes from './InlineEdit.module.css';
 
-/** A borderless text input that saves on blur / Enter and reverts on Escape. */
+/** A text input, borderless until hovered or focused, that saves on blur / Enter and reverts on Escape. */
 export function InlineEdit({
   value,
   onSave,
@@ -25,6 +26,7 @@ export function InlineEdit({
   return (
     <TextInput
       variant="unstyled"
+      classNames={{ input: classes.input }}
       size="sm"
       value={draft}
       placeholder={placeholder}
