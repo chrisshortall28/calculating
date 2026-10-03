@@ -3,6 +3,20 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import pkg from './package.json';
 
+// Lets the installed app open .pod files (double-click / "Open with"); see OpenedFileHandler. The
+// icons give .pod files Podium's icon. vite-plugin-pwa's manifest type predates file_handlers icons,
+// hence the separate (non-fresh) object.
+const fileHandlers = [
+  {
+    action: '.',
+    accept: { 'application/json': ['.pod'] },
+    icons: [
+      { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+      { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+    ],
+  },
+];
+
 export default defineConfig({
   // App version for the status bar, from package.json.
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
@@ -18,8 +32,7 @@ export default defineConfig({
         theme_color: '#0b1d3a',
         background_color: '#ffffff',
         display: 'standalone',
-        // Lets the installed app open .pod files (double-click / "Open with"); see OpenedFileHandler.
-        file_handlers: [{ action: '.', accept: { 'application/json': ['.pod'] } }],
+        file_handlers: fileHandlers,
         launch_handler: { client_mode: 'focus-existing' },
         // PNGs generated from favicon.svg by `npm run generate-icons` (pwa-assets.config.ts).
         icons: [
