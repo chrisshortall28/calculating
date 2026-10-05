@@ -20,7 +20,13 @@ function event(id: string, name: string, entryType: EntryType, skaters: string[]
     { id: 'cd:w', name: 'Glide Waltz', kind: 'compulsory' as const, markKeys: ['cd:w' as const] },
     { id: 'fd', name: 'Free Dance', kind: 'free' as const, markKeys: ['fd:A' as const, 'fd:B' as const] },
   ];
-  const rows = skaters.map((s, i) => ({ id: `${id}${i}`, name: s, club: 'Bristol RSC', members: '' }));
+  const rows = skaters.map((s, i) => ({
+    id: `${id}${i}`,
+    name: s,
+    club: 'Bristol RSC',
+    members: '',
+    skaterIds: [],
+  }));
   const judges = [{ id: 'j1', competitionId: 'c', name: 'Helen Judge' }];
   const mark = () => 50;
   return {

@@ -93,6 +93,26 @@ describe('competition file round trip', () => {
     expect(await db.competitions.count()).toBe(2);
   });
 
+  it('keeps the Combined Cup settings, with ids remapped, when importing a copy', async () => {
+    const { compId, eventId } = await seed();
+    const [skater] = await db.skaters.where({ competitionId: compId }).toArray();
+    await repo.updateCombinedCup(compId, {
+      eventRoles: { [eventId]: 'solo' },
+      entrants: [{ skaterId: skater!.id, category: 'elementary-prelim' }],
+      trio: { [skater!.id]: 2 },
+    });
+    const file = parseCompetitionFile(JSON.parse(JSON.stringify(await exportCompetition(compId))));
+    const copyId = await importCompetition(file, 'copy');
+    const copy = (await db.competitions.get(copyId))!.combinedCup!;
+    const [copyEvent] = await db.events.where({ competitionId: copyId }).toArray();
+    const copySkaters = await db.skaters.where({ competitionId: copyId }).toArray();
+    const copySkater = copySkaters.find((s) => s.name === skater!.name)!;
+    expect(copy.eventRoles).toEqual({ [copyEvent!.id]: 'solo' });
+    expect(copy.entrants).toEqual([{ skaterId: copySkater.id, category: 'elementary-prelim' }]);
+    expect(copy.trio).toEqual({ [copySkater.id]: 2 });
+    expect(copyEvent!.id).not.toBe(eventId);
+  });
+
   it('replace restores deleted data', async () => {
     const { compId, eventId } = await seed();
     const original = await exportCompetition(compId);

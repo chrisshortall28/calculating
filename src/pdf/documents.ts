@@ -30,7 +30,7 @@ const styles: TDocumentDefinitions['styles'] = {
  * Results tables in the competition's colours: header cells filled with the primary colour (with
  * readable text on it) and ruled off in the secondary colour; light rules between rows.
  */
-function clubTable(d: EventData) {
+export function clubTable(d: Pick<EventData, 'competition'>) {
   const { primary, secondary } = clubColors(d.competition);
   return {
     th: (text: string, extra: Record<string, unknown> = {}): TableCell => ({
@@ -54,7 +54,7 @@ function clubTable(d: EventData) {
   };
 }
 
-function compLine(d: EventData) {
+export function compLine(d: Pick<EventData, 'competition'>) {
   const c = d.competition;
   return [c.name, c.date && new Date(c.date).toLocaleDateString(), c.venue].filter(Boolean).join(' · ');
 }

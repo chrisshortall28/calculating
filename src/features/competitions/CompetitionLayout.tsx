@@ -11,19 +11,23 @@ import {
   IconPencil,
   IconPrinter,
   IconSettings,
+  IconTrophy,
   IconUsers,
 } from '@tabler/icons-react';
-import { Outlet, useLocation, useNavigate, useParams } from 'react-router';
+import { useEffect } from 'react';
+import { Outlet, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { IconJudge } from '../../app/IconJudge';
 import { useCompetition } from '../../app/data';
 import { formatLongDate } from '../../app/format';
 import { clubColors } from '../../app/clubColors';
 import { HeroMeta, HeroTabs, PageHero } from '../../app/PageHero';
-import { updateCompetition } from '../../db/repo';
+import { updateCombinedCup, updateCompetition } from '../../db/repo';
 import { printJudgeSheets, printProgramme, printResults } from '../../pdf/actions';
 import type { ResultsStyle } from '../../pdf/documents';
 import { CompetitionDetailsForm, detailsOf } from './CompetitionDetailsForm';
 import { useExportCompetition } from './useExportCompetition';
+
+const CUP_TAB = { value: 'cup', label: 'Combined Cup', icon: <IconTrophy size={18} /> };
 
 const TABS = [
   { value: 'events', label: 'Events', icon: <IconListNumbers size={18} /> },
@@ -41,6 +45,22 @@ export function CompetitionLayout() {
   const exportCompetition = useExportCompetition();
   const [editing, { open: openEdit, close: closeEdit }] = useDisclosure(false);
   const current = location.pathname.split('/')[3] || 'events';
+  const [searchParams, setSearchParams] = useSearchParams();
+  const hasCup = competition?.combinedCup !== undefined;
+  const wantsCup = searchParams.has('cup');
+
+  // Opening the competition with the Combined Cup parameter switches the feature on for it.
+  useEffect(() => {
+    if (!wantsCup || !competition) return;
+    if (!hasCup) void updateCombinedCup(competition.id, { eventRoles: {}, entrants: [], trio: {} });
+    setSearchParams(
+      (p) => {
+        p.delete('cup');
+        return p;
+      },
+      { replace: true },
+    );
+  }, [wantsCup, hasCup, competition, setSearchParams]);
 
   if (competition === undefined) return <Loader />;
   if (competition === null) return <Text>Competition not found.</Text>;
@@ -129,7 +149,7 @@ export function CompetitionLayout() {
         }
       >
         <HeroTabs
-          tabs={TABS}
+          tabs={hasCup ? [...TABS, CUP_TAB] : TABS}
           value={current}
           onChange={(v) => navigate(`/c/${compId}/${v === 'events' ? '' : v}`)}
         />

@@ -1,6 +1,9 @@
 import { db } from '../db/db';
 import type { Id } from '../domain/types';
 import { fileNameFor } from '../io/competitionFile';
+import { buildCupStandings } from '../cup/combinedCup';
+import { cupEventsFromData } from '../cup/fromEvents';
+import { combinedCupDocument } from './combinedCup';
 import { judgeSheetsDocument, resultsDocument, type ResultsStyle } from './documents';
 import { loadCompetitionEvents, loadEventData, type EventData } from './loadEvent';
 import { openPdf } from './pdfmake';
@@ -39,4 +42,18 @@ export function printProgramme(competitionId: Id, name: string) {
     ([competition, events]) => programmeDocument(competition!, events),
   );
   return openPdf(doc, fileNameFor(`${name} programme`, 'pdf'));
+}
+
+/** The Combined Cup results for a competition. Call directly from a click handler. */
+export function printCombinedCup(competitionId: Id, name: string) {
+  const doc = Promise.all([
+    db.competitions.get(competitionId),
+    db.skaters.where({ competitionId }).toArray(),
+    loadCompetitionEvents(competitionId),
+  ]).then(([competition, skaters, events]) => {
+    const cup = competition!.combinedCup!;
+    const standings = buildCupStandings(cup, cupEventsFromData(cup, events));
+    return combinedCupDocument(competition!, standings, skaters);
+  });
+  return openPdf(doc, fileNameFor(`${name} combined cup`, 'pdf'));
 }

@@ -10,6 +10,7 @@ export interface EventRow {
   name: string;
   club: string;
   members: string;
+  skaterIds: Id[];
 }
 
 export interface EventData {
@@ -55,6 +56,7 @@ export async function loadEventData(eventId: Id): Promise<EventData> {
       name: entryName(e, skaters),
       club: entryClub(e, skaters),
       members: event.entryType === 'team' ? entryMembers(e, skaters) : '',
+      skaterIds: e.skaterIds,
     })),
     judges: event.judgeIds.map((id) => judgeMap.get(id)!).filter(Boolean),
     referee: event.refereeId ? judgeMap.get(event.refereeId) : undefined,
