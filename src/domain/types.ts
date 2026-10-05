@@ -25,7 +25,8 @@ export interface Dance {
 export type EntryType = 'solo' | 'duo' | 'couples' | 'team' | 'single' | 'pairs';
 /** Dance: compulsory dances + free dance. Figures: compulsory figures + short/free programmes. */
 export type EventDiscipline = 'dance' | 'figures';
-export type EventStatus = 'setup' | 'scoring' | 'final';
+/** Setup (no skaters yet) → ready (has skaters) → scoring (marks entered) → final (locked). */
+export type EventStatus = 'setup' | 'ready' | 'scoring' | 'final';
 
 export interface CompEvent {
   id: Id;

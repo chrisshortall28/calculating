@@ -232,7 +232,8 @@ export function ScoringTab({ event }: { event: CompEvent }) {
             getValue={(k, j, e) => markMap.get(markKey(k, j, e))}
             onCommit={(segmentKey, judgeId, entryId, tenths) => {
               void setMark({ eventId: event.id, segmentKey, judgeId, entryId }, tenths);
-              if (event.status === 'setup') void setEventStatus(event.id, 'scoring');
+              if (event.status === 'setup' || event.status === 'ready')
+                void setEventStatus(event.id, 'scoring');
             }}
             ordinals={ordinals}
             direction={direction}
