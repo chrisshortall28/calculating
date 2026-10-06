@@ -33,6 +33,19 @@ export class PodiumDB extends Dexie {
           .toCollection()
           .modify((ev: CompEvent) => Object.assign(ev, { ...danceEventDefaults(), ...ev })),
       );
+    // Ready status: existing setup events that already have entries are ready.
+    this.version(3)
+      .stores({})
+      .upgrade(async (tx) => {
+        const withEntries = new Set<string>();
+        await tx.table('entries').each((en: { eventId: string }) => void withEntries.add(en.eventId));
+        await tx
+          .table('events')
+          .toCollection()
+          .modify((ev: CompEvent) => {
+            if (ev.status === 'setup' && withEntries.has(ev.id)) ev.status = 'ready';
+          });
+      });
   }
 }
 

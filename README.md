@@ -29,7 +29,8 @@ and results PDFs ready to print.
 - 📴 **Works offline.** Podium is an installable app that runs entirely in the browser, with no
   server and no sign-in. Your data stays on your device.
 - 💾 **Backup and transfer.** Export a competition to a `.pod` file and import it on another
-  device (older `.json` backups still import).
+  device (older `.json` backups still import). [`examples/podium-demo.pod`](examples/podium-demo.pod) is a
+  fictional competition to try: it has events with no ties and events showing each tie-break rule.
 - 🌙 **Light and dark themes**, and competitions can take their club colours.
 
 ## 📸 Screenshots
@@ -127,7 +128,7 @@ per judge; the free dance and each programme an A and a B (artistic impression) 
 
 - **Results tab**: a Rule column on tied places (e.g. `7A`; hover for the rule), "How ties were
   resolved" with the values compared at each rule and a link to the manual, the judges' equal
-  sums (rule 3), and the summary of scores and table of victories.
+  sums (rule 3), and the Table of Victories.
 - **Results PDFs**: a short Rule column with a key to the rules used; "Results with marks" adds
   the tie explanations and the table of victories. The guest judges PDF shows placings only (tied
   places marked `=`), with no rules.

@@ -8,6 +8,7 @@ import { EventsTab } from '../features/events/EventsTab';
 import { SkatersTab } from '../features/roster/SkatersTab';
 import { JudgesTab } from '../features/roster/JudgesTab';
 import { DancesTab } from '../features/roster/DancesTab';
+import { CombinedCupTab } from '../features/cup/CombinedCupTab';
 import { CompetitionSettingsTab } from '../features/competitions/CompetitionSettingsTab';
 import { EventPage } from '../features/events/EventPage';
 import { HomePage } from '../features/home/HomePage';
@@ -33,6 +34,7 @@ const router = createBrowserRouter(
             { path: 'judges', element: <JudgesTab /> },
             { path: 'dances', element: <DancesTab /> },
             { path: 'settings', element: <CompetitionSettingsTab /> },
+            { path: 'cup', element: <CombinedCupTab /> },
           ],
         },
         { path: 'c/:compId/e/:eventId/:tab?', element: <EventPage /> },

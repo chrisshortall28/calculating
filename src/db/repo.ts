@@ -1,4 +1,5 @@
 import type {
+  CombinedCupConfig,
   CompEvent,
   Competition,
   Entry,
@@ -67,6 +68,11 @@ export async function createCompetition(
 
 export async function updateCompetition(id: Id, data: Partial<Omit<Competition, 'id'>>) {
   await db.competitions.update(id, { ...data, updatedAt: Date.now() });
+}
+
+/** Switches The Combined Cup on (with the given settings) or, with `undefined`, off. */
+export async function updateCombinedCup(id: Id, combinedCup: CombinedCupConfig | undefined) {
+  await db.competitions.update(id, { combinedCup, updatedAt: Date.now() });
 }
 
 export async function deleteCompetition(id: Id) {
@@ -163,6 +169,18 @@ export async function updateEvent(eventId: Id, data: Partial<Omit<CompEvent, 'id
 export const setEventStatus = (eventId: Id, status: CompEvent['status']) =>
   db.events.update(eventId, { status });
 
+/** The status a setup/ready event has, given whether it has any entries; later statuses are unchanged. */
+export const statusForEntries = (status: CompEvent['status'], entryCount: number): CompEvent['status'] =>
+  status === 'setup' || status === 'ready' ? (entryCount > 0 ? 'ready' : 'setup') : status;
+
+/** Moves an event between setup and ready as entries are added or all removed. Call inside a transaction on events and entries. */
+async function syncReadyStatus(eventId: Id) {
+  const ev = await db.events.get(eventId);
+  if (!ev) return;
+  const status = statusForEntries(ev.status, await db.entries.where({ eventId }).count());
+  if (status !== ev.status) await db.events.update(eventId, { status });
+}
+
 export async function deleteEvent(eventId: Id) {
   await competitionOfEvent(eventId);
   await db.transaction('rw', db.events, db.entries, db.marks, async () => {
@@ -195,7 +213,7 @@ export const updateSkater = (id: Id, data: Partial<Pick<Skater, 'name' | 'club'>
 
 /** Deleting a skater removes them from entries; entries left empty are deleted with their marks. */
 export async function deleteSkater(id: Id) {
-  await db.transaction('rw', db.skaters, db.entries, db.marks, async () => {
+  await db.transaction('rw', db.skaters, db.entries, db.marks, db.events, async () => {
     const entries = await db.entries.filter((e) => e.skaterIds.includes(id)).toArray();
     for (const e of entries) {
       const skaterIds = e.skaterIds.filter((s) => s !== id);
@@ -203,15 +221,19 @@ export async function deleteSkater(id: Id) {
       else await db.entries.update(e.id, { skaterIds });
     }
     await db.skaters.delete(id);
+    for (const eventId of new Set(entries.map((e) => e.eventId))) await syncReadyStatus(eventId);
   });
 }
 
 // ---------- Entries ----------
 
 export async function addEntry(eventId: Id, data: Pick<Entry, 'skaterIds' | 'teamName' | 'club'>) {
-  const count = await db.entries.where({ eventId }).count();
   const id = newId();
-  await db.entries.add({ id, eventId, startOrder: count, ...data });
+  await db.transaction('rw', db.entries, db.events, async () => {
+    const count = await db.entries.where({ eventId }).count();
+    await db.entries.add({ id, eventId, startOrder: count, ...data });
+    await syncReadyStatus(eventId);
+  });
   await competitionOfEvent(eventId);
   return id;
 }
@@ -225,12 +247,13 @@ async function deleteEntryTx(id: Id) {
 }
 
 export async function deleteEntry(id: Id) {
-  await db.transaction('rw', db.entries, db.marks, async () => {
+  await db.transaction('rw', db.entries, db.marks, db.events, async () => {
     const entry = await db.entries.get(id);
     await deleteEntryTx(id);
     if (entry) {
       const rest = await db.entries.where({ eventId: entry.eventId }).sortBy('startOrder');
       await Promise.all(rest.map((e, i) => db.entries.update(e.id, { startOrder: i })));
+      await syncReadyStatus(entry.eventId);
     }
   });
 }

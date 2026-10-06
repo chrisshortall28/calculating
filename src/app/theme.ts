@@ -81,4 +81,4 @@ export const entryTypeColor = {
 } as const;
 
 /** Colours for event status (stripes, badges, progress). */
-export const statusColor = { setup: 'gray', scoring: 'podium', final: 'teal' } as const;
+export const statusColor = { setup: 'gray', ready: 'yellow', scoring: 'podium', final: 'teal' } as const;

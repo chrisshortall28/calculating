@@ -11,7 +11,13 @@ function sampleEvent(): EventData {
   const segments = [
     { id: 'cd:w', name: 'Waltz', kind: 'compulsory' as const, markKeys: ['cd:w' as SegmentKey] },
   ];
-  const rows = ['Amy', 'Beth'].map((name, i) => ({ id: `e${i}`, name, club: 'Club', members: '' }));
+  const rows = ['Amy', 'Beth'].map((name, i) => ({
+    id: `e${i}`,
+    name,
+    club: 'Club',
+    members: '',
+    skaterIds: [],
+  }));
   const judges = ['Helen', 'Ian', 'Jo'].map((name, i) => ({ id: `j${i}`, competitionId: 'c', name }));
   const mark = (_k: SegmentKey, _j: string, e: string) => (e === 'e0' ? 50 : 40);
   return {
@@ -132,9 +138,7 @@ describe('resultsPages', () => {
     expect(guest).not.toContain('8');
     expect(guest).not.toContain('CIPA tie-break rules: 8 tie');
     const detail = texts(resultsPages([tied], 'withMarks'));
-    expect(detail).toEqual(
-      expect.arrayContaining(['How ties were resolved', 'Summary of scores and table of victories']),
-    );
+    expect(detail).toEqual(expect.arrayContaining(['How ties were resolved', 'Table of Victories']));
     expect(texts(resultsPages([sampleEvent()], 'standard'))).not.toContain('CIPA tie-break rules: 8 tie');
   });
 
@@ -192,7 +196,8 @@ describe('judgeSheets', () => {
     const doc = judgeSheetsDocument([sampleEvent()]);
     const t = texts((doc.content as unknown[])[0]); // J1's sheet
     expect(t.filter((s) => s.includes('Event'))).toEqual(['Event — Judge’s sheet']);
-    expect(t.filter((s) => s.includes('Helen'))).toEqual(['J1  Helen']);
+    expect(t.filter((s) => s.includes('Helen'))).toEqual([]);
+    expect(t.filter((s) => s.includes('J1'))).toEqual(['J1  ______________________________']);
     const footer = (d: TDocumentDefinitions) =>
       (d.footer as (page: number, pages: number) => { text: string })(1, 2).text;
     expect(footer(doc)).toBe('Created with Podium');

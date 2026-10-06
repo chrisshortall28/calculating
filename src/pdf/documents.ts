@@ -30,7 +30,7 @@ const styles: TDocumentDefinitions['styles'] = {
  * Results tables in the competition's colours: header cells filled with the primary colour (with
  * readable text on it) and ruled off in the secondary colour; light rules between rows.
  */
-function clubTable(d: EventData) {
+export function clubTable(d: Pick<EventData, 'competition'>) {
   const { primary, secondary } = clubColors(d.competition);
   return {
     th: (text: string, extra: Record<string, unknown> = {}): TableCell => ({
@@ -54,7 +54,7 @@ function clubTable(d: EventData) {
   };
 }
 
-function compLine(d: EventData) {
+export function compLine(d: Pick<EventData, 'competition'>) {
   const c = d.competition;
   return [c.name, c.date && new Date(c.date).toLocaleDateString(), c.venue].filter(Boolean).join(' · ');
 }
@@ -74,7 +74,7 @@ function header(d: EventData, subtitle?: string, withCompetition = true): Conten
 interface Official {
   role: 'Judge' | 'Referee';
   label: string; // "J1"… for judges, "" for the referee
-  name: string; // blank = name to be written in
+  name: string; // always blank: the name is written in by hand
 }
 
 /** Most dances one landscape sheet can hold while leaving the Comments columns room to write in. */
@@ -188,9 +188,9 @@ export function judgeSheets(events: EventData[], blankCount = 3): Content[] {
   for (const d of events) {
     if (d.segments.length === 0) continue;
     const officials: Official[] = d.judges.length
-      ? d.judges.map((j, i) => ({ role: 'Judge', label: `J${i + 1}`, name: j.name }))
+      ? d.judges.map((_, i) => ({ role: 'Judge', label: `J${i + 1}`, name: '' }))
       : Array.from({ length: blankCount }, (_, i) => ({ role: 'Judge', label: `J${i + 1}`, name: '' }));
-    officials.push({ role: 'Referee', label: '', name: d.referee?.name ?? '' });
+    officials.push({ role: 'Referee', label: '', name: '' });
     const parts = sheetParts(d.segments);
     for (const o of officials)
       parts.forEach((segments, index) =>
@@ -297,7 +297,10 @@ function ruleKey(d: EventData): Content[] {
   ];
 }
 
-/** CIPA master chart: judges' sums, then each entry's judge victories over every other entry. */
+const VICTORY_FILL = '#e8f0fb';
+const VICTORY_SELF_FILL = '#6b6b6b';
+
+/** CIPA master chart: judges' rankings, then each entry's judge victories over every other entry. */
 function victoriesTable(d: EventData): Content[] {
   const { result } = d;
   const rowOf = new Map(result.overall.map((o) => [o.entryId, o]));
@@ -310,12 +313,12 @@ function victoriesTable(d: EventData): Content[] {
     th('#'),
     th(entryHeading[d.event.entryType], { alignment: 'left' }),
     ...d.judges.map((_, i) => th(`J${i + 1}`)),
-    th('Total'),
-    ...d.rows.map((_, i) => th(`v${i + 1}`)),
+    ...d.rows.map((_, i) => th(`v${i + 1}`, { fillColor: VICTORY_FILL })),
     th('MV'),
     th('S.M.V.'),
     th('Total B scores'),
     th('TV'),
+    th('Total'),
     th('Pl'),
   ];
   const rows: TableCell[][] = d.rows.map((r, i) => {
@@ -323,14 +326,14 @@ function victoriesTable(d: EventData): Content[] {
     return [
       { text: String(i + 1), alignment: center, color: '#555' },
       r.name,
-      ...o.judgeSums.map((s) => ({ text: formatSum(s), alignment: center })),
-      { text: formatSum(o.totalSum), alignment: center, bold: true },
+      ...o.judgeRanks.map((rank) => ({ text: String(rank), alignment: center })),
       ...d.rows.map((other) => {
         const v = result.victories.get(r.id)!.get(other.id);
         return v === undefined
-          ? { text: '—', alignment: center, color: '#999' }
+          ? { text: '', fillColor: VICTORY_SELF_FILL }
           : {
               text: formatVictories(v),
+              fillColor: VICTORY_FILL,
               alignment: center,
               bold: v * 2 > judgeCount,
               color: v * 2 > judgeCount ? '#000' : '#777',
@@ -343,12 +346,13 @@ function victoriesTable(d: EventData): Content[] {
         alignment: center,
       },
       { text: formatVictories(o.totalVictories), alignment: center },
+      { text: formatSum(o.totalSum), alignment: center, bold: true },
       { text: `${o.place}${o.tied ? '=' : ''}`, alignment: center, bold: true },
     ];
   });
   const factors = factorSummary(d.event);
   return [
-    { text: 'Summary of scores and table of victories', style: 'h2' },
+    { text: 'Table of Victories', style: 'h2' },
     ...(factors
       ? [
           {
@@ -361,14 +365,14 @@ function victoriesTable(d: EventData): Content[] {
     {
       table: {
         headerRows: 1,
-        widths: [12, '*', ...d.judges.map(() => 26), 30, ...d.rows.map(() => 16), 20, 26, 42, 20, 18],
+        widths: [12, '*', ...d.judges.map(() => 26), 30, ...d.rows.map(() => 16), 20, 26, 42, 20, 30, 18],
         body: [head, ...rows],
       },
       layout,
       fontSize: d.rows.length > 12 ? 6.5 : 8,
     } as Content,
     {
-      text: `Judges’ sums, then each entry’s judge victories over every other (v1 = entry 1…). Bold: majority victory (${result.majority} of ${judgeCount} judges). MV majority victories · TV total victories.`,
+      text: `Each judge’s ranking of the entry, then its judge victories over every other (v1 = entry 1…). Bold: majority victory (${result.majority} of ${judgeCount} judges). MV majority victories · TV total victories.`,
       style: 'small',
       margin: [0, 3, 0, 0],
     },

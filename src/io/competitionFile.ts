@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { db, newId } from '../db/db';
+import { statusForEntries } from '../db/repo';
 import { NO_FACTORS } from '../domain/segments';
 import { MAX_COMPULSORY_DANCES, MAX_FIGURES, type Id, type SegmentKey } from '../domain/types';
 
@@ -27,6 +28,18 @@ const fileSchema = z.object({
     primaryColor: hexColor.optional(),
     secondaryColor: hexColor.optional(),
     welcome: z.string().optional(),
+    combinedCup: z
+      .object({
+        eventRoles: z.record(z.string(), z.enum(['solo', 'duo', 'team'])),
+        entrants: z.array(
+          z.object({
+            skaterId: z.string(),
+            category: z.enum(['newcomer-novice', 'elementary-prelim', 'inter-bronze-up']),
+          }),
+        ),
+        trio: z.record(z.string(), z.number().int().min(1).max(5)),
+      })
+      .optional(),
     createdAt: z.number(),
     updatedAt: z.number(),
   }),
@@ -54,7 +67,7 @@ const fileSchema = z.object({
       factors: z.object({ figures: factor, short: factor, long: factor }).default(() => ({ ...NO_FACTORS })),
       judgeIds: z.array(z.string()),
       refereeId: z.string().optional(),
-      status: z.enum(['setup', 'scoring', 'final']),
+      status: z.enum(['setup', 'ready', 'scoring', 'final']),
     }),
   ),
   entries: z.array(
@@ -136,6 +149,17 @@ export async function importCompetition(file: CompetitionFile, mode: 'copy' | 'r
       ...file.competition,
       id: compId,
       name: mode === 'copy' ? `${file.competition.name} (imported)` : file.competition.name,
+      ...(file.competition.combinedCup && {
+        combinedCup: {
+          eventRoles: Object.fromEntries(
+            Object.entries(file.competition.combinedCup.eventRoles).map(([k, v]) => [id(k), v]),
+          ),
+          entrants: file.competition.combinedCup.entrants.map((e) => ({ ...e, skaterId: id(e.skaterId) })),
+          trio: Object.fromEntries(
+            Object.entries(file.competition.combinedCup.trio).map(([k, v]) => [id(k), v]),
+          ),
+        },
+      }),
       updatedAt: now,
     });
     await db.dances.bulkPut(file.dances.map((d) => ({ ...d, id: id(d.id), competitionId: compId })));
@@ -149,6 +173,8 @@ export async function importCompetition(file: CompetitionFile, mode: 'copy' | 'r
         compulsoryDanceIds: e.compulsoryDanceIds.map(id),
         judgeIds: e.judgeIds.map(id),
         refereeId: e.refereeId && id(e.refereeId),
+        // Files from before the ready status: setup events with skaters are ready.
+        status: statusForEntries(e.status, file.entries.filter((en) => en.eventId === e.id).length),
       })),
     );
     await db.entries.bulkPut(
