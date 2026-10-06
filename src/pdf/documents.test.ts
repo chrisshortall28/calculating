@@ -196,7 +196,8 @@ describe('judgeSheets', () => {
     const doc = judgeSheetsDocument([sampleEvent()]);
     const t = texts((doc.content as unknown[])[0]); // J1's sheet
     expect(t.filter((s) => s.includes('Event'))).toEqual(['Event — Judge’s sheet']);
-    expect(t.filter((s) => s.includes('Helen'))).toEqual(['J1  Helen']);
+    expect(t.filter((s) => s.includes('Helen'))).toEqual([]);
+    expect(t.filter((s) => s.includes('J1'))).toEqual(['J1  ______________________________']);
     const footer = (d: TDocumentDefinitions) =>
       (d.footer as (page: number, pages: number) => { text: string })(1, 2).text;
     expect(footer(doc)).toBe('Created with Podium');

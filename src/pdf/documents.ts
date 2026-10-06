@@ -188,7 +188,7 @@ export function judgeSheets(events: EventData[], blankCount = 3): Content[] {
   for (const d of events) {
     if (d.segments.length === 0) continue;
     const officials: Official[] = d.judges.length
-      ? d.judges.map((j, i) => ({ role: 'Judge', label: `J${i + 1}`, name: j.name }))
+      ? d.judges.map((_, i) => ({ role: 'Judge', label: `J${i + 1}`, name: '' }))
       : Array.from({ length: blankCount }, (_, i) => ({ role: 'Judge', label: `J${i + 1}`, name: '' }));
     officials.push({ role: 'Referee', label: '', name: d.referee?.name ?? '' });
     const parts = sheetParts(d.segments);
