@@ -74,7 +74,7 @@ function header(d: EventData, subtitle?: string, withCompetition = true): Conten
 interface Official {
   role: 'Judge' | 'Referee';
   label: string; // "J1"… for judges, "" for the referee
-  name: string; // blank = name to be written in
+  name: string; // always blank: the name is written in by hand
 }
 
 /** Most dances one landscape sheet can hold while leaving the Comments columns room to write in. */
@@ -190,7 +190,7 @@ export function judgeSheets(events: EventData[], blankCount = 3): Content[] {
     const officials: Official[] = d.judges.length
       ? d.judges.map((_, i) => ({ role: 'Judge', label: `J${i + 1}`, name: '' }))
       : Array.from({ length: blankCount }, (_, i) => ({ role: 'Judge', label: `J${i + 1}`, name: '' }));
-    officials.push({ role: 'Referee', label: '', name: d.referee?.name ?? '' });
+    officials.push({ role: 'Referee', label: '', name: '' });
     const parts = sheetParts(d.segments);
     for (const o of officials)
       parts.forEach((segments, index) =>
