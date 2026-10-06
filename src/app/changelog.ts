@@ -8,6 +8,17 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.3.0',
+    date: '2026-10-06',
+    changes: [
+      'The table of victories has been reworked: it shows each judge’s ranking instead of their sum, and hovering a v, MV, TV or S.M.V. cell highlights the rankings it was worked out from. The results with marks PDF follows suit.',
+      'Events now have a Ready status between Setup and Scoring: an event is ready once it has entries.',
+      'Judges’ and referee’s sheets now print with a blank line to write the name on, instead of the assigned name.',
+      'There is now an example competition file, examples/podium-demo.pod, with events decided by each tie-break rule.',
+      'On iPhones and iPads, tapping an input no longer zooms the page in, and the skater form wraps on narrow screens.',
+    ],
+  },
+  {
     version: '1.2.0',
     date: '2026-10-03',
     changes: [
