@@ -52,7 +52,7 @@ export function CompetitionLayout() {
   // Opening the competition with the Combined Cup parameter switches the feature on for it.
   useEffect(() => {
     if (!wantsCup || !competition) return;
-    if (!hasCup) void updateCombinedCup(competition.id, { eventRoles: {}, entrants: [], trio: {} });
+    if (!hasCup) void updateCombinedCup(competition.id, { eventRoles: {}, entrants: [] });
     setSearchParams(
       (p) => {
         p.delete('cup');

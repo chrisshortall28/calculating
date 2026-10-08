@@ -14,6 +14,7 @@ export const CUP_ROLES: { value: CupRole; label: string }[] = [
   { value: 'solo', label: 'Solo dance' },
   { value: 'duo', label: 'Duo dance' },
   { value: 'team', label: 'Team' },
+  { value: 'mixmatch', label: 'Mix & Match' },
 ];
 
 export const roleLabel = (r: CupRole) => CUP_ROLES.find((x) => x.value === r)!.label;
@@ -38,7 +39,7 @@ export interface CupPlacing {
   points: number;
 }
 
-/** One part of a skater's Cup (solo, duo or team). */
+/** One part of a skater's Cup (solo, duo, team or Mix & Match). */
 export interface CupPart {
   /** The placing that scores: their best in this part. */
   counted?: CupPlacing;
@@ -48,11 +49,11 @@ export interface CupPart {
   pending: string[];
 }
 
-export type TieBreakPart = 'trio' | 'solo' | 'duo' | 'team';
+export type TieBreakPart = 'mixmatch' | 'solo' | 'duo' | 'team';
 
-export const TIE_BREAK_ORDER: TieBreakPart[] = ['trio', 'solo', 'duo', 'team'];
+export const TIE_BREAK_ORDER: TieBreakPart[] = ['mixmatch', 'solo', 'duo', 'team'];
 export const tieBreakLabel: Record<TieBreakPart, string> = {
-  trio: 'Mix and Match result',
+  mixmatch: 'Mix and Match result',
   solo: 'solo result',
   duo: 'duo result',
   team: 'team result',
@@ -64,8 +65,7 @@ export interface CupEntrantResult {
   solo: CupPart;
   duo: CupPart;
   team: CupPart;
-  /** The Mix and Match trio placing, if any. */
-  trio?: { place: number; points: number };
+  mixmatch: CupPart;
   total: number;
 }
 
@@ -91,10 +91,9 @@ export interface CupStandings {
   provisional: boolean;
 }
 
-const partPoints = (r: CupEntrantResult, part: TieBreakPart) =>
-  part === 'trio' ? (r.trio?.points ?? 0) : (r[part].counted?.points ?? 0);
+const partPoints = (r: CupEntrantResult, part: TieBreakPart) => r[part].counted?.points ?? 0;
 
-/** Scores every entrant, then ranks each category: total points, then trio, solo, duo and team points. */
+/** Scores every entrant, then ranks each category: total points, then Mix and Match, solo, duo and team points. */
 export function buildCupStandings(cup: CombinedCupConfig, events: CupEventInput[]): CupStandings {
   const tagged = events.filter((e) => cup.eventRoles[e.eventId] === e.role);
   let provisional = false;
@@ -123,14 +122,13 @@ export function buildCupStandings(cup: CombinedCupConfig, events: CupEventInput[
       const best = [...placings].sort((a, b) => b.points - a.points || a.place - b.place)[0];
       return { counted: best, notCounted: placings.filter((p) => p !== best), pending };
     };
-    const place = cup.trio[skaterId];
     const result: CupEntrantResult = {
       skaterId,
       category,
       solo: part('solo'),
       duo: part('duo'),
       team: part('team'),
-      trio: place ? { place, points: cupPoints(place) } : undefined,
+      mixmatch: part('mixmatch'),
       total: 0,
     };
     result.total = TIE_BREAK_ORDER.reduce((sum, p) => sum + partPoints(result, p), 0);

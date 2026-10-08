@@ -49,7 +49,7 @@ function categoryTable(
     th('Solo dance', { alignment: 'left' }),
     th('Duo dance', { alignment: 'left' }),
     th('Team', { alignment: 'left' }),
-    th('Mix and Match', { alignment: 'left' }),
+    th('Mix & Match', { alignment: 'left' }),
     th('Total'),
   ];
   const rows: TableCell[][] = c.ranked.map((r: CupRanked) => [
@@ -58,9 +58,7 @@ function categoryTable(
     partCell(r.solo),
     partCell(r.duo),
     partCell(r.team),
-    r.trio
-      ? { text: `${ordinalLabel(r.trio.place)} · ${pts(r.trio.points)}`, bold: true }
-      : { text: '—', color: '#999' },
+    partCell(r.mixmatch),
     { text: String(r.total), alignment: 'center', bold: true },
   ]);
   return [
@@ -74,7 +72,7 @@ function categoryTable(
             margin: [0, 0, 0, 4],
           } as Content,
           {
-            table: { headerRows: 1, widths: [30, '*', 120, 120, 120, 70, 34], body: [head, ...rows] },
+            table: { headerRows: 1, widths: [30, '*', 105, 105, 105, 105, 34], body: [head, ...rows] },
             layout,
             fontSize: 8.5,
           } as Content,
@@ -108,7 +106,7 @@ export function combinedCupDocument(
       : []),
     ...standings.categories.flatMap((c) => categoryTable(competition, c, nameOf, clubOf)),
     {
-      text: 'Points: 5 for 1st, 4 for 2nd, 3 for 3rd, 2 for 4th, 1 for 5th. Each skater scores their solo dance, duo dance, best team event and the Mix and Match trio; other team results are not counted.',
+      text: 'Points: 5 for 1st, 4 for 2nd, 3 for 3rd, 2 for 4th, 1 for 5th. Each skater scores their solo dance, duo dance, best team event and Mix & Match; other team results are not counted.',
       style: 'small',
       margin: [0, 10, 0, 0],
     },
