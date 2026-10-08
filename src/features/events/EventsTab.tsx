@@ -142,7 +142,7 @@ export function EventsTab() {
                   <Button
                     size="sm"
                     leftSection={<IconPlayerPlayFilled size={14} />}
-                    onClick={() => navigate(`/c/${compId}/e/${ev.id}/scoring`)}
+                    onClick={() => navigate(`/c/${compId}/e/${ev.id}`)}
                   >
                     View
                   </Button>

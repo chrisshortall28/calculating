@@ -9,7 +9,7 @@ import {
   IconUsers,
 } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, Navigate, useNavigate, useParams } from 'react-router';
 import { IconJudge } from '../../app/IconJudge';
 import { useCompetition, useDances, useEvent, useEvents } from '../../app/data';
 import { clubColors } from '../../app/clubColors';
@@ -18,7 +18,7 @@ import { entryTypeColor } from '../../app/theme';
 import { entryTypeLabel } from '../../db/repo';
 import { entryHeading } from '../../domain/entryName';
 import { eventSegments } from '../../domain/segments';
-import type { CompEvent, Competition } from '../../domain/types';
+import type { CompEvent, Competition, EventStatus } from '../../domain/types';
 import { ResultsTab } from '../results/ResultsTab';
 import { ScoringTab } from '../scoring/ScoringTab';
 import { EntriesTab } from './EntriesTab';
@@ -34,6 +34,14 @@ const tabs = (event: CompEvent) => [
   { value: 'results', label: 'Results', icon: <IconTrophy size={18} /> },
 ];
 
+/** The tab an event opens on when the URL doesn't name one, by how far along the event is. */
+const STATUS_TAB: Record<EventStatus, string> = {
+  setup: 'entries',
+  ready: 'judges',
+  scoring: 'scoring',
+  final: 'results',
+};
+
 const PANELS: Record<string, (event: CompEvent, competition: Competition) => ReactNode> = {
   setup: (e) => <EventSetupTab event={e} />,
   entries: (e) => <EntriesTab event={e} />,
@@ -43,7 +51,7 @@ const PANELS: Record<string, (event: CompEvent, competition: Competition) => Rea
 };
 
 export function EventPage() {
-  const { compId, eventId, tab = 'setup' } = useParams() as { compId: string; eventId: string; tab?: string };
+  const { compId, eventId, tab: tabParam } = useParams() as { compId: string; eventId: string; tab?: string };
   const competition = useCompetition(compId);
   const event = useEvent(eventId);
   const dances = useDances(compId);
@@ -52,6 +60,10 @@ export function EventPage() {
 
   if (event === undefined || competition === undefined) return <Loader />;
   if (!event || !competition) return <Text>Event not found.</Text>;
+
+  // Redirect once, so a later status change doesn't switch tabs under the user.
+  if (!tabParam) return <Navigate to={`/c/${compId}/e/${eventId}/${STATUS_TAB[event.status]}`} replace />;
+  const tab = tabParam;
 
   const segments = eventSegments(event, dances ?? []);
   const panel = PANELS[tab] ?? PANELS.setup!;
