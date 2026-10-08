@@ -1,9 +1,17 @@
-import { Badge, Container, Loader, Text } from '@mantine/core';
-import { IconAdjustments, IconMusic, IconPencilBolt, IconTrophy, IconUsers } from '@tabler/icons-react';
+import { ActionIcon, Badge, Container, Group, Loader, Text, Tooltip } from '@mantine/core';
+import {
+  IconAdjustments,
+  IconChevronLeft,
+  IconChevronRight,
+  IconMusic,
+  IconPencilBolt,
+  IconTrophy,
+  IconUsers,
+} from '@tabler/icons-react';
 import type { ReactNode } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import { IconJudge } from '../../app/IconJudge';
-import { useCompetition, useDances, useEvent } from '../../app/data';
+import { useCompetition, useDances, useEvent, useEvents } from '../../app/data';
 import { clubColors } from '../../app/clubColors';
 import { HeroMeta, HeroTabs, PageHero } from '../../app/PageHero';
 import { entryTypeColor } from '../../app/theme';
@@ -39,6 +47,7 @@ export function EventPage() {
   const competition = useCompetition(compId);
   const event = useEvent(eventId);
   const dances = useDances(compId);
+  const events = useEvents(compId);
   const navigate = useNavigate();
 
   if (event === undefined || competition === undefined) return <Loader />;
@@ -46,6 +55,9 @@ export function EventPage() {
 
   const segments = eventSegments(event, dances ?? []);
   const panel = PANELS[tab] ?? PANELS.setup!;
+  const index = events?.findIndex((e) => e.id === event.id) ?? -1;
+  const prev = index > 0 ? events![index - 1] : undefined;
+  const next = index >= 0 ? events![index + 1] : undefined;
 
   return (
     <>
@@ -58,6 +70,12 @@ export function EventPage() {
           { label: event.name },
         ]}
         title={event.name}
+        actions={
+          <Group gap={4} wrap="nowrap">
+            <NeighbourLink event={prev} direction="previous" compId={compId} tab={tab} />
+            <NeighbourLink event={next} direction="next" compId={compId} tab={tab} />
+          </Group>
+        }
         badges={
           <>
             <Badge variant="filled" color={entryTypeColor[event.entryType]}>
@@ -83,5 +101,43 @@ export function EventPage() {
         {panel(event, competition)}
       </Container>
     </>
+  );
+}
+
+/** Arrow to the previous/next event in the competition's order, staying on the same tab. */
+function NeighbourLink({
+  event,
+  direction,
+  compId,
+  tab,
+}: {
+  event: CompEvent | undefined;
+  direction: 'previous' | 'next';
+  compId: string;
+  tab: string;
+}) {
+  const Icon = direction === 'previous' ? IconChevronLeft : IconChevronRight;
+  const label = event
+    ? `${direction === 'previous' ? 'Previous' : 'Next'} event: ${event.name}`
+    : `No ${direction} event`;
+  const common = { variant: 'subtle', c: 'var(--club-on-primary)', size: 'lg', 'aria-label': label } as const;
+  if (!event) {
+    return (
+      <ActionIcon
+        {...common}
+        disabled
+        // Mantine's disabled style is a light grey block; keep it transparent so it fades into the banner.
+        style={{ background: 'transparent', color: 'var(--club-on-primary)', opacity: 0.3 }}
+      >
+        <Icon size={22} />
+      </ActionIcon>
+    );
+  }
+  return (
+    <Tooltip label={label}>
+      <ActionIcon {...common} component={Link} to={`/c/${compId}/e/${event.id}/${tab}`}>
+        <Icon size={22} />
+      </ActionIcon>
+    </Tooltip>
   );
 }
