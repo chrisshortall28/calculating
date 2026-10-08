@@ -8,6 +8,19 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.3.1',
+    date: '2026-10-08',
+    changes: [
+      'Scoring has an optional on-screen number pad for entering marks with the mouse or a finger. Turn it on with the Number pad switch; it sits beside the grid and is remembered.',
+      'Typing 10 now enters 1.0, like any other two digits. For a full 10.0, turn off Auto-advance and type 100.',
+      'The scoring options (direction, Auto-advance, Number pad, Clear marks, Mark final) are now in a toolbar at the top, and the dance buttons are larger with each dance’s progress along their bottom edge.',
+      'Events have previous and next arrows beside their title, to move through the events without going back to the list.',
+      'Opening an event, including with the View button, now lands on the most useful tab for its status: skaters, judges, scoring or results.',
+      'The home page’s “Calculating an event?” box has an Import button, and the latest competition is now headed “Your latest competition”.',
+      'On phones, the breadcrumb no longer repeats the page’s name above its title.',
+    ],
+  },
+  {
     version: '1.3.0',
     date: '2026-10-06',
     changes: [
