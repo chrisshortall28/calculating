@@ -1,4 +1,4 @@
-import { ActionIcon, Badge, Container, Group, Loader, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Badge, Container, Loader, Text, Tooltip } from '@mantine/core';
 import {
   IconAdjustments,
   IconChevronLeft,
@@ -82,12 +82,8 @@ export function EventPage() {
           { label: event.name },
         ]}
         title={event.name}
-        actions={
-          <Group gap={4} wrap="nowrap">
-            <NeighbourLink event={prev} direction="previous" compId={compId} tab={tab} />
-            <NeighbourLink event={next} direction="next" compId={compId} tab={tab} />
-          </Group>
-        }
+        titleStart={<NeighbourLink event={prev} direction="previous" compId={compId} tab={tab} />}
+        titleEnd={<NeighbourLink event={next} direction="next" compId={compId} tab={tab} />}
         badges={
           <>
             <Badge variant="filled" color={entryTypeColor[event.entryType]}>
