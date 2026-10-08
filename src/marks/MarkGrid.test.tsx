@@ -116,14 +116,29 @@ describe('MarkGrid entry', () => {
 
     type('57');
     type('62');
-    type('100');
+    type('10');
 
     expect(commits.map((c) => [c[2], c[3]])).toEqual([
       ['amy', 57],
       ['beth', 62],
-      ['cara', 100],
+      ['cara', 10],
     ]);
-    expect([cell('Amy').value, cell('Beth').value, cell('Cara').value]).toEqual(['5.7', '6.2', '10.0']);
+    expect([cell('Amy').value, cell('Beth').value, cell('Cara').value]).toEqual(['5.7', '6.2', '1.0']);
+  });
+
+  it('"10" is 1.0; a full 10.0 is "100" with auto-advance off', () => {
+    const commits: Commit[] = [];
+    render(<Harness commits={commits} autoAdvance={false} />);
+
+    type('10');
+    press('Enter');
+    type('100');
+    press('Enter');
+
+    expect(commits.map((c) => [c[2], c[3]])).toEqual([
+      ['amy', 10],
+      ['beth', 100],
+    ]);
   });
 
   it('Enter commits once and moves on', () => {

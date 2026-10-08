@@ -18,8 +18,8 @@ and results PDFs ready to print.
 
 ## ✨ Highlights
 
-- ⚡ **Fast mark entry.** A keyboard-driven grid built for speed: type `57` for 5.7 or `100`
-  for 10.0, and the cursor moves on by itself. Enter marks judge by judge or entry by entry.
+- ⚡ **Fast mark entry.** A keyboard-driven grid built for speed: type `57` for 5.7 or `10`
+  for 1.0 (a full 10.0 is `100` with auto-advance off), and the cursor moves on by itself. Enter marks judge by judge or entry by entry.
 - 🏆 **CIPA majority scoring.** The table of victories, majority victories and every tie-break
   rule (6A/6B, 7B, 7C, 7A, 8) are applied automatically.
 - 🔍 **Every tie explained.** The Results tab shows which rule decided each tied place and the

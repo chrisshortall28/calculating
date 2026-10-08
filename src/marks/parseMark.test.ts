@@ -9,7 +9,7 @@ describe('parseMark', () => {
     ['05', 5],
     ['99', 99],
     ['11', 11],
-    ['10', 100],
+    ['10', 10],
     ['100', 100],
     ['5.7', 57],
     ['5,7', 57],
@@ -32,10 +32,10 @@ describe('parseMark', () => {
 });
 
 describe('isCompleteMark', () => {
-  it.each(['57', '05', '99', '100', '5.7', '.5', '10.0', '0.0'])('%s is complete', (s) => {
+  it.each(['57', '05', '10', '99', '100', '5.7', '.5', '10.0', '0.0'])('%s is complete', (s) => {
     expect(isCompleteMark(s)).toBe(true);
   });
-  it.each(['', '5', '1', '10', '5.', '10.', '10.5', '99.9'])('%s is not complete', (s) => {
+  it.each(['', '5', '1', '5.', '10.', '10.5', '99.9'])('%s is not complete', (s) => {
     expect(isCompleteMark(s)).toBe(false);
   });
 });

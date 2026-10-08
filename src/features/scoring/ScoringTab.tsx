@@ -233,9 +233,10 @@ export function ScoringTab({ event }: { event: CompEvent }) {
             />
             {/* Wraps to the grid's width rather than widening the page to fit on one line. */}
             <Text size="xs" c="dimmed" mt="sm" style={{ contain: 'inline-size' }}>
-              Type <Kbd>57</Kbd> for 5.7, <Kbd>100</Kbd> for 10.0, <Kbd>5</Kbd> <Kbd>Enter</Kbd> for 5.0.{' '}
-              <Kbd>Enter</Kbd>/<Kbd>Tab</Kbd> next · <Kbd>Shift</Kbd> back · arrows move · <Kbd>Esc</Kbd> undo
-              edit · empty + <Kbd>Enter</Kbd> keeps the value; delete the text to clear a mark.
+              Type <Kbd>57</Kbd> for 5.7, <Kbd>10</Kbd> for 1.0, <Kbd>5</Kbd> <Kbd>Enter</Kbd> for 5.0; for
+              10.0 turn off auto-advance and type <Kbd>100</Kbd>. <Kbd>Enter</Kbd>/<Kbd>Tab</Kbd> next ·{' '}
+              <Kbd>Shift</Kbd> back · arrows move · <Kbd>Esc</Kbd> undo edit · empty + <Kbd>Enter</Kbd> keeps
+              the value; delete the text to clear a mark.
             </Text>
           </Card>
         </Box>
