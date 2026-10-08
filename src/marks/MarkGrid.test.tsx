@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 import { MantineProvider } from '@mantine/core';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { SegmentKey } from '../domain/types';
 import { MarkGrid } from './MarkGrid';
+import { NumberPad } from './NumberPad';
 
 afterEach(cleanup);
 
@@ -24,8 +25,17 @@ window.matchMedia ??= (query: string) =>
 type Commit = [SegmentKey, string, string, number | null];
 
 /** A grid backed by in-memory state, recording every commit in order. */
-function Harness({ commits, autoAdvance = true }: { commits: Commit[]; autoAdvance?: boolean }) {
+function Harness({
+  commits,
+  autoAdvance = true,
+  pad = false,
+}: {
+  commits: Commit[];
+  autoAdvance?: boolean;
+  pad?: boolean;
+}) {
   const [marks, setMarks] = useState(new Map<string, number>());
+  const focused = useRef<HTMLInputElement | null>(null);
   return (
     <MantineProvider>
       <MarkGrid
@@ -50,7 +60,10 @@ function Harness({ commits, autoAdvance = true }: { commits: Commit[]; autoAdvan
         autoAdvance={autoAdvance}
         readOnly={false}
         focusKey="seg"
+        numberPad={pad}
+        focusedInputRef={focused}
       />
+      {pad && <NumberPad targetRef={focused} />}
     </MantineProvider>
   );
 }
@@ -67,6 +80,15 @@ function type(text: string) {
       });
     });
   }
+}
+
+/** Taps a number pad key: mouse down (which must not steal focus), then click. */
+function tap(name: string) {
+  const button = screen.getByRole('button', { name });
+  act(() => {
+    fireEvent.mouseDown(button);
+    fireEvent.click(button);
+  });
 }
 
 function press(key: string) {
@@ -160,5 +182,62 @@ describe('MarkGrid entry', () => {
 
     expect(commits.map((c) => [c[2], c[3]])).toEqual([['amy', 40]]);
     expect(cell('Amy').value).toBe('4.0');
+  });
+
+  describe('number pad', () => {
+    it('keys in "57" like the keyboard and advances', () => {
+      const commits: Commit[] = [];
+      render(<Harness commits={commits} pad />);
+
+      tap('5');
+      expect(cell('Amy').value).toBe('5');
+      tap('7');
+
+      expect(commits).toEqual([['cd:w', 'j1', 'amy', 57]]);
+      expect(document.activeElement).toBe(cell('Beth'));
+    });
+
+    it('takes a decimal point, Enter and Backspace', () => {
+      const commits: Commit[] = [];
+      render(<Harness commits={commits} autoAdvance={false} pad />);
+
+      tap('4');
+      tap('.');
+      tap('5');
+      tap('9');
+      tap('Backspace');
+      tap('Enter');
+      tap('7');
+      tap('Enter');
+
+      expect(commits.map((c) => [c[2], c[3]])).toEqual([
+        ['amy', 45],
+        ['beth', 70],
+      ]);
+      expect(document.activeElement).toBe(cell('Cara'));
+    });
+
+    it('replaces an existing mark and clears it with Backspace', () => {
+      const commits: Commit[] = [];
+      render(<Harness commits={commits} pad />);
+      type('52');
+
+      act(() => {
+        fireEvent.mouseDown(cell('Amy'));
+      });
+      tap('6');
+      tap('1');
+      act(() => {
+        fireEvent.mouseDown(cell('Amy'));
+      });
+      tap('Backspace');
+      tap('Enter');
+
+      expect(commits.map((c) => [c[2], c[3]])).toEqual([
+        ['amy', 52],
+        ['amy', 61],
+        ['amy', null],
+      ]);
+    });
   });
 });

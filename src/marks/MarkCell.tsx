@@ -8,6 +8,8 @@ interface Props {
   value: number | undefined;
   readOnly: boolean;
   autoAdvance: boolean;
+  /** "none" keeps the system keyboard away when an on-screen number pad is in use. */
+  inputMode: 'decimal' | 'none';
   label: string;
   inputRef: (el: HTMLInputElement | null) => void;
   onCommit: (tenths: number | null) => void;
@@ -19,6 +21,7 @@ export function MarkCell({
   value,
   readOnly,
   autoAdvance,
+  inputMode,
   label,
   inputRef,
   onCommit,
@@ -109,7 +112,7 @@ export function MarkCell({
       className={className}
       value={display}
       readOnly={readOnly}
-      inputMode="decimal"
+      inputMode={inputMode}
       autoComplete="off"
       spellCheck={false}
       aria-label={label}
