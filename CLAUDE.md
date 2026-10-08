@@ -69,7 +69,7 @@ grid are display-only).
 to text (`src/pdf/documents.test.ts`).
 
 **Mark entry.** `src/marks/MarkGrid.tsx` is a keyboard-driven grid (`gridNav.ts` for movement,
-`parseMark.ts` for shorthand such as `57` → 5.7, `100` → 10.0). Entry speed is the key UX
+`parseMark.ts` for shorthand such as `57` → 5.7, `10` → 1.0, `100` → 10.0). Entry speed is the key UX
 requirement; don't add steps or confirmations to mark entry.
 
 **Import/export.** `src/io/competitionFile.ts` defines a versioned, zod-validated file format

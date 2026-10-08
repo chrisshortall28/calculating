@@ -1,5 +1,5 @@
 import { Text } from '@mantine/core';
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import type { Id, SegmentKey } from '../domain/types';
 import { markKeyLabel } from '../domain/segments';
 import { arrowCell, stepCell, type Cell, type Direction } from './gridNav';
@@ -30,6 +30,10 @@ interface Props {
   direction: Direction;
   autoAdvance: boolean;
   readOnly: boolean;
+  /** An on-screen number pad is in use: don't raise the system keyboard on touch devices. */
+  numberPad?: boolean;
+  /** Kept pointing at the cell that last had focus, for the number pad. */
+  focusedInputRef?: RefObject<HTMLInputElement | null>;
   /** changes to this value re-focus the first empty cell (e.g. switching segment) */
   focusKey?: string;
 }
@@ -50,6 +54,8 @@ export function MarkGrid(props: Props) {
     direction,
     autoAdvance,
     readOnly,
+    numberPad,
+    focusedInputRef,
     focusKey,
   } = props;
   const cols = judges.length * markKeys.length;
@@ -170,6 +176,7 @@ export function MarkGrid(props: Props) {
                           value={getValue(key, j.id, row.id)}
                           readOnly={readOnly}
                           autoAdvance={autoAdvance}
+                          inputMode={numberPad ? 'none' : 'decimal'}
                           label={`${row.label}, judge ${ji + 1}${multi ? ` ${markKeyLabel(key)}` : ''}`}
                           inputRef={(el) => {
                             const id = `${r}:${col}`;
@@ -178,7 +185,11 @@ export function MarkGrid(props: Props) {
                           }}
                           onCommit={(t) => onCommit(key, j.id, row.id, t)}
                           onNavigate={(intent) => navigate(cell, intent)}
-                          onFocus={() => setActive(cell)}
+                          onFocus={() => {
+                            setActive(cell);
+                            if (focusedInputRef)
+                              focusedInputRef.current = refs.current.get(`${r}:${col}`) ?? null;
+                          }}
                         />
                         {ordinals && !multi && (
                           <span className={`${classes.ordinal} ${classes.inlineOrdinal}`}>

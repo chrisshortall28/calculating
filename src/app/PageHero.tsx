@@ -14,6 +14,8 @@ export function PageHero({
   crumbs,
   title,
   titleAddon,
+  titleStart,
+  titleEnd,
   meta,
   badges,
   actions,
@@ -24,6 +26,9 @@ export function PageHero({
   crumbs: Crumb[];
   title: ReactNode;
   titleAddon?: ReactNode;
+  /** Beside the title, before and after it. On narrow screens they drop beneath the title, which then gets the full width. */
+  titleStart?: ReactNode;
+  titleEnd?: ReactNode;
   meta?: ReactNode;
   badges?: ReactNode;
   actions?: ReactNode;
@@ -33,13 +38,20 @@ export function PageHero({
   size?: MantineSize;
   colors?: ClubColors;
 }) {
+  const hasTitleNav = !!(titleStart || titleEnd);
+
   return (
     <div className={classes.hero} style={clubVars(colors)}>
       <Container size={size} className={classes.inner}>
         {crumbs.length > 0 && (
           <Group gap={6} className={classes.crumbs} wrap="nowrap">
             {crumbs.map((c, i) => (
-              <Group key={i} gap={6} wrap="nowrap">
+              <Group
+                key={i}
+                gap={6}
+                wrap="nowrap"
+                className={i > 0 && i === crumbs.length - 1 && !c.to ? classes.crumbCurrentItem : undefined}
+              >
                 {i > 0 && <span className={classes.sep}>/</span>}
                 {c.to ? (
                   <Anchor component={Link} to={c.to} className={classes.crumbLink}>
@@ -55,11 +67,13 @@ export function PageHero({
           </Group>
         )}
         <Group justify="space-between" align="flex-end" wrap="wrap" gap="md">
-          <Stack gap={6} style={{ minWidth: 0 }}>
-            <Group gap="sm" wrap="nowrap" align="center">
+          <Stack gap={6} style={{ minWidth: 0, flexGrow: hasTitleNav ? 1 : undefined }}>
+            <div className={`${classes.titleRow} ${hasTitleNav ? classes.titleRowNav : ''}`}>
+              {titleStart}
               <h1 className={classes.title}>{title}</h1>
+              {titleEnd}
               {titleAddon}
-            </Group>
+            </div>
             {(meta || badges) && (
               <Group gap="md" className={classes.meta}>
                 {badges}

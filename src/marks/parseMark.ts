@@ -7,7 +7,7 @@ export type ParseResult =
  *
  * Fast-entry shorthand (no decimal point needed):
  *   "5"   -> 5.0     "57" -> 5.7     "05" -> 0.5
- *   "10"  -> 10.0    "100" -> 10.0
+ *   "10"  -> 1.0     "100" -> 10.0 (a full 10.0 is rare, so "10" is read like any other two digits)
  * Explicit decimals: "5.7", "5,7", ".5", "5." are accepted.
  */
 export function parseMark(raw: string): ParseResult {
@@ -15,7 +15,7 @@ export function parseMark(raw: string): ParseResult {
   if (s === '') return { ok: true, tenths: null };
 
   if (/^\d+$/.test(s)) {
-    if (s === '10' || s === '100') return { ok: true, tenths: 100 };
+    if (s === '100') return { ok: true, tenths: 100 };
     if (s.length === 1) return { ok: true, tenths: Number(s) * 10 };
     if (s.length === 2) return { ok: true, tenths: Number(s) };
     return { ok: false, error: 'Mark must be between 0.0 and 10.0' };
@@ -33,11 +33,12 @@ export function parseMark(raw: string): ParseResult {
 
 /**
  * True when no further keystroke could make a different valid mark, so the grid can
- * auto-advance: "57", "5.7", "100", "10.0". Not "5" (could be "57") or "10" (could be "100").
+ * auto-advance: "57", "10", "5.7", "10.0". Not "5" (could be "57"). Typing "10" advances at once,
+ * so "100" and "10.0" only get through with auto-advance off.
  */
 export function isCompleteMark(raw: string): boolean {
   const s = raw.trim().replace(',', '.');
-  if (/^\d{2}$/.test(s)) return s !== '10';
+  if (/^\d{2}$/.test(s)) return true;
   if (s === '100') return true;
   return /^\d{0,2}\.\d$/.test(s) && parseMark(s).ok;
 }

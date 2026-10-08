@@ -1,0 +1,37 @@
+.pad {
+  flex: none;
+  width: 280px;
+  /* Stays in view as a long grid scrolls, below the app header. */
+  position: sticky;
+  top: calc(var(--app-shell-header-height, 0px) + var(--mantine-spacing-md));
+}
+
+.key {
+  height: 84px;
+  padding: 0;
+  font-size: 2rem;
+  font-variant-numeric: tabular-nums;
+  /* No double-tap zoom when tapping quickly. */
+  touch-action: manipulation;
+}
+
+/* Raised keys: a clear edge and a drop shadow underneath, flattening as the key is pressed. */
+.key {
+  --key-edge: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-3));
+  border: 1px solid var(--key-edge);
+  box-shadow:
+    0 3px 0 var(--key-edge),
+    0 5px 6px rgb(0 0 0 / 0.18);
+  transition:
+    box-shadow 60ms,
+    transform 60ms;
+}
+
+.key:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 var(--key-edge);
+}
+
+.key:disabled {
+  box-shadow: none;
+}

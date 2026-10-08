@@ -1,10 +1,21 @@
-import { Anchor, Button, Card, Container, SimpleGrid, Stack, Text, ThemeIcon } from '@mantine/core';
+import {
+  Anchor,
+  Button,
+  Card,
+  Container,
+  FileButton,
+  SimpleGrid,
+  Stack,
+  Text,
+  ThemeIcon,
+} from '@mantine/core';
 import {
   IconArrowRight,
   IconBolt,
   IconBrandOpenSource,
   IconCalculator,
   IconDevices,
+  IconFileImport,
   IconFileTypePdf,
   IconHelpCircle,
   IconListDetails,
@@ -18,6 +29,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { SectionHeader } from '../../app/SectionHeader';
 import { db } from '../../db/db';
+import { useImportCompetitionFile } from '../competitions/useImportCompetitionFile';
 import { CompetitionCard, NewCompetitionButton, useCompetitionStats } from '../competitions/CompetitionCard';
 import { HeroArt } from './HeroArt';
 import classes from './HomePage.module.css';
@@ -95,6 +107,7 @@ export function HomePage() {
   const latest = useLiveQuery(() => db.competitions.orderBy('updatedAt').last());
   const count = useLiveQuery(() => db.competitions.count());
   const stats = useCompetitionStats();
+  const onFile = useImportCompetitionFile();
 
   return (
     <>
@@ -129,7 +142,7 @@ export function HomePage() {
       <Container size="lg">
         <Stack gap={48}>
           <Stack gap="md">
-            <SectionHeader title={latest ? 'Latest competition' : 'Get started'} />
+            <SectionHeader title={latest ? 'Your latest competition' : 'Get started'} />
             <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
               {latest ? (
                 <CompetitionCard competition={latest} stats={stats?.get(latest.id)} />
@@ -153,12 +166,24 @@ export function HomePage() {
                       Calculating an event?
                     </Text>
                     <Text c="dimmed" size="sm" mt={4}>
-                      Create a competition, then add its events, skaters and judges. You can import a
-                      competition file from the competitions page.
+                      Create a competition, then add its events, skaters and judges — or import a competition
+                      file.
                     </Text>
                   </div>
                   <Stack gap="xs">
                     <NewCompetitionButton fullWidth />
+                    <FileButton onChange={onFile} accept=".pod,.json">
+                      {(props) => (
+                        <Button
+                          variant="default"
+                          fullWidth
+                          leftSection={<IconFileImport size={16} />}
+                          {...props}
+                        >
+                          Import a competition file
+                        </Button>
+                      )}
+                    </FileButton>
                     <Button
                       component={Link}
                       to="/competitions"

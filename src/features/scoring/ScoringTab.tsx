@@ -6,34 +6,32 @@ import {
   Card,
   Group,
   Kbd,
-  Progress,
+  Paper,
   SegmentedControl,
-  Select,
   Stack,
   Switch,
   Text,
 } from '@mantine/core';
 import { useLocalStorage } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
-import { IconCheck, IconEraser, IconLock, IconLockOpen } from '@tabler/icons-react';
-import { useMemo, useState } from 'react';
+import { IconEraser, IconLock, IconLockOpen } from '@tabler/icons-react';
+import { useMemo, useRef, useState } from 'react';
 import { useJudges, useSkaters } from '../../app/data';
 import { clearMarks, setEventStatus, setMark } from '../../db/repo';
 import { byId, entryClub, entryHeading, entryName } from '../../domain/entryName';
 import type { CompEvent } from '../../domain/types';
 import type { Direction } from '../../marks/gridNav';
 import { MarkGrid } from '../../marks/MarkGrid';
+import { NumberPad } from '../../marks/NumberPad';
+import { SegmentPicker } from './SegmentPicker';
 import { markKey, useEventResult } from './useEventResult';
 
-/** More dances than this switch with a dropdown rather than side-by-side tabs. */
-const MAX_TABBED_DANCES = 5;
 const fitWidth = {
   width: 'fit-content',
   minWidth: 'min(100%, calc(var(--container-size-xl) - 2 * var(--mantine-spacing-md)))',
   maxWidth: '100%',
   marginInline: 'auto',
 };
-const checkIcon = <IconCheck size={14} color="var(--mantine-color-green-6)" />;
 
 export function ScoringTab({ event }: { event: CompEvent }) {
   const { loading, segments, entries, markMap, result } = useEventResult(event);
@@ -44,6 +42,8 @@ export function ScoringTab({ event }: { event: CompEvent }) {
     defaultValue: 'down',
   });
   const [autoAdvance, setAutoAdvance] = useLocalStorage({ key: 'podium.autoAdvance', defaultValue: true });
+  const [numberPad, setNumberPad] = useLocalStorage({ key: 'podium.numberPad', defaultValue: false });
+  const focusedInput = useRef<HTMLInputElement | null>(null);
   const [segmentId, setSegmentId] = useState<string | null>(null);
 
   // Open on the first incomplete dance, then stay put: finishing a dance shouldn't switch the grid away.
@@ -53,7 +53,6 @@ export function ScoringTab({ event }: { event: CompEvent }) {
   const activeId = segmentId ?? initialId;
   const segment = segments.find((s) => s.id === activeId) ?? segments[0];
   const segResult = result.segments.find((s) => s.segmentId === segment?.id);
-  const isComplete = (id: string) => result.segments.find((s) => s.segmentId === id)?.complete;
   const locked = event.status === 'final';
 
   const judges = event.judgeIds.map((id) => ({ id, name: judgeMap.get(id)?.name ?? '?' }));
@@ -131,88 +130,77 @@ export function ScoringTab({ event }: { event: CompEvent }) {
     // Centred and as wide as the mark grid needs: the usual page width for a typical panel,
     // growing towards the window edges (then scrolling) as judges are added.
     <Stack style={fitWidth}>
-      <Group justify="space-between" align="flex-end">
-        {segments.length > MAX_TABBED_DANCES ? (
-          // Too many dances to sit side by side: pick from a list instead.
-          <Select
-            w={260}
-            value={segment.id}
-            onChange={(v) => v && setSegmentId(v)}
-            allowDeselect={false}
-            leftSection={isComplete(segment.id) ? checkIcon : undefined}
-            data={segments.map((s) => ({ value: s.id, label: s.name }))}
-            renderOption={({ option }) => (
-              <Group gap={6} wrap="nowrap">
-                {isComplete(option.value) ? checkIcon : <Box w={14} />}
-                {option.label}
-              </Group>
-            )}
-          />
-        ) : (
-          <SegmentedControl
-            value={segment.id}
-            onChange={setSegmentId}
-            data={segments.map((s) => ({
-              value: s.id,
-              label: (
-                <Group gap={6} wrap="nowrap">
-                  {isComplete(s.id) && checkIcon}
-                  {s.name}
-                </Group>
-              ),
-            }))}
-          />
-        )}
-        <Group>
-          <SegmentedControl
-            size="xs"
-            value={direction}
-            onChange={(v) => setDirection(v as Direction)}
-            data={[
-              { value: 'down', label: '↓ Judge by judge' },
-              { value: 'across', label: '→ Entry by entry' },
-            ]}
-          />
-          <Switch
-            size="sm"
-            label="Auto-advance"
-            checked={autoAdvance}
-            onChange={(e) => setAutoAdvance(e.currentTarget.checked)}
-          />
-          <Button
-            variant="default"
-            color="red"
-            leftSection={<IconEraser size={16} />}
-            disabled={locked || entered === 0}
-            onClick={confirmClear}
-          >
-            Clear marks
-          </Button>
-          <Button
-            variant={locked ? 'light' : 'filled'}
-            color={locked ? 'gray' : 'green'}
-            leftSection={locked ? <IconLockOpen size={16} /> : <IconLock size={16} />}
-            onClick={toggleLock}
-          >
-            {locked ? 'Unlock' : 'Mark final'}
-          </Button>
+      {/* Always-present options and actions, apart from the event-specific controls below. */}
+      <Paper
+        withBorder
+        shadow="xs"
+        radius="md"
+        px="md"
+        py="xs"
+        bg="light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-5))"
+        style={{ borderColor: 'light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-3))' }}
+      >
+        <Group justify="space-between" gap="md">
+          <Group gap="md">
+            <SegmentedControl
+              size="xs"
+              value={direction}
+              onChange={(v) => setDirection(v as Direction)}
+              data={[
+                { value: 'down', label: '↓ Judge by judge' },
+                { value: 'across', label: '→ Entry by entry' },
+              ]}
+            />
+            <Switch
+              size="sm"
+              label="Auto-advance"
+              checked={autoAdvance}
+              onChange={(e) => setAutoAdvance(e.currentTarget.checked)}
+            />
+            <Switch
+              size="sm"
+              label="Number pad"
+              checked={numberPad}
+              onChange={(e) => setNumberPad(e.currentTarget.checked)}
+            />
+          </Group>
+          <Group gap="sm">
+            <Button
+              variant="default"
+              color="red"
+              leftSection={<IconEraser size={16} />}
+              disabled={locked || entered === 0}
+              onClick={confirmClear}
+            >
+              Clear marks
+            </Button>
+            <Button
+              variant={locked ? 'light' : 'filled'}
+              color={locked ? 'gray' : 'green'}
+              leftSection={locked ? <IconLockOpen size={16} /> : <IconLock size={16} />}
+              onClick={toggleLock}
+            >
+              {locked ? 'Unlock' : 'Mark final'}
+            </Button>
+          </Group>
         </Group>
-      </Group>
+      </Paper>
 
-      <Group gap="sm">
-        <Progress
-          value={result.totalMarks ? (100 * entered) / result.totalMarks : 0}
-          w={200}
-          color={result.complete ? 'green' : 'blue'}
+      <Group justify="space-between" align="flex-end">
+        <SegmentPicker
+          value={segment.id}
+          onChange={setSegmentId}
+          segments={segments.map((s) => {
+            const r = result.segments.find((x) => x.segmentId === s.id)!;
+            const total = s.markKeys.length * judges.length * entries.length;
+            return {
+              id: s.id,
+              name: s.name,
+              progress: total ? (total - r.missingMarks) / total : 0,
+              complete: r.complete,
+            };
+          })}
         />
-        <Text size="sm" c="dimmed">
-          {entered} / {result.totalMarks} marks
-        </Text>
-        {segResult && !segResult.complete && segResult.missingMarks > 0 && (
-          <Badge color="yellow" variant="light">
-            {segResult.missingMarks} missing in {segment.name}
-          </Badge>
-        )}
         {locked && (
           <Badge color="green" leftSection={<IconLock size={12} />}>
             Final — read only
@@ -221,33 +209,39 @@ export function ScoringTab({ event }: { event: CompEvent }) {
       </Group>
 
       {/* The mark grid's card fits its columns, scrolling once it runs out of room. */}
-      <Box w="fit-content" maw="100%" miw={0}>
-        <Card withBorder p="sm">
-          <MarkGrid
-            focusKey={`${event.id}:${segment.id}`}
-            rows={rows}
-            entryLabel={entryHeading[event.entryType]}
-            judges={judges}
-            markKeys={segment.markKeys}
-            getValue={(k, j, e) => markMap.get(markKey(k, j, e))}
-            onCommit={(segmentKey, judgeId, entryId, tenths) => {
-              void setMark({ eventId: event.id, segmentKey, judgeId, entryId }, tenths);
-              if (event.status === 'setup' || event.status === 'ready')
-                void setEventStatus(event.id, 'scoring');
-            }}
-            ordinals={ordinals}
-            direction={direction}
-            autoAdvance={autoAdvance}
-            readOnly={locked}
-          />
-          {/* Wraps to the grid's width rather than widening the page to fit on one line. */}
-          <Text size="xs" c="dimmed" mt="sm" style={{ contain: 'inline-size' }}>
-            Type <Kbd>57</Kbd> for 5.7, <Kbd>100</Kbd> for 10.0, <Kbd>5</Kbd> <Kbd>Enter</Kbd> for 5.0.{' '}
-            <Kbd>Enter</Kbd>/<Kbd>Tab</Kbd> next · <Kbd>Shift</Kbd> back · arrows move · <Kbd>Esc</Kbd> undo
-            edit · empty + <Kbd>Enter</Kbd> keeps the value; delete the text to clear a mark.
-          </Text>
-        </Card>
-      </Box>
+      <Group wrap="nowrap" align="flex-start" justify="space-between" gap="md">
+        <Box w="fit-content" maw="100%" miw={0}>
+          <Card withBorder p="sm">
+            <MarkGrid
+              focusKey={`${event.id}:${segment.id}`}
+              rows={rows}
+              entryLabel={entryHeading[event.entryType]}
+              judges={judges}
+              markKeys={segment.markKeys}
+              getValue={(k, j, e) => markMap.get(markKey(k, j, e))}
+              onCommit={(segmentKey, judgeId, entryId, tenths) => {
+                void setMark({ eventId: event.id, segmentKey, judgeId, entryId }, tenths);
+                if (event.status === 'setup' || event.status === 'ready')
+                  void setEventStatus(event.id, 'scoring');
+              }}
+              ordinals={ordinals}
+              direction={direction}
+              autoAdvance={autoAdvance}
+              readOnly={locked}
+              numberPad={numberPad}
+              focusedInputRef={focusedInput}
+            />
+            {/* Wraps to the grid's width rather than widening the page to fit on one line. */}
+            <Text size="xs" c="dimmed" mt="sm" style={{ contain: 'inline-size' }}>
+              Type <Kbd>57</Kbd> for 5.7, <Kbd>10</Kbd> for 1.0, <Kbd>5</Kbd> <Kbd>Enter</Kbd> for 5.0; for
+              10.0 turn off auto-advance and type <Kbd>100</Kbd>. <Kbd>Enter</Kbd>/<Kbd>Tab</Kbd> next ·{' '}
+              <Kbd>Shift</Kbd> back · arrows move · <Kbd>Esc</Kbd> undo edit · empty + <Kbd>Enter</Kbd> keeps
+              the value; delete the text to clear a mark.
+            </Text>
+          </Card>
+        </Box>
+        {numberPad && <NumberPad targetRef={focusedInput} disabled={locked} />}
+      </Group>
     </Stack>
   );
 }
