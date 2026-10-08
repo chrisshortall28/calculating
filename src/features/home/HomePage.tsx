@@ -129,7 +129,7 @@ export function HomePage() {
       <Container size="lg">
         <Stack gap={48}>
           <Stack gap="md">
-            <SectionHeader title={latest ? 'Latest competition' : 'Get started'} />
+            <SectionHeader title={latest ? 'Your latest competition' : 'Get started'} />
             <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
               {latest ? (
                 <CompetitionCard competition={latest} stats={stats?.get(latest.id)} />
