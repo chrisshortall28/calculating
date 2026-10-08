@@ -17,15 +17,13 @@ export interface Competition {
 }
 
 /** Which kind of Combined Cup event an event counts as. */
-export type CupRole = 'solo' | 'duo' | 'team';
+export type CupRole = 'solo' | 'duo' | 'team' | 'mixmatch';
 export type CupCategory = 'newcomer-novice' | 'elementary-prelim' | 'inter-bronze-up';
 
 export interface CombinedCupConfig {
   /** The events that count towards the Cup, and as what. Other events don't count. */
   eventRoles: Record<Id, CupRole>;
   entrants: { skaterId: Id; category: CupCategory }[];
-  /** The externally scored Mix and Match trio: skaterId -> placing (1–5). No entry = not placed. */
-  trio: Record<Id, number>;
 }
 
 /** Catalogue of compulsory dances, per competition so exports are self-contained. */

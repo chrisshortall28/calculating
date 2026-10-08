@@ -25,13 +25,12 @@ const skaters = [
   { id: 'c', name: 'Cara Dunn', club: 'Club C' },
 ];
 const cup: CombinedCupConfig = {
-  eventRoles: { s1: 'solo', t1: 'team', t2: 'team' },
+  eventRoles: { s1: 'solo', t1: 'team', t2: 'team', mm: 'mixmatch' },
   entrants: [
     { skaterId: 'a', category: 'newcomer-novice' },
     { skaterId: 'b', category: 'newcomer-novice' },
     { skaterId: 'c', category: 'inter-bronze-up' },
   ],
-  trio: { a: 1 },
 };
 const events: CupEventInput[] = [
   {
@@ -56,6 +55,13 @@ const events: CupEventInput[] = [
     eventId: 't2',
     name: 'Superteam',
     role: 'team',
+    complete: true,
+    entries: [{ skaterIds: ['a'], place: 1 }],
+  },
+  {
+    eventId: 'mm',
+    name: 'Mix & Match',
+    role: 'mixmatch',
     complete: true,
     entries: [{ skaterIds: ['a'], place: 1 }],
   },
@@ -91,15 +97,14 @@ describe('combinedCupDocument', () => {
 });
 
 describe('tie-break notes in the PDF', () => {
-  const doc = (places: Record<string, number>, trio: Record<string, number> = { a: 2, b: 4 }) =>
+  const doc = (places: Record<string, number>, mm: Record<string, number> = { a: 2, b: 4 }) =>
     texts(
       combinedCupDocument(
         competition,
         buildCupStandings(
           {
-            eventRoles: { s1: 'solo' },
+            eventRoles: { s1: 'solo', mm: 'mixmatch' },
             entrants: ['a', 'b', 'c'].map((skaterId) => ({ skaterId, category: 'newcomer-novice' as const })),
-            trio,
           },
           [
             {
@@ -108,6 +113,13 @@ describe('tie-break notes in the PDF', () => {
               role: 'solo',
               complete: true,
               entries: Object.entries(places).map(([id, place]) => ({ skaterIds: [id], place })),
+            },
+            {
+              eventId: 'mm',
+              name: 'Mix & Match',
+              role: 'mixmatch',
+              complete: true,
+              entries: Object.entries(mm).map(([id, place]) => ({ skaterIds: [id], place })),
             },
           ],
         ),

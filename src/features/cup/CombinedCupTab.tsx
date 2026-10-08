@@ -34,10 +34,10 @@ import { printCombinedCup } from '../../pdf/actions';
 import { loadCompetitionEvents } from '../../pdf/loadEvent';
 import { ordinalLabel } from '../../scoring';
 
-const ROLE_OPTIONS = [{ value: 'none', label: 'Not counted' }, ...CUP_ROLES];
-const TRIO_OPTIONS = [
-  { value: 'none', label: '—' },
-  ...[1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: ordinalLabel(n) })),
+// Mix & Match is a team event, so it is only offered for events entered as a team.
+const roleOptions = (entryType: string) => [
+  { value: 'none', label: 'Not counted' },
+  ...CUP_ROLES.filter((r) => r.value !== 'mixmatch' || entryType === 'team'),
 ];
 
 export function CombinedCupTab() {
@@ -89,20 +89,13 @@ export function CombinedCupTab() {
       ),
     });
 
-  const setTrio = (skaterId: string, value: string | null) => {
-    const trio = { ...cup.trio };
-    if (value && value !== 'none') trio[skaterId] = Number(value);
-    else delete trio[skaterId];
-    return save({ trio });
-  };
-
   const turnOff = () =>
     modals.openConfirmModal({
       title: 'Turn off The Combined Cup',
       children: (
         <Text size="sm">
-          This removes the Combined Cup entrants, categories and Mix and Match results from this competition.
-          Events and marks are not affected.
+          This removes the Combined Cup entrants and categories from this competition. Events and marks are
+          not affected.
         </Text>
       ),
       labels: { confirm: 'Turn off', cancel: 'Cancel' },
@@ -135,8 +128,8 @@ export function CombinedCupTab() {
           <Title order={3}>The Combined Cup</Title>
           <Text size="sm" c="dimmed" maw={640}>
             Entrants score points for their placing in their solo dance, their duo dance, their best team
-            event and the Mix and Match trio: 5 points for 1st down to 1 point for 5th. The highest total in
-            each category wins; ties on points go to the Mix and Match result, then solo, duo and team.
+            event and Mix & Match: 5 points for 1st down to 1 point for 5th. The highest total in each
+            category wins; ties on points go to the Mix and Match result, then solo, duo and team.
           </Text>
         </div>
         <Button
@@ -174,7 +167,7 @@ export function CombinedCupTab() {
                     <Select
                       size="xs"
                       aria-label={`Combined Cup role of ${e.name}`}
-                      data={ROLE_OPTIONS}
+                      data={roleOptions(e.entryType)}
                       value={cup.eventRoles[e.id] ?? 'none'}
                       allowDeselect={false}
                       onChange={(v) => setRole(e.id, v === 'none' || !v ? null : (v as CupRole))}
@@ -214,7 +207,6 @@ export function CombinedCupTab() {
               <Table.Tr>
                 <Table.Th>Skater</Table.Th>
                 <Table.Th>Category</Table.Th>
-                <Table.Th title="The externally scored Mix and Match trio">Mix and Match</Table.Th>
                 <Table.Th w={40} />
               </Table.Tr>
             </Table.Thead>
@@ -243,16 +235,6 @@ export function CombinedCupTab() {
                           ),
                         })
                       }
-                    />
-                  </Table.Td>
-                  <Table.Td w={120}>
-                    <Select
-                      size="xs"
-                      aria-label={`Mix and Match placing of ${nameOf(en.skaterId)}`}
-                      data={TRIO_OPTIONS}
-                      value={cup.trio[en.skaterId] ? String(cup.trio[en.skaterId]) : 'none'}
-                      allowDeselect={false}
-                      onChange={(v) => setTrio(en.skaterId, v)}
                     />
                   </Table.Td>
                   <Table.Td>
@@ -317,7 +299,7 @@ export function CombinedCupTab() {
                       <Table.Th>Solo dance</Table.Th>
                       <Table.Th>Duo dance</Table.Th>
                       <Table.Th>Team</Table.Th>
-                      <Table.Th>Mix and Match</Table.Th>
+                      <Table.Th>Mix & Match</Table.Th>
                       <Table.Th ta="center">Total</Table.Th>
                     </Table.Tr>
                   </Table.Thead>
@@ -377,13 +359,7 @@ function RankedRow({ r, name, club }: { r: CupRanked; name: string; club?: strin
         <PartCell part={r.team} />
       </Table.Td>
       <Table.Td>
-        {r.trio ? (
-          <Text size="sm" fw={600}>
-            {ordinalLabel(r.trio.place)} · {r.trio.points} {r.trio.points === 1 ? 'pt' : 'pts'}
-          </Text>
-        ) : (
-          <Text c="dimmed">—</Text>
-        )}
+        <PartCell part={r.mixmatch} />
       </Table.Td>
       <Table.Td ta="center" fw={700}>
         {r.total}

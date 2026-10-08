@@ -23,11 +23,9 @@ const event = (
 const cup = (
   entrants: Record<string, CombinedCupConfig['entrants'][number]['category']>,
   roles: Record<string, CupRole>,
-  trio: Record<string, number> = {},
 ): CombinedCupConfig => ({
   eventRoles: roles,
   entrants: Object.entries(entrants).map(([skaterId, category]) => ({ skaterId, category })),
-  trio,
 });
 
 const cat = (s: ReturnType<typeof buildCupStandings>, c: string) =>
@@ -85,9 +83,11 @@ describe('buildCupStandings', () => {
     expect(row(s, 'b').solo.counted?.points).toBe(4);
   });
 
-  it('adds the Mix and Match trio placing', () => {
-    const s = buildCupStandings(cup({ a: 'newcomer-novice' }, {}, { a: 1 }), []);
-    expect(row(s, 'a').trio).toEqual({ place: 1, points: 5 });
+  it('scores a Mix & Match event like the other parts', () => {
+    const s = buildCupStandings(cup({ a: 'newcomer-novice' }, { mm: 'mixmatch' }), [
+      event('mm', 'mixmatch', { a: 1 }),
+    ]);
+    expect(row(s, 'a').mixmatch.counted).toMatchObject({ eventId: 'mm', place: 1, points: 5 });
     expect(row(s, 'a').total).toBe(5);
   });
 
@@ -125,22 +125,24 @@ describe('buildCupStandings', () => {
       expect(cat(s, 'inter-bronze-up').winners).toEqual([]);
     });
 
-    const two = (roles: Record<string, CupRole>, trio: Record<string, number> = {}) =>
-      cup({ a: 'newcomer-novice', b: 'newcomer-novice' }, roles, trio);
+    const two = (roles: Record<string, CupRole>) =>
+      cup({ a: 'newcomer-novice', b: 'newcomer-novice' }, roles);
 
     it('breaks a tie on points by the Mix and Match result first', () => {
       // a: solo 3rd (3) + trio 2nd (4) = 7; b: solo 1st (5) + trio 4th (2) = 7
-      const s = buildCupStandings(two({ solo1: 'solo' }, { a: 2, b: 4 }), [
+      const s = buildCupStandings(two({ solo1: 'solo', mm: 'mixmatch' }), [
         event('solo1', 'solo', { a: 3, b: 1 }),
+        event('mm', 'mixmatch', { a: 2, b: 4 }),
       ]);
       expect(cat(s, 'newcomer-novice').ranked.map((r) => r.skaterId)).toEqual(['a', 'b']);
-      expect(row(s, 'a')).toMatchObject({ rank: 1, tied: false, levelOnTotal: true, decidedBy: 'trio' });
+      expect(row(s, 'a')).toMatchObject({ rank: 1, tied: false, levelOnTotal: true, decidedBy: 'mixmatch' });
       expect(cat(s, 'newcomer-novice').winners).toEqual(['a']);
     });
 
     it('then by the solo result when the trio results are level', () => {
       // both 9 points with trio 3rd (3): a solo 2nd (4) + duo 4th (2); b solo 1st (5) + duo 5th (1)
-      const s = buildCupStandings(two({ solo1: 'solo', duo1: 'duo' }, { a: 3, b: 3 }), [
+      const s = buildCupStandings(two({ solo1: 'solo', duo1: 'duo', mm: 'mixmatch' }), [
+        event('mm', 'mixmatch', { a: 3, b: 3 }, { tied: ['a', 'b'] }),
         event('solo1', 'solo', { a: 2, b: 1 }),
         event('duo1', 'duo', { a: 4, b: 5 }),
       ]);

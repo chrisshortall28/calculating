@@ -30,14 +30,13 @@ const fileSchema = z.object({
     welcome: z.string().optional(),
     combinedCup: z
       .object({
-        eventRoles: z.record(z.string(), z.enum(['solo', 'duo', 'team'])),
+        eventRoles: z.record(z.string(), z.enum(['solo', 'duo', 'team', 'mixmatch'])),
         entrants: z.array(
           z.object({
             skaterId: z.string(),
             category: z.enum(['newcomer-novice', 'elementary-prelim', 'inter-bronze-up']),
           }),
         ),
-        trio: z.record(z.string(), z.number().int().min(1).max(5)),
       })
       .optional(),
     createdAt: z.number(),
@@ -155,9 +154,6 @@ export async function importCompetition(file: CompetitionFile, mode: 'copy' | 'r
             Object.entries(file.competition.combinedCup.eventRoles).map(([k, v]) => [id(k), v]),
           ),
           entrants: file.competition.combinedCup.entrants.map((e) => ({ ...e, skaterId: id(e.skaterId) })),
-          trio: Object.fromEntries(
-            Object.entries(file.competition.combinedCup.trio).map(([k, v]) => [id(k), v]),
-          ),
         },
       }),
       updatedAt: now,

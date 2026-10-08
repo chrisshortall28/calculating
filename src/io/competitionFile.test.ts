@@ -99,7 +99,6 @@ describe('competition file round trip', () => {
     await repo.updateCombinedCup(compId, {
       eventRoles: { [eventId]: 'solo' },
       entrants: [{ skaterId: skater!.id, category: 'elementary-prelim' }],
-      trio: { [skater!.id]: 2 },
     });
     const file = parseCompetitionFile(JSON.parse(JSON.stringify(await exportCompetition(compId))));
     const copyId = await importCompetition(file, 'copy');
@@ -109,7 +108,6 @@ describe('competition file round trip', () => {
     const copySkater = copySkaters.find((s) => s.name === skater!.name)!;
     expect(copy.eventRoles).toEqual({ [copyEvent!.id]: 'solo' });
     expect(copy.entrants).toEqual([{ skaterId: copySkater.id, category: 'elementary-prelim' }]);
-    expect(copy.trio).toEqual({ [copySkater.id]: 2 });
     expect(copyEvent!.id).not.toBe(eventId);
   });
 
