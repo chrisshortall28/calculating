@@ -1,0 +1,50 @@
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-xs);
+}
+
+.button {
+  position: relative;
+  overflow: hidden;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-lg) calc(var(--mantine-spacing-sm) + 4px);
+  border: 1px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4));
+  border-radius: var(--mantine-radius-md);
+  background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+  transition: background-color 100ms;
+}
+
+.button:hover {
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-5));
+}
+
+.button[data-active] {
+  border-color: var(--mantine-primary-color-filled);
+  background: var(--mantine-primary-color-light);
+  box-shadow: 0 0 0 1px var(--mantine-primary-color-filled);
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Progress runs along the button's bottom edge. */
+.track {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 5px;
+  background: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  background: var(--mantine-primary-color-filled);
+  transition: width 200ms;
+}
+
+.fill[data-complete] {
+  background: var(--mantine-color-green-6);
+}

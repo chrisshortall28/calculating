@@ -7,16 +7,14 @@ import {
   Group,
   Kbd,
   Paper,
-  Progress,
   SegmentedControl,
-  Select,
   Stack,
   Switch,
   Text,
 } from '@mantine/core';
 import { useLocalStorage } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
-import { IconCheck, IconEraser, IconLock, IconLockOpen } from '@tabler/icons-react';
+import { IconEraser, IconLock, IconLockOpen } from '@tabler/icons-react';
 import { useMemo, useRef, useState } from 'react';
 import { useJudges, useSkaters } from '../../app/data';
 import { clearMarks, setEventStatus, setMark } from '../../db/repo';
@@ -25,17 +23,15 @@ import type { CompEvent } from '../../domain/types';
 import type { Direction } from '../../marks/gridNav';
 import { MarkGrid } from '../../marks/MarkGrid';
 import { NumberPad } from '../../marks/NumberPad';
+import { SegmentPicker } from './SegmentPicker';
 import { markKey, useEventResult } from './useEventResult';
 
-/** More dances than this switch with a dropdown rather than side-by-side tabs. */
-const MAX_TABBED_DANCES = 5;
 const fitWidth = {
   width: 'fit-content',
   minWidth: 'min(100%, calc(var(--container-size-xl) - 2 * var(--mantine-spacing-md)))',
   maxWidth: '100%',
   marginInline: 'auto',
 };
-const checkIcon = <IconCheck size={14} color="var(--mantine-color-green-6)" />;
 
 export function ScoringTab({ event }: { event: CompEvent }) {
   const { loading, segments, entries, markMap, result } = useEventResult(event);
@@ -57,7 +53,6 @@ export function ScoringTab({ event }: { event: CompEvent }) {
   const activeId = segmentId ?? initialId;
   const segment = segments.find((s) => s.id === activeId) ?? segments[0];
   const segResult = result.segments.find((s) => s.segmentId === segment?.id);
-  const isComplete = (id: string) => result.segments.find((s) => s.segmentId === id)?.complete;
   const locked = event.status === 'final';
 
   const judges = event.judgeIds.map((id) => ({ id, name: judgeMap.get(id)?.name ?? '?' }));
@@ -192,53 +187,20 @@ export function ScoringTab({ event }: { event: CompEvent }) {
       </Paper>
 
       <Group justify="space-between" align="flex-end">
-        {segments.length > MAX_TABBED_DANCES ? (
-          // Too many dances to sit side by side: pick from a list instead.
-          <Select
-            w={260}
-            value={segment.id}
-            onChange={(v) => v && setSegmentId(v)}
-            allowDeselect={false}
-            leftSection={isComplete(segment.id) ? checkIcon : undefined}
-            data={segments.map((s) => ({ value: s.id, label: s.name }))}
-            renderOption={({ option }) => (
-              <Group gap={6} wrap="nowrap">
-                {isComplete(option.value) ? checkIcon : <Box w={14} />}
-                {option.label}
-              </Group>
-            )}
-          />
-        ) : (
-          <SegmentedControl
-            value={segment.id}
-            onChange={setSegmentId}
-            data={segments.map((s) => ({
-              value: s.id,
-              label: (
-                <Group gap={6} wrap="nowrap">
-                  {isComplete(s.id) && checkIcon}
-                  {s.name}
-                </Group>
-              ),
-            }))}
-          />
-        )}
-      </Group>
-
-      <Group gap="sm">
-        <Progress
-          value={result.totalMarks ? (100 * entered) / result.totalMarks : 0}
-          w={200}
-          color={result.complete ? 'green' : 'blue'}
+        <SegmentPicker
+          value={segment.id}
+          onChange={setSegmentId}
+          segments={segments.map((s) => {
+            const r = result.segments.find((x) => x.segmentId === s.id)!;
+            const total = s.markKeys.length * judges.length * entries.length;
+            return {
+              id: s.id,
+              name: s.name,
+              progress: total ? (total - r.missingMarks) / total : 0,
+              complete: r.complete,
+            };
+          })}
         />
-        <Text size="sm" c="dimmed">
-          {entered} / {result.totalMarks} marks
-        </Text>
-        {segResult && !segResult.complete && segResult.missingMarks > 0 && (
-          <Badge color="yellow" variant="light">
-            {segResult.missingMarks} missing in {segment.name}
-          </Badge>
-        )}
         {locked && (
           <Badge color="green" leftSection={<IconLock size={12} />}>
             Final — read only
