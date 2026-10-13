@@ -5,7 +5,7 @@ import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useJudges, useSkaters } from '../../app/data';
 import { clearMarks, setEventStatus, setMark } from '../../db/repo';
 import { byId, entryClub, entryHeading, entryName } from '../../domain/entryName';
-import { eventTieBreakMarks } from '../../domain/segments';
+import { eventTieBreakMarks, segmentNoun } from '../../domain/segments';
 import type { CompEvent, SegmentKey } from '../../domain/types';
 import { judgeEventRanks } from '../../scoring';
 import type { Direction } from '../../marks/gridNav';
@@ -156,6 +156,7 @@ export function ScoringTab({ event }: { event: CompEvent }) {
     // growing towards the window edges (then scrolling) as judges are added.
     <Stack style={fitWidth} gap={28}>
       <ScoringToolbar
+        noun={segmentNoun(event)}
         view={view}
         onView={setView}
         direction={direction}

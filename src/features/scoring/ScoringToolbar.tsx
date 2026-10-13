@@ -3,6 +3,8 @@ import { IconEraser, IconLock, IconLockOpen } from '@tabler/icons-react';
 import type { Direction } from '../../marks/gridNav';
 import classes from './ScoringToolbar.module.css';
 
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 export type ScoringView = 'dance' | 'judge';
 
 function Segmented<T extends string>({
@@ -62,6 +64,8 @@ function Chip({
 
 /** The scoring options and actions, the same for every event. */
 export function ScoringToolbar(props: {
+  /** what the event's parts are called, lower case: dance, figure, programme or section */
+  noun: string;
   view: ScoringView;
   onView: (v: ScoringView) => void;
   direction: Direction;
@@ -85,7 +89,7 @@ export function ScoringToolbar(props: {
           value={view}
           onChange={props.onView}
           options={[
-            { value: 'dance', label: 'Dance' },
+            { value: 'dance', label: cap(props.noun) },
             { value: 'judge', label: 'Judge' },
           ]}
         />
@@ -98,7 +102,10 @@ export function ScoringToolbar(props: {
           onChange={props.onDirection}
           disabled={locked}
           options={[
-            { value: 'down', label: view === 'judge' ? '↓ Dance by dance' : '↓ Judge by judge' },
+            {
+              value: 'down',
+              label: view === 'judge' ? `↓ ${cap(props.noun)} by ${props.noun}` : '↓ Judge by judge',
+            },
             { value: 'across', label: '→ Skater by skater' },
           ]}
         />
