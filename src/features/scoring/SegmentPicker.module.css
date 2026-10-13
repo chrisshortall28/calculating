@@ -1,50 +1,59 @@
+/* Folder tabs: the selected tab is taller and joins the card below it. */
 .row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--mantine-spacing-xs);
+  align-items: flex-end;
+  gap: 6px;
+  position: relative;
+  z-index: 1;
+  margin-bottom: -1px;
 }
 
-.button {
-  position: relative;
-  overflow: hidden;
-  padding: var(--mantine-spacing-sm) var(--mantine-spacing-lg) calc(var(--mantine-spacing-sm) + 4px);
-  border: 1px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4));
-  border-radius: var(--mantine-radius-md);
-  background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  height: 46px;
+  padding: 0 var(--mantine-spacing-lg);
+  border: 1px solid var(--mantine-color-default-border);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  background: light-dark(#e8ecf1, var(--mantine-color-dark-6));
+  color: var(--mantine-color-dimmed);
+  font: inherit;
+  font-size: var(--mantine-font-size-md);
+  cursor: pointer;
   transition: background-color 100ms;
 }
 
-.button:hover {
-  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-5));
+.tab:hover {
+  background: light-dark(#dfe4ea, var(--mantine-color-dark-5));
 }
 
-.button[data-active] {
-  border-color: var(--mantine-primary-color-filled);
-  background: var(--mantine-primary-color-light);
-  box-shadow: 0 0 0 1px var(--mantine-primary-color-filled);
+.tab[data-active] {
+  height: 54px;
+  border-top: 3px solid var(--mantine-primary-color-filled);
+  background: var(--mantine-color-body);
+  color: var(--mantine-color-text);
+  font-weight: 600;
+  /* Cover the card's top border so the tab and card read as one piece. */
+  padding-bottom: 1px;
 }
 
-.label {
+.pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-}
-
-/* Progress runs along the button's bottom edge. */
-.track {
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 5px;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
   background: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
-.fill {
-  display: block;
-  height: 100%;
-  background: var(--mantine-primary-color-filled);
-  transition: width 200ms;
-}
-
-.fill[data-complete] {
-  background: var(--mantine-color-green-6);
+.pill[data-complete] {
+  background: light-dark(#e3f2e7, rgba(47, 158, 68, 0.2));
+  color: light-dark(#1b5e2f, var(--mantine-color-green-3));
 }

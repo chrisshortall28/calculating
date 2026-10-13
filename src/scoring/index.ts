@@ -12,6 +12,7 @@ import type {
 } from './types';
 
 export * from './types';
+export { judgeEventRanks } from './judgeOrdinals';
 export {
   bTotalsUsed,
   smvUsed,

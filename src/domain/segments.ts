@@ -149,3 +149,13 @@ export function factorSummary(
   if (parts.length < 2) return '';
   return parts.map(([name, f]) => `${name} ×${f / 100}`).join(', ');
 }
+
+/** What an event's scored parts are called: dance, figure, programme, or section when figures and programmes mix. */
+export function segmentNoun(
+  event: Pick<CompEvent, 'discipline' | 'figures' | 'hasShort' | 'hasLong'>,
+): 'dance' | 'figure' | 'programme' | 'section' {
+  if (event.discipline !== 'figures') return 'dance';
+  const programmes = event.hasShort || event.hasLong;
+  if (event.figures.length > 0 && programmes) return 'section';
+  return programmes ? 'programme' : 'figure';
+}
