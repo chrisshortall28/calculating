@@ -225,10 +225,22 @@ export function ScoringTab({ event }: { event: CompEvent }) {
             ]}
           />
           {byJudge ? (
-            <SegmentedControl
+            <SegmentPicker
               value={judgeId ?? ''}
               onChange={setJudgeSel}
-              data={judges.map((j, i) => ({ value: j.id, label: `J${i + 1} ${j.name}` }))}
+              segments={judges.map((j, i) => {
+                const total = segments.reduce((n, s) => n + s.markKeys.length, 0) * entries.length;
+                let missing = 0;
+                for (const s of segments)
+                  for (const k of s.markKeys)
+                    for (const e of entries) if (!markMap.has(markKey(k, j.id, e.id))) missing++;
+                return {
+                  id: j.id,
+                  name: `J${i + 1} ${j.name}`,
+                  progress: total ? (total - missing) / total : 0,
+                  complete: total > 0 && missing === 0,
+                };
+              })}
             />
           ) : (
             <SegmentPicker

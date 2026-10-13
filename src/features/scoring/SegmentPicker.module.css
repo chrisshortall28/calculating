@@ -7,7 +7,7 @@
 .button {
   position: relative;
   overflow: hidden;
-  padding: var(--mantine-spacing-sm) var(--mantine-spacing-lg) calc(var(--mantine-spacing-sm) + 4px);
+  padding: calc(var(--mantine-spacing-sm) - 5px) var(--mantine-spacing-lg) calc(var(--mantine-spacing-sm) - 1px);
   border: 1px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4));
   border-radius: var(--mantine-radius-md);
   background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
