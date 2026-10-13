@@ -1,21 +1,7 @@
-import {
-  Alert,
-  Badge,
-  Box,
-  Button,
-  Card,
-  Group,
-  Kbd,
-  Paper,
-  SegmentedControl,
-  Stack,
-  Switch,
-  Text,
-} from '@mantine/core';
+import { Alert, Box, Card, Group, Stack, Text } from '@mantine/core';
 import { useLocalStorage } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
-import { IconEraser, IconLock, IconLockOpen } from '@tabler/icons-react';
-import { useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useJudges, useSkaters } from '../../app/data';
 import { clearMarks, setEventStatus, setMark } from '../../db/repo';
 import { byId, entryClub, entryHeading, entryName } from '../../domain/entryName';
@@ -26,6 +12,7 @@ import type { Direction } from '../../marks/gridNav';
 import { JudgeGrid } from '../../marks/JudgeGrid';
 import { MarkGrid } from '../../marks/MarkGrid';
 import { NumberPad } from '../../marks/NumberPad';
+import { ScoringToolbar } from './ScoringToolbar';
 import { SegmentPicker } from './SegmentPicker';
 import { markKey, useEventResult } from './useEventResult';
 
@@ -104,6 +91,17 @@ export function ScoringTab({ event }: { event: CompEvent }) {
     };
   }, [judgeId, segments, entries, markMap, event]);
 
+  // The tabs start after the grid's # and entry columns.
+  const gridBox = useRef<HTMLDivElement>(null);
+  const [tabOffset, setTabOffset] = useState(0);
+  useLayoutEffect(() => {
+    const box = gridBox.current;
+    const th = box?.querySelectorAll('thead tr:first-child th')[1];
+    if (!box || !th) return;
+    const offset = Math.round(th.getBoundingClientRect().right - box.getBoundingClientRect().left);
+    if (offset !== tabOffset) setTabOffset(offset);
+  });
+
   if (loading) return null;
   if (!segment)
     return (
@@ -156,120 +154,64 @@ export function ScoringTab({ event }: { event: CompEvent }) {
   return (
     // Centred and as wide as the mark grid needs: the usual page width for a typical panel,
     // growing towards the window edges (then scrolling) as judges are added.
-    <Stack style={fitWidth}>
-      {/* Always-present options and actions, apart from the event-specific controls below. */}
-      <Paper
-        withBorder
-        shadow="xs"
-        radius="md"
-        px="md"
-        py="xs"
-        bg="light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-5))"
-        style={{ borderColor: 'light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-3))' }}
-      >
-        <Group justify="space-between" gap="md">
-          <Group gap="md">
-            <SegmentedControl
-              size="xs"
-              value={direction}
-              onChange={(v) => setDirection(v as Direction)}
-              data={[
-                { value: 'down', label: byJudge ? '↓ Dance by dance' : '↓ Judge by judge' },
-                { value: 'across', label: '→ Entry by entry' },
-              ]}
-            />
-            <Switch
-              size="sm"
-              label="Auto-advance"
-              checked={autoAdvance}
-              onChange={(e) => setAutoAdvance(e.currentTarget.checked)}
-            />
-            <Switch
-              size="sm"
-              label="Number pad"
-              checked={numberPad}
-              onChange={(e) => setNumberPad(e.currentTarget.checked)}
-            />
-          </Group>
-          <Group gap="sm">
-            <Button
-              variant="default"
-              color="red"
-              leftSection={<IconEraser size={16} />}
-              disabled={locked || entered === 0}
-              onClick={confirmClear}
-            >
-              Clear marks
-            </Button>
-            <Button
-              variant={locked ? 'light' : 'filled'}
-              color={locked ? 'gray' : 'green'}
-              leftSection={locked ? <IconLockOpen size={16} /> : <IconLock size={16} />}
-              onClick={toggleLock}
-            >
-              {locked ? 'Unlock' : 'Mark final'}
-            </Button>
-          </Group>
-        </Group>
-      </Paper>
-
-      <Group justify="space-between" align="flex-end">
-        <Group align="flex-end" gap="md">
-          <SegmentedControl
-            size="xs"
-            value={view}
-            onChange={(v) => setView(v as 'dance' | 'judge')}
-            data={[
-              { value: 'dance', label: 'By dance' },
-              { value: 'judge', label: 'By judge' },
-            ]}
-          />
-          {byJudge ? (
-            <SegmentPicker
-              value={judgeId ?? ''}
-              onChange={setJudgeSel}
-              segments={judges.map((j, i) => {
-                const total = segments.reduce((n, s) => n + s.markKeys.length, 0) * entries.length;
-                let missing = 0;
-                for (const s of segments)
-                  for (const k of s.markKeys)
-                    for (const e of entries) if (!markMap.has(markKey(k, j.id, e.id))) missing++;
-                return {
-                  id: j.id,
-                  name: `J${i + 1} ${j.name}`,
-                  progress: total ? (total - missing) / total : 0,
-                  complete: total > 0 && missing === 0,
-                };
-              })}
-            />
-          ) : (
-            <SegmentPicker
-              value={segment.id}
-              onChange={setSegmentId}
-              segments={segments.map((s) => {
-                const r = result.segments.find((x) => x.segmentId === s.id)!;
-                const total = s.markKeys.length * judges.length * entries.length;
-                return {
-                  id: s.id,
-                  name: s.name,
-                  progress: total ? (total - r.missingMarks) / total : 0,
-                  complete: r.complete,
-                };
-              })}
-            />
-          )}
-        </Group>
-        {locked && (
-          <Badge color="green" leftSection={<IconLock size={12} />}>
-            Final — read only
-          </Badge>
-        )}
-      </Group>
+    <Stack style={fitWidth} gap={28}>
+      <ScoringToolbar
+        view={view}
+        onView={setView}
+        direction={direction}
+        onDirection={setDirection}
+        autoAdvance={autoAdvance}
+        onAutoAdvance={setAutoAdvance}
+        numberPad={numberPad}
+        onNumberPad={setNumberPad}
+        locked={locked}
+        canClear={entered > 0}
+        onClear={confirmClear}
+        onToggleLock={toggleLock}
+      />
 
       {/* The mark grid's card fits its columns, scrolling once it runs out of room. */}
       <Group wrap="nowrap" align="flex-start" justify="space-between" gap="md">
-        <Box w="fit-content" maw="100%" miw={0}>
-          <Card withBorder p="sm">
+        <Box ref={gridBox} w="fit-content" maw="100%" miw={0}>
+          <div style={{ paddingLeft: tabOffset }}>
+            {byJudge ? (
+              <SegmentPicker
+                value={judgeId ?? ''}
+                onChange={setJudgeSel}
+                segments={judges.map((j, i) => {
+                  const total = segments.reduce((n, s) => n + s.markKeys.length, 0) * entries.length;
+                  let missing = 0;
+                  for (const s of segments)
+                    for (const k of s.markKeys)
+                      for (const e of entries) if (!markMap.has(markKey(k, j.id, e.id))) missing++;
+                  return {
+                    id: j.id,
+                    name: `J${i + 1} ${j.name}`,
+                    done: total - missing,
+                    total,
+                    complete: total > 0 && missing === 0,
+                  };
+                })}
+              />
+            ) : (
+              <SegmentPicker
+                value={segment.id}
+                onChange={setSegmentId}
+                segments={segments.map((s) => {
+                  const r = result.segments.find((x) => x.segmentId === s.id)!;
+                  const total = s.markKeys.length * judges.length * entries.length;
+                  return {
+                    id: s.id,
+                    name: s.name,
+                    done: total - r.missingMarks,
+                    total,
+                    complete: r.complete,
+                  };
+                })}
+              />
+            )}
+          </div>
+          <Card withBorder p="sm" radius="md">
             {byJudge && judgeId ? (
               <JudgeGrid
                 focusKey={`${event.id}:${judgeId}`}
@@ -315,13 +257,6 @@ export function ScoringTab({ event }: { event: CompEvent }) {
                 focusedInputRef={focusedInput}
               />
             )}
-            {/* Wraps to the grid's width rather than widening the page to fit on one line. */}
-            <Text size="xs" c="dimmed" mt="sm" style={{ contain: 'inline-size' }}>
-              Type <Kbd>57</Kbd> for 5.7, <Kbd>10</Kbd> for 1.0, <Kbd>5</Kbd> <Kbd>Enter</Kbd> for 5.0; for
-              10.0 turn off auto-advance and type <Kbd>100</Kbd>. <Kbd>Enter</Kbd>/<Kbd>Tab</Kbd> next ·{' '}
-              <Kbd>Shift</Kbd> back · arrows move · <Kbd>Esc</Kbd> undo edit · empty + <Kbd>Enter</Kbd> keeps
-              the value; delete the text to clear a mark.
-            </Text>
           </Card>
         </Box>
         {numberPad && <NumberPad targetRef={focusedInput} disabled={locked} />}

@@ -10,7 +10,7 @@
 
 .table th,
 .table td {
-  padding: 3px 4px;
+  padding: 3px var(--cell-px, 4px);
   border-bottom: 1px solid var(--mantine-color-default-border);
   text-align: center;
   white-space: nowrap;
@@ -92,7 +92,7 @@
 /* Single-mark grids: room for the ordinal on the right, matched on the left to keep the box centred. */
 .table td.withOrdinal {
   position: relative;
-  padding-inline: 26px;
+  padding-inline: calc(22px + var(--cell-px, 4px));
 }
 
 .inlineOrdinal {
@@ -101,4 +101,15 @@
   right: 4px;
   transform: translateY(-50%);
   text-align: center;
+}
+
+/* The judge-sheet view's Rank column, as the results tables show a judge's ranking. */
+.rank {
+  color: var(--mantine-color-dimmed);
+  min-width: 44px;
+}
+
+/* The by-judge grid has room to spare, so its columns breathe. */
+.roomy {
+  --cell-px: 12px;
 }

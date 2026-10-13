@@ -87,7 +87,7 @@ export function JudgeGrid(props: Props) {
 
   return (
     <div className={classes.wrap}>
-      <table className={classes.table}>
+      <table className={`${classes.table} ${classes.roomy}`}>
         <thead>
           <tr>
             <th className={classes.startNo} rowSpan={multi ? 2 : 1}>
@@ -110,7 +110,7 @@ export function JudgeGrid(props: Props) {
             <th className={classes.judgeStart} rowSpan={multi ? 2 : 1}>
               Total
             </th>
-            <th className={classes.ordinal} rowSpan={multi ? 2 : 1}>
+            <th className={classes.judgeStart} rowSpan={multi ? 2 : 1}>
               Rank
             </th>
           </tr>
@@ -171,10 +171,8 @@ export function JudgeGrid(props: Props) {
                   </td>
                 );
               })}
-              <td className={classes.judgeStart}>
-                <Text fw={600}>{sums.has(row.id) ? formatSum(sums.get(row.id)!) : ''}</Text>
-              </td>
-              <td className={classes.ordinal}>{ranks?.get(row.id) ?? ''}</td>
+              <td className={classes.judgeStart}>{sums.has(row.id) ? formatSum(sums.get(row.id)!) : ''}</td>
+              <td className={`${classes.judgeStart} ${classes.rank}`}>{ranks?.get(row.id) ?? ''}</td>
             </tr>
           ))}
         </tbody>

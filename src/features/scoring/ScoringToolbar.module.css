@@ -1,0 +1,109 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: 14px;
+  background: var(--mantine-color-body);
+  box-shadow: var(--mantine-shadow-xs);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-inline: var(--mantine-spacing-md);
+  border-left: 1px solid var(--mantine-color-default-border);
+  transition: opacity 100ms;
+}
+
+.group:first-child {
+  padding-left: 0;
+  border-left: none;
+}
+
+.group[data-disabled] {
+  opacity: 0.45;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mantine-color-dimmed);
+}
+
+.controls {
+  display: flex;
+  gap: var(--mantine-spacing-xs);
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: var(--mantine-radius-md);
+  background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+}
+
+.segment {
+  min-height: 38px;
+  padding: 0 var(--mantine-spacing-md);
+  border: none;
+  border-radius: var(--mantine-radius-sm);
+  background: transparent;
+  color: var(--mantine-color-dimmed);
+  font: inherit;
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.segment[aria-pressed='true'] {
+  background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-4));
+  color: var(--mantine-color-text);
+  font-weight: 600;
+  box-shadow: var(--mantine-shadow-xs);
+}
+
+.segment:disabled {
+  cursor: default;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  min-height: 44px;
+  padding: 0 var(--mantine-spacing-sm);
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.chip[data-disabled] {
+  cursor: default;
+}
+
+.actions {
+  display: flex;
+  gap: var(--mantine-spacing-xs);
+  margin-left: auto;
+}
+
+/* Unlock: the Mark final button faded once the event is final. */
+.unlock {
+  background: light-dark(#e3f2e7, rgba(47, 158, 68, 0.18));
+  border: 1px solid light-dark(#b6dcc1, rgba(47, 158, 68, 0.4));
+  color: light-dark(#1b5e2f, var(--mantine-color-green-3));
+}
+
+.unlock:hover {
+  background: light-dark(#d4ebd9, rgba(47, 158, 68, 0.26));
+}
