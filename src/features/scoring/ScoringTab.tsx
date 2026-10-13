@@ -4,7 +4,7 @@ import { modals } from '@mantine/modals';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useJudges, useSkaters } from '../../app/data';
 import { clearMarks, setEventStatus, setMark } from '../../db/repo';
-import { byId, entryClub, entryHeading, entryName } from '../../domain/entryName';
+import { byId, entryClub, entryHeading, entryName, entryNoun } from '../../domain/entryName';
 import { eventTieBreakMarks, segmentNoun } from '../../domain/segments';
 import type { CompEvent, SegmentKey } from '../../domain/types';
 import { judgeEventRanks } from '../../scoring';
@@ -157,6 +157,7 @@ export function ScoringTab({ event }: { event: CompEvent }) {
     <Stack style={fitWidth} gap={28}>
       <ScoringToolbar
         noun={segmentNoun(event)}
+        entryNoun={entryNoun[event.entryType][0]}
         view={view}
         onView={setView}
         direction={direction}

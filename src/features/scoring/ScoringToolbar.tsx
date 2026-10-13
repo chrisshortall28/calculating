@@ -66,6 +66,8 @@ function Chip({
 export function ScoringToolbar(props: {
   /** what the event's parts are called, lower case: dance, figure, programme or section */
   noun: string;
+  /** what the event's entries are called, lower case, singular: skater, duo, couple, team, pair */
+  entryNoun: string;
   view: ScoringView;
   onView: (v: ScoringView) => void;
   direction: Direction;
@@ -106,7 +108,7 @@ export function ScoringToolbar(props: {
               value: 'down',
               label: view === 'judge' ? `↓ ${cap(props.noun)} by ${props.noun}` : '↓ Judge by judge',
             },
-            { value: 'across', label: '→ Skater by skater' },
+            { value: 'across', label: `→ ${cap(props.entryNoun)} by ${props.entryNoun}` },
           ]}
         />
       </div>
