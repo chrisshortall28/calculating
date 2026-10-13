@@ -1,5 +1,5 @@
 import type { Id } from '../domain/types';
-import type { MarkLookup, ScoringSegment } from './types';
+import type { MarkLookup, ScoringSegment, TieBreakMark } from './types';
 
 /**
  * Ranks one judge's marks for a dance (1 = best), for display while scoring. Totals are compared
@@ -33,6 +33,38 @@ export function judgeOrdinals(
     }
   });
   return { ordinals, totals };
+}
+
+/**
+ * One judge's sum (thousandths, factors applied) and ranking (1 = best) of each entry over the whole
+ * event, as written on the judge's sheet. Equal sums are split by the tie-break B marks (rule 3); any
+ * remaining tie shares the better ranking. Missing marks count as 0, so callers show these only once
+ * the judge's marks are all in.
+ */
+export function judgeEventRanks(
+  segments: ScoringSegment[],
+  judgeId: Id,
+  entryIds: Id[],
+  mark: MarkLookup,
+  tieBreakMarks: TieBreakMark[],
+): { sums: Map<Id, number>; ranks: Map<Id, number> } {
+  const sums = new Map<Id, number>();
+  const bKeys = tieBreakMarks.filter((t) => segments.some((s) => s.markKeys.includes(t.key)));
+  const keyed = entryIds.map((entryId) => {
+    const sum = segments.reduce(
+      (t, s) => t + s.markKeys.reduce((x, k) => x + (mark(k, judgeId, entryId) ?? 0), 0) * (s.factor ?? 100),
+      0,
+    );
+    sums.set(entryId, sum);
+    return { entryId, key: [-sum, ...bKeys.map((t) => -(mark(t.key, judgeId, entryId) ?? 0))] };
+  });
+  keyed.sort((a, b) => compareKeys(a.key, b.key));
+  const ranks = new Map<Id, number>();
+  keyed.forEach((item, i) => {
+    const prev = keyed[i - 1];
+    ranks.set(item.entryId, prev && compareKeys(prev.key, item.key) === 0 ? ranks.get(prev.entryId)! : i + 1);
+  });
+  return { sums, ranks };
 }
 
 export function compareKeys(a: number[], b: number[]): number {

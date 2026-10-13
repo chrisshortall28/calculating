@@ -19,8 +19,11 @@ import { useMemo, useRef, useState } from 'react';
 import { useJudges, useSkaters } from '../../app/data';
 import { clearMarks, setEventStatus, setMark } from '../../db/repo';
 import { byId, entryClub, entryHeading, entryName } from '../../domain/entryName';
-import type { CompEvent } from '../../domain/types';
+import { eventTieBreakMarks } from '../../domain/segments';
+import type { CompEvent, SegmentKey } from '../../domain/types';
+import { judgeEventRanks } from '../../scoring';
 import type { Direction } from '../../marks/gridNav';
+import { JudgeGrid } from '../../marks/JudgeGrid';
 import { MarkGrid } from '../../marks/MarkGrid';
 import { NumberPad } from '../../marks/NumberPad';
 import { SegmentPicker } from './SegmentPicker';
@@ -45,6 +48,11 @@ export function ScoringTab({ event }: { event: CompEvent }) {
   const [numberPad, setNumberPad] = useLocalStorage({ key: 'podium.numberPad', defaultValue: false });
   const focusedInput = useRef<HTMLInputElement | null>(null);
   const [segmentId, setSegmentId] = useState<string | null>(null);
+  const [view, setView] = useLocalStorage<'dance' | 'judge'>({
+    key: 'podium.scoringView',
+    defaultValue: 'dance',
+  });
+  const [judgeSel, setJudgeSel] = useState<string | null>(null);
 
   // Open on the first incomplete dance, then stay put: finishing a dance shouldn't switch the grid away.
   const firstIncomplete = result.segments.find((s) => !s.complete)?.segmentId;
@@ -76,6 +84,25 @@ export function ScoringTab({ event }: { event: CompEvent }) {
     }
     return shown;
   }, [segment, segResult, event.judgeIds, entries, markMap]);
+
+  const byJudge = view === 'judge';
+  const judgeId = judgeSel && event.judgeIds.includes(judgeSel) ? judgeSel : event.judgeIds[0];
+  const judgeNo = judgeId ? event.judgeIds.indexOf(judgeId) + 1 : 0;
+
+  // The selected judge's sheet: each entry's event total once all their marks are in, and the
+  // judge's ranking once every mark is in.
+  const sheet = useMemo(() => {
+    if (!judgeId) return undefined;
+    const mark = (k: SegmentKey, j: string, e: string) => markMap.get(markKey(k, j, e));
+    const entryIds = entries.map((e) => e.id);
+    const { sums, ranks } = judgeEventRanks(segments, judgeId, entryIds, mark, eventTieBreakMarks(event));
+    const full = (e: string) =>
+      segments.every((s) => s.markKeys.every((k) => mark(k, judgeId, e) !== undefined));
+    return {
+      sums: new Map([...sums].filter(([e]) => full(e))),
+      ranks: entryIds.every(full) ? ranks : undefined,
+    };
+  }, [judgeId, segments, entries, markMap, event]);
 
   if (loading) return null;
   if (!segment)
@@ -147,7 +174,7 @@ export function ScoringTab({ event }: { event: CompEvent }) {
               value={direction}
               onChange={(v) => setDirection(v as Direction)}
               data={[
-                { value: 'down', label: '↓ Judge by judge' },
+                { value: 'down', label: byJudge ? '↓ Dance by dance' : '↓ Judge by judge' },
                 { value: 'across', label: '→ Entry by entry' },
               ]}
             />
@@ -187,20 +214,39 @@ export function ScoringTab({ event }: { event: CompEvent }) {
       </Paper>
 
       <Group justify="space-between" align="flex-end">
-        <SegmentPicker
-          value={segment.id}
-          onChange={setSegmentId}
-          segments={segments.map((s) => {
-            const r = result.segments.find((x) => x.segmentId === s.id)!;
-            const total = s.markKeys.length * judges.length * entries.length;
-            return {
-              id: s.id,
-              name: s.name,
-              progress: total ? (total - r.missingMarks) / total : 0,
-              complete: r.complete,
-            };
-          })}
-        />
+        <Group align="flex-end" gap="md">
+          <SegmentedControl
+            size="xs"
+            value={view}
+            onChange={(v) => setView(v as 'dance' | 'judge')}
+            data={[
+              { value: 'dance', label: 'By dance' },
+              { value: 'judge', label: 'By judge' },
+            ]}
+          />
+          {byJudge ? (
+            <SegmentedControl
+              value={judgeId ?? ''}
+              onChange={setJudgeSel}
+              data={judges.map((j, i) => ({ value: j.id, label: `J${i + 1} ${j.name}` }))}
+            />
+          ) : (
+            <SegmentPicker
+              value={segment.id}
+              onChange={setSegmentId}
+              segments={segments.map((s) => {
+                const r = result.segments.find((x) => x.segmentId === s.id)!;
+                const total = s.markKeys.length * judges.length * entries.length;
+                return {
+                  id: s.id,
+                  name: s.name,
+                  progress: total ? (total - r.missingMarks) / total : 0,
+                  complete: r.complete,
+                };
+              })}
+            />
+          )}
+        </Group>
         {locked && (
           <Badge color="green" leftSection={<IconLock size={12} />}>
             Final — read only
@@ -212,25 +258,51 @@ export function ScoringTab({ event }: { event: CompEvent }) {
       <Group wrap="nowrap" align="flex-start" justify="space-between" gap="md">
         <Box w="fit-content" maw="100%" miw={0}>
           <Card withBorder p="sm">
-            <MarkGrid
-              focusKey={`${event.id}:${segment.id}`}
-              rows={rows}
-              entryLabel={entryHeading[event.entryType]}
-              judges={judges}
-              markKeys={segment.markKeys}
-              getValue={(k, j, e) => markMap.get(markKey(k, j, e))}
-              onCommit={(segmentKey, judgeId, entryId, tenths) => {
-                void setMark({ eventId: event.id, segmentKey, judgeId, entryId }, tenths);
-                if (event.status === 'setup' || event.status === 'ready')
-                  void setEventStatus(event.id, 'scoring');
-              }}
-              ordinals={ordinals}
-              direction={direction}
-              autoAdvance={autoAdvance}
-              readOnly={locked}
-              numberPad={numberPad}
-              focusedInputRef={focusedInput}
-            />
+            {byJudge && judgeId ? (
+              <JudgeGrid
+                focusKey={`${event.id}:${judgeId}`}
+                rows={rows}
+                entryLabel={entryHeading[event.entryType]}
+                judgeId={judgeId}
+                judgeNo={judgeNo}
+                segments={segments}
+                getValue={(k, j, e) => markMap.get(markKey(k, j, e))}
+                onCommit={(segmentKey, jId, entryId, tenths) => {
+                  void setMark({ eventId: event.id, segmentKey, judgeId: jId, entryId }, tenths);
+                  if (event.status === 'setup' || event.status === 'ready')
+                    void setEventStatus(event.id, 'scoring');
+                }}
+                sums={sheet?.sums ?? new Map()}
+                ranks={sheet?.ranks}
+                direction={direction}
+                autoAdvance={autoAdvance}
+                readOnly={locked}
+                numberPad={numberPad}
+                focusedInputRef={focusedInput}
+              />
+            ) : byJudge ? (
+              <Text c="dimmed">Add judges to this event’s panel to start entering marks.</Text>
+            ) : (
+              <MarkGrid
+                focusKey={`${event.id}:${segment.id}`}
+                rows={rows}
+                entryLabel={entryHeading[event.entryType]}
+                judges={judges}
+                markKeys={segment.markKeys}
+                getValue={(k, j, e) => markMap.get(markKey(k, j, e))}
+                onCommit={(segmentKey, judgeId, entryId, tenths) => {
+                  void setMark({ eventId: event.id, segmentKey, judgeId, entryId }, tenths);
+                  if (event.status === 'setup' || event.status === 'ready')
+                    void setEventStatus(event.id, 'scoring');
+                }}
+                ordinals={ordinals}
+                direction={direction}
+                autoAdvance={autoAdvance}
+                readOnly={locked}
+                numberPad={numberPad}
+                focusedInputRef={focusedInput}
+              />
+            )}
             {/* Wraps to the grid's width rather than widening the page to fit on one line. */}
             <Text size="xs" c="dimmed" mt="sm" style={{ contain: 'inline-size' }}>
               Type <Kbd>57</Kbd> for 5.7, <Kbd>10</Kbd> for 1.0, <Kbd>5</Kbd> <Kbd>Enter</Kbd> for 5.0; for
