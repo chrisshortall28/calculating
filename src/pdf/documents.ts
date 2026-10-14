@@ -477,11 +477,16 @@ function withPageBreaks(pages: Content[][]): Content[] {
   }));
 }
 
-export function resultsDocument(events: EventData[], style: ResultsStyle): TDocumentDefinitions {
+/** `landscape` suits a single event's results, which are stapled to its (landscape) judge sheets. */
+export function resultsDocument(
+  events: EventData[],
+  style: ResultsStyle,
+  landscape = false,
+): TDocumentDefinitions {
   const first = events[0];
   return document(
     resultsPages(events, style),
-    false,
+    landscape,
     sharesPages(style) && first ? compLine(first) : undefined,
   );
 }

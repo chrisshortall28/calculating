@@ -203,6 +203,12 @@ describe('judgeSheets', () => {
     expect(footer(doc)).toBe('Created with Podium');
     expect(footer(resultsDocument([sampleEvent()], 'standard'))).toBe('Created with Podium · page 1 of 2');
   });
+
+  it('prints results portrait unless asked for landscape (a single event, stapled to its judge sheets)', () => {
+    expect(resultsDocument([sampleEvent()], 'standard').pageOrientation).toBe('portrait');
+    expect(resultsDocument([sampleEvent()], 'standard', true).pageOrientation).toBe('landscape');
+    expect(judgeSheetsDocument([sampleEvent()]).pageOrientation).toBe('landscape');
+  });
 });
 
 describe('figures & free events', () => {

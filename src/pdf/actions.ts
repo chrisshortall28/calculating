@@ -26,7 +26,7 @@ const resultsFileSuffix: Record<ResultsStyle, string> = {
 export async function printResults(target: Target, name: string, style: ResultsStyle) {
   const events = load(target);
   await openPdf(
-    events.then((e) => resultsDocument(e, style)),
+    events.then((e) => resultsDocument(e, style, 'eventId' in target)),
     fileNameFor(`${name} ${resultsFileSuffix[style]}`, 'pdf'),
   );
   const loaded = await events;
