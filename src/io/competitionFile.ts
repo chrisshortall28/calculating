@@ -28,17 +28,6 @@ const fileSchema = z.object({
     primaryColor: hexColor.optional(),
     secondaryColor: hexColor.optional(),
     welcome: z.string().optional(),
-    combinedCup: z
-      .object({
-        eventRoles: z.record(z.string(), z.enum(['solo', 'duo', 'team', 'mixmatch'])),
-        entrants: z.array(
-          z.object({
-            skaterId: z.string(),
-            category: z.enum(['newcomer-novice', 'elementary-prelim', 'inter-bronze-up']),
-          }),
-        ),
-      })
-      .optional(),
     createdAt: z.number(),
     updatedAt: z.number(),
   }),
@@ -148,14 +137,6 @@ export async function importCompetition(file: CompetitionFile, mode: 'copy' | 'r
       ...file.competition,
       id: compId,
       name: mode === 'copy' ? `${file.competition.name} (imported)` : file.competition.name,
-      ...(file.competition.combinedCup && {
-        combinedCup: {
-          eventRoles: Object.fromEntries(
-            Object.entries(file.competition.combinedCup.eventRoles).map(([k, v]) => [id(k), v]),
-          ),
-          entrants: file.competition.combinedCup.entrants.map((e) => ({ ...e, skaterId: id(e.skaterId) })),
-        },
-      }),
       updatedAt: now,
     });
     await db.dances.bulkPut(file.dances.map((d) => ({ ...d, id: id(d.id), competitionId: compId })));

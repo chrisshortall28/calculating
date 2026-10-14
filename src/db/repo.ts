@@ -1,5 +1,4 @@
 import type {
-  CombinedCupConfig,
   CompEvent,
   Competition,
   Entry,
@@ -68,11 +67,6 @@ export async function createCompetition(
 
 export async function updateCompetition(id: Id, data: Partial<Omit<Competition, 'id'>>) {
   await db.competitions.update(id, { ...data, updatedAt: Date.now() });
-}
-
-/** Switches The Combined Cup on (with the given settings) or, with `undefined`, off. */
-export async function updateCombinedCup(id: Id, combinedCup: CombinedCupConfig | undefined) {
-  await db.competitions.update(id, { combinedCup, updatedAt: Date.now() });
 }
 
 export async function deleteCompetition(id: Id) {
