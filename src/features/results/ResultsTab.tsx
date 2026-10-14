@@ -297,7 +297,7 @@ const VICTORY_BORDER = {
 function VictoriesTable({
   event,
   result,
-  entryIds,
+  entryIds: skatingOrder,
   label,
 }: {
   event: CompEvent;
@@ -311,6 +311,9 @@ function VictoriesTable({
   // The TV or S.M.V. cell under the pointer: the v cells in that row which add up to it are highlighted.
   const [sumRow, setSumRow] = useState<{ row: string; cols: Set<string> } | null>(null);
   const rowOf = new Map(result.overall.map((o) => [o.entryId, o]));
+  // Rows and columns run in placing order; the # and v labels keep each entry's number (skating order).
+  const entryIds = result.overall.map((o) => o.entryId);
+  const numberOf = new Map(skatingOrder.map((e, i) => [e, i + 1]));
   const judgeCount = event.judgeIds.length;
   const factors = factorSummary(event);
   const bTotals = bTotalsUsed(result.steps);
@@ -334,9 +337,9 @@ function VictoriesTable({
                   J{ji + 1}
                 </Table.Th>
               ))}
-              {entryIds.map((e, i) => (
+              {entryIds.map((e) => (
                 <Table.Th key={e} ta="center" title={label(e)} bg={VICTORY_BG} style={VICTORY_BORDER}>
-                  v{i + 1}
+                  v{numberOf.get(e)}
                 </Table.Th>
               ))}
               <Table.Th ta="center" title="Majority victories">
@@ -362,11 +365,11 @@ function VictoriesTable({
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {entryIds.map((e, i) => {
+            {entryIds.map((e) => {
               const o = rowOf.get(e)!;
               return (
                 <Table.Tr key={e}>
-                  <Table.Td c="dimmed">{i + 1}</Table.Td>
+                  <Table.Td c="dimmed">{numberOf.get(e)}</Table.Td>
                   <Table.Td>{label(e)}</Table.Td>
                   {o.judgeRanks.map((r, ji) => {
                     const isFocus = hover?.focus === e;

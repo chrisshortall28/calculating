@@ -309,11 +309,14 @@ function victoriesTable(d: EventData, newPage = false): Content[] {
   const smv = smvUsed(result.steps);
   const { th, layout } = clubTable(d);
   const center = 'center' as const;
+  // Rows and columns run in placing order; the # and v labels keep each entry's number (skating order).
+  const numbered = d.rows.map((r, i) => ({ r, n: i + 1 }));
+  const byPlace = result.overall.map((o) => numbered.find((x) => x.r.id === o.entryId)!);
   const head: TableCell[] = [
     th('#'),
     th(entryHeading[d.event.entryType], { alignment: 'left' }),
     ...d.judges.map((_, i) => th(`J${i + 1}`)),
-    ...d.rows.map((_, i) => th(`v${i + 1}`, { fillColor: VICTORY_FILL })),
+    ...byPlace.map(({ n }) => th(`v${n}`, { fillColor: VICTORY_FILL })),
     th('MV'),
     th('S.M.V.'),
     th('Total B scores'),
@@ -321,13 +324,13 @@ function victoriesTable(d: EventData, newPage = false): Content[] {
     th('Total'),
     th('Pl'),
   ];
-  const rows: TableCell[][] = d.rows.map((r, i) => {
+  const rows: TableCell[][] = byPlace.map(({ r, n }) => {
     const o = rowOf.get(r.id)!;
     return [
-      { text: String(i + 1), alignment: center, color: '#555' },
+      { text: String(n), alignment: center, color: '#555' },
       r.name,
       ...o.judgeRanks.map((rank) => ({ text: String(rank), alignment: center })),
-      ...d.rows.map((other) => {
+      ...byPlace.map(({ r: other }) => {
         const v = result.victories.get(r.id)!.get(other.id);
         return v === undefined
           ? { text: '', fillColor: VICTORY_SELF_FILL }
