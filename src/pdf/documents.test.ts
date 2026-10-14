@@ -204,6 +204,15 @@ describe('judgeSheets', () => {
     expect(footer(resultsDocument([sampleEvent()], 'standard'))).toBe('Created with Podium · page 1 of 2');
   });
 
+  it('starts the table of victories on a new page only for a single event with marks', () => {
+    const victoriesBreaks = (single: boolean) =>
+      JSON.stringify(resultsDocument([sampleEvent()], 'withMarks', single).content).includes(
+        '"text":"Table of Victories","style":"h2","pageBreak":"before"',
+      );
+    expect(victoriesBreaks(true)).toBe(true);
+    expect(victoriesBreaks(false)).toBe(false);
+  });
+
   it('prints results portrait unless asked for landscape (a single event, stapled to its judge sheets)', () => {
     expect(resultsDocument([sampleEvent()], 'standard').pageOrientation).toBe('portrait');
     expect(resultsDocument([sampleEvent()], 'standard', true).pageOrientation).toBe('landscape');

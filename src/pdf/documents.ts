@@ -301,7 +301,7 @@ const VICTORY_FILL = '#e8f0fb';
 const VICTORY_SELF_FILL = '#6b6b6b';
 
 /** CIPA master chart: judges' rankings, then each entry's judge victories over every other entry. */
-function victoriesTable(d: EventData): Content[] {
+function victoriesTable(d: EventData, newPage = false): Content[] {
   const { result } = d;
   const rowOf = new Map(result.overall.map((o) => [o.entryId, o]));
   const judgeCount = d.judges.length;
@@ -352,7 +352,7 @@ function victoriesTable(d: EventData): Content[] {
   });
   const factors = factorSummary(d.event);
   return [
-    { text: 'Table of Victories', style: 'h2' },
+    { text: 'Table of Victories', style: 'h2', ...(newPage && { pageBreak: 'before' as const }) },
     ...(factors
       ? [
           {
@@ -450,7 +450,12 @@ function detailTables(d: EventData): Content[] {
 /** Standard and guest results fit several events per page; with-marks gets a page per event. */
 const sharesPages = (style: ResultsStyle) => style !== 'withMarks';
 
-export function resultsPages(events: EventData[], style: ResultsStyle): Content[] {
+/** `victoriesOnNewPage` starts a with-marks event's table of victories on a fresh page. */
+export function resultsPages(
+  events: EventData[],
+  style: ResultsStyle,
+  victoriesOnNewPage = false,
+): Content[] {
   const pages = events
     .filter((d) => d.result.complete)
     .map((d): Content[] => [
@@ -458,7 +463,9 @@ export function resultsPages(events: EventData[], style: ResultsStyle): Content[
       resultsTable(d, style === 'guest'),
       ...(style === 'guest' ? [] : ruleKey(d)),
       officialsBlock(d),
-      ...(style === 'withMarks' ? [...tieNotes(d), ...victoriesTable(d), ...detailTables(d)] : []),
+      ...(style === 'withMarks'
+        ? [...tieNotes(d), ...victoriesTable(d, victoriesOnNewPage), ...detailTables(d)]
+        : []),
     ]);
   if (!sharesPages(style)) return withPageBreaks(pages);
   // Shorter results share pages: events follow on in order, each kept whole (moved to the next page
@@ -477,16 +484,17 @@ function withPageBreaks(pages: Content[][]): Content[] {
   }));
 }
 
-/** `landscape` suits a single event's results, which are stapled to its (landscape) judge sheets. */
+/** A single event's results are landscape (stapled to its landscape judge sheets), and with marks
+ * the table of victories starts its own page. */
 export function resultsDocument(
   events: EventData[],
   style: ResultsStyle,
-  landscape = false,
+  singleEvent = false,
 ): TDocumentDefinitions {
   const first = events[0];
   return document(
-    resultsPages(events, style),
-    landscape,
+    resultsPages(events, style, singleEvent),
+    singleEvent,
     sharesPages(style) && first ? compLine(first) : undefined,
   );
 }
