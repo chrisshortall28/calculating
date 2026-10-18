@@ -44,7 +44,7 @@ export function StatsTab() {
   // Only skaters who skated more than once are worth ranking.
   const busiest = stats.busiest.filter((s) => s.events > 1).slice(0, 10);
   const clubMedals = stats.medals.map((m) => ({ ...m, key: m.club, name: m.club }));
-  const topSkaters = stats.skaterMedals.slice(0, 10);
+  const topSkaters = stats.skaterMedals.slice(0, 10).map((m) => ({ ...m, key: m.id, sub: m.club }));
 
   return (
     <Stack gap="lg" mt="md" className={classes.root}>
@@ -60,7 +60,7 @@ export function StatsTab() {
       </SimpleGrid>
 
       <Section title="Club medal table" icon={<IconMedal size={26} />}>
-        <Podium rows={clubMedals} />
+        <Podium title="Top clubs" rows={clubMedals} />
         <MedalTable nameHeader="Club" rows={clubMedals} />
         <Text size="xs" c="dimmed">
           A place shared under rule 8 gives each skater who shares it that place’s medal.
@@ -69,7 +69,8 @@ export function StatsTab() {
 
       {topSkaters.length > 0 && (
         <Section title="Skater medal table" icon={<IconUserStar size={26} />}>
-          <MedalTable nameHeader="Skater" rows={topSkaters.map((m) => ({ ...m, key: m.id, sub: m.club }))} />
+          <Podium title="Top skaters" rows={topSkaters} />
+          <MedalTable nameHeader="Skater" rows={topSkaters} />
           <Text size="xs" c="dimmed">
             The ten skaters with the most medals. Each member of a pair or team gets its medal.
           </Text>
@@ -184,17 +185,28 @@ function medalRanks(rows: MedalCounts[]): number[] {
   return ranks;
 }
 
-/** The top three as a podium, second place on the left and third on the right. */
-function Podium({ rows }: { rows: (MedalCounts & { key: string; name: string })[] }) {
+/**
+ * The top three as a podium, second place on the left and third on the right. Left out when a fourth
+ * entry shares a top-three rank, as then there is no single top three to show.
+ */
+function Podium({
+  title,
+  rows,
+}: {
+  title: string;
+  rows: (MedalCounts & { key: string; name: string; sub?: string })[];
+}) {
   const ranks = medalRanks(rows);
+  if (ranks[3] !== undefined && ranks[3] <= 3) return null;
   const top = rows.slice(0, 3).map((r, i) => ({ ...r, rank: Math.min(ranks[i]!, 3) }));
   // Winner in the middle: [2nd, 1st, 3rd], dropping places that don't exist.
   const order = [top[1], top[0], top[2]].filter((r) => r !== undefined);
   return (
-    <div className={classes.podium} role="img" aria-label={`Top clubs: ${top.map((r) => r.name).join(', ')}`}>
+    <div className={classes.podium} role="img" aria-label={`${title}: ${top.map((r) => r.name).join(', ')}`}>
       {order.map((r) => (
         <div key={r.key} className={classes.step}>
           <div className={classes.stepName}>{r.name}</div>
+          {r.sub && <div className={classes.stepSub}>{r.sub}</div>}
           <div className={classes.stepMedals}>
             {MEDALS.map((m) => (
               <span key={m.key} className={`${classes.stepCount} ${r[m.key] ? m.className : classes.zero}`}>
