@@ -147,8 +147,9 @@ Worked examples live in `src/scoring/scoring.test.ts`.
 
 ### Compulsory figures
 
-The 41 figures are built in (`src/domain/figures.ts`), shown as e.g. "39. Paragraph Loops BOI -
-BIO" — the edges without the starting foot. Each figure in an event is on the left, the right,
+The 53 figures are built in (`src/domain/figures.ts`), shown as e.g. "39. Paragraph Loops BOI -
+BIO" — the edges without the starting foot. Figures 42–53 combine several turns, so they are
+named by those turns and show only the edge they start on, e.g. "42. Counter, Bracket & Counter FO". Each figure in an event is on the left, the right,
 or unspecified. A figure's number is stored in its marks' keys, so numbers must never be reused.
 
 ## Licence

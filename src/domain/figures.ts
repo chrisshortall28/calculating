@@ -51,6 +51,20 @@ const list: [string, string][] = [
   ['Paragraph Loops', 'BOI - BIO'],
   ['Paragraph Brackets', 'FO - FI'],
   ['Paragraph Brackets', 'BO - BI'],
+  // 42-53 (junior and senior) combine several turns in one figure. They are listed by the turns in
+  // order and the edge they start on, as the regulations describe them.
+  ['Counter, Bracket & Counter', 'FO'],
+  ['Rocker & Double Three', 'FO'],
+  ['Rocker & Double Three', 'FI'],
+  ['Counter, Bracket & Counter', 'BO'],
+  ['Double Three, Rocker & Paragraph Double Three', 'FO'],
+  ['Bracket, Counter & Paragraph Bracket', 'FO'],
+  ['Double Three, Rocker & Paragraph Double Three', 'B'],
+  ['Bracket, Counter & Paragraph Bracket', 'BO'],
+  ['Double Three, Counter & Paragraph Double Three', 'F'],
+  ['Bracket, Rocker & Paragraph Bracket', 'FO'],
+  ['Double Three, Counter & Paragraph Double Three', 'BO'],
+  ['Bracket, Rocker & Paragraph Bracket', 'BO'],
 ];
 
 export const FIGURES: Figure[] = list.map(([name, direction], i) => ({ id: String(i + 1), name, direction }));

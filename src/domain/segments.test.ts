@@ -26,10 +26,13 @@ const event = (over: Partial<CompEvent>): CompEvent => ({
 });
 
 describe('figures catalogue', () => {
-  it('numbers the 41 figures and shows the edges without the starting foot', () => {
-    expect(FIGURES).toHaveLength(41);
+  it('numbers the 53 figures and shows the edges without the starting foot', () => {
+    expect(FIGURES).toHaveLength(53);
     expect(figureLabel('1')).toBe('1. Eights FO - FO');
     expect(figureLabel('39')).toBe('39. Paragraph Loops BOI - BIO');
+    expect(figureLabel('42')).toBe('42. Counter, Bracket & Counter FO');
+    expect(figureLabel('46')).toBe('46. Double Three, Rocker & Paragraph Double Three FO');
+    expect(figureLabel('53')).toBe('53. Bracket, Rocker & Paragraph Bracket BO');
   });
 });
 
