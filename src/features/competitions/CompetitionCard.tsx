@@ -14,28 +14,29 @@ import classes from './CompetitionCard.module.css';
 export interface CompetitionStats {
   events: number;
   final: number;
-  entries: number;
+  skaters: number;
+  judges: number;
 }
 
-/** Event, final-event and entry counts for every competition, keyed by competition id. */
+/** Event, final-event, skater and judge/referee counts for every competition, keyed by id. */
 export function useCompetitionStats() {
   return useLiveQuery(async () => {
     const byComp = new Map<string, CompetitionStats>();
-    const compOfEvent = new Map<string, string>();
     const get = (id: string) => {
       let s = byComp.get(id);
-      if (!s) byComp.set(id, (s = { events: 0, final: 0, entries: 0 }));
+      if (!s) byComp.set(id, (s = { events: 0, final: 0, skaters: 0, judges: 0 }));
       return s;
     };
     await db.events.each((e) => {
-      compOfEvent.set(e.id, e.competitionId);
       const s = get(e.competitionId);
       s.events++;
       if (e.status === 'final') s.final++;
     });
-    await db.entries.each((en) => {
-      const comp = compOfEvent.get(en.eventId);
-      if (comp) get(comp).entries++;
+    await db.skaters.each((s) => {
+      get(s.competitionId).skaters++;
+    });
+    await db.judges.each((j) => {
+      get(j.competitionId).judges++;
     });
     return byComp;
   });
@@ -44,7 +45,7 @@ export function useCompetitionStats() {
 /** A competition as a club-coloured card linking to it. */
 export function CompetitionCard({
   competition: c,
-  stats: s = { events: 0, final: 0, entries: 0 },
+  stats: s = { events: 0, final: 0, skaters: 0, judges: 0 },
 }: {
   competition: Competition;
   stats?: CompetitionStats;
@@ -80,9 +81,9 @@ export function CompetitionCard({
           </Text>
         </Group>
         <Group grow gap="xs">
-          <Stat label="Events" value={s.events} />
-          <Stat label="Entries" value={s.entries} />
-          <Stat label="Final" value={`${s.final}/${s.events}`} />
+          <Stat label="Events" value={`${s.final}/${s.events}`} />
+          <Stat label="Skaters" value={s.skaters} />
+          <Stat label="Judges" value={s.judges} />
         </Group>
         <Progress
           value={s.events ? (100 * s.final) / s.events : 0}

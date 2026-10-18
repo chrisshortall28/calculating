@@ -54,7 +54,7 @@ free dance B mark; long then short programme B; none with figures) → majority 
 placing (rule 5) → ties broken by 6A/6B, 7B (once per tie-break mark), 7C, 7A, then shared (8). A rule that separates tied entries places all of them in its order; only entries
 still level go to the next rule. The result carries the explanation data (`steps` with each rule's
 values, `judgeTies`, the victories table), and `src/scoring/rules.ts` turns it into text
-(`explainStep`, `explainJudgeTie`) and labels (`ruleLabel`: 6B shows as "6B (S.M.V.)"). The README's
+(`explainStep`, `explainJudgeTie`) and labels (`ruleLabel`: 6A and 6B show as "6A (S.M.V.)" and "6B (S.M.V.)"). The README's
 "Scoring rules" section is the prose version — keep the two in step.
 
 **Where results appear.** The Results tab (`src/features/results/`) and the `standard` and
