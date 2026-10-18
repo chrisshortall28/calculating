@@ -42,9 +42,9 @@ export const RULES: Record<PlacementRule, { name: string; description: string }>
   },
 };
 
-/** How a rule number is presented: 6B carries the manual's abbreviation, "6B (S.M.V.)". */
+/** How a rule number is presented: 6A and 6B carry the manual's abbreviation, e.g. "6B (S.M.V.)". */
 export function ruleLabel(rule: PlacementRule): string {
-  return rule === '6B' ? '6B (S.M.V.)' : rule;
+  return rule === '6A' || rule === '6B' ? `${rule} (S.M.V.)` : rule;
 }
 
 /** 3½, 21, 0½ → ½ */

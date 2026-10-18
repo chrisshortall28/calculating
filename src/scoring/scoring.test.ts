@@ -203,7 +203,7 @@ describe('ties on majority victories (rules 6–8)', () => {
     expect(placed(r)).toEqual({ a: '1:7B', d: '2:7B', e: '3:7B' });
     const name = (id: string) => id.toUpperCase();
     expect(explainStep(r.steps[2]!, name)).toEqual([
-      '6A Separate victories: A 3, D 3, E 3 — still tied.',
+      '6A (S.M.V.) Separate victories: A 3, D 3, E 3 — still tied.',
       '7B Free dance B marks: A 16.0, D 15.5, E 15.0 — E takes 3rd.',
     ]);
   });
@@ -225,7 +225,7 @@ describe('ties on majority victories (rules 6–8)', () => {
     expect(third).toMatchObject({ place: 3, rule: '7B', entryIds: ['e'] });
     const name = (id: string) => id.toUpperCase();
     expect(explainStep(second!, name)).toEqual([
-      '6A Separate victories: A 3, D 3, E 3 — still tied.',
+      '6A (S.M.V.) Separate victories: A 3, D 3, E 3 — still tied.',
       '7B Free dance B marks: A 16.0, D 16.0, E 15.0 — A and D still level.',
       '7C Total victories: A 3, D 3 — still tied.',
       '7A Total sums: A 30.7, D 30.6 — D takes 2nd.',
@@ -246,6 +246,7 @@ describe('ties on majority victories (rules 6–8)', () => {
     );
     expect(placed(r)).toEqual({ a: '1:6B', b: '2:6B', d: '3:6B', c: '4:6B' });
     expect(ruleLabel('6B')).toBe('6B (S.M.V.)');
+    expect(ruleLabel('6A')).toBe('6A (S.M.V.)');
     expect(ruleLabel('7A')).toBe('7A');
     expect(explainStep(r.steps[0]!, (id) => id.toUpperCase())).toEqual([
       '6B (S.M.V.) Separate victories: A 2, B 1 — A takes 1st.',

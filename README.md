@@ -79,16 +79,16 @@ entry to `src/app/changelog.ts` (shown in the "What's New?" popup when the versi
 
 ## Layout
 
-| Path | What |
-| --- | --- |
-| `src/scoring/` | **Pure scoring engine**, with no React or DB code. `calculateEvent()` turns marks into placings and explanations. |
-| `src/marks/` | Mark parsing (`57` → 5.7) and the keyboard-driven mark-entry grid. |
-| `src/domain/` | Types, segments (compulsory dances or figures, and the A/B-marked free dance and programmes), the figures catalogue, entry display helpers. |
-| `src/db/` | Dexie schema and repository functions, which cascade deletes of marks. |
-| `src/io/` | Competition file export/import (versioned, validated with zod). |
-| `src/pdf/` | Judge sheets, results and programme PDFs (pdfmake, lazy-loaded). |
-| `src/features/` | Screens: home, competitions, events, rosters, scoring, results. |
-| `public/` | Icons, and the CIPA scoring manual (`2009 - The CIPA System of Scoring.pdf`) linked from the results. |
+| Path            | What                                                                                                                                        |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/scoring/`  | **Pure scoring engine**, with no React or DB code. `calculateEvent()` turns marks into placings and explanations.                           |
+| `src/marks/`    | Mark parsing (`57` → 5.7) and the keyboard-driven mark-entry grid.                                                                          |
+| `src/domain/`   | Types, segments (compulsory dances or figures, and the A/B-marked free dance and programmes), the figures catalogue, entry display helpers. |
+| `src/db/`       | Dexie schema and repository functions, which cascade deletes of marks.                                                                      |
+| `src/io/`       | Competition file export/import (versioned, validated with zod).                                                                             |
+| `src/pdf/`      | Judge sheets, results and programme PDFs (pdfmake, lazy-loaded).                                                                            |
+| `src/features/` | Screens: home, competitions, events, rosters, scoring, results.                                                                             |
+| `public/`       | Icons, and the CIPA scoring manual (`2009 - The CIPA System of Scoring.pdf`) linked from the results.                                       |
 
 ## Scoring rules (CIPA system of scoring)
 
@@ -133,7 +133,7 @@ per judge; the free dance and each programme an A and a B (artistic impression) 
   the tie explanations and the table of victories. The guest judges PDF shows placings only (tied
   places marked `=`), with no rules.
 
-Rule 6B is shown as "6B (S.M.V.)" (separate majority victories); labels come from `ruleLabel()`
+Rules 6A and 6B are shown as "6A (S.M.V.)" and "6B (S.M.V.)" (separate majority victories); labels come from `ruleLabel()`
 in `src/scoring/rules.ts`.
 
 The manual (`public/2009 - The CIPA System of Scoring.pdf`) is linked from "How ties were
