@@ -43,6 +43,7 @@ export function StatsTab() {
   const maxEntries = Math.max(...stats.clubRows.map((c) => c.entries));
   // Only skaters who skated more than once are worth ranking.
   const busiest = stats.busiest.filter((s) => s.events > 1).slice(0, 10);
+  const clubMedals = stats.medals.map((m) => ({ ...m, key: m.club, name: m.club }));
   const topSkaters = stats.skaterMedals.slice(0, 10);
 
   return (
@@ -59,7 +60,8 @@ export function StatsTab() {
       </SimpleGrid>
 
       <Section title="Club medal table" icon={<IconMedal size={26} />}>
-        <MedalTable nameHeader="Club" rows={stats.medals.map((m) => ({ ...m, key: m.club, name: m.club }))} />
+        <Podium rows={clubMedals} />
+        <MedalTable nameHeader="Club" rows={clubMedals} />
         <Text size="xs" c="dimmed">
           A place shared under rule 8 gives each skater who shares it that place’s medal.
         </Text>
@@ -171,7 +173,43 @@ function Medal({ kind, size = 20 }: { kind: (typeof MEDALS)[number]; size?: numb
   return <IconMedal size={size} className={kind.className} aria-label={kind.label} />;
 }
 
-/** Rows must already be sorted by gold, then silver, then bronze; equal records share a rank. */
+/** Rank of each row, which must already be sorted by gold, then silver, then bronze; equal records share a rank. */
+function medalRanks(rows: MedalCounts[]): number[] {
+  const ranks: number[] = [];
+  rows.forEach((r, i) => {
+    const prev = rows[i - 1];
+    const same = prev && prev.gold === r.gold && prev.silver === r.silver && prev.bronze === r.bronze;
+    ranks.push(same ? ranks[i - 1]! : i + 1);
+  });
+  return ranks;
+}
+
+/** The top three as a podium, second place on the left and third on the right. */
+function Podium({ rows }: { rows: (MedalCounts & { key: string; name: string })[] }) {
+  const ranks = medalRanks(rows);
+  const top = rows.slice(0, 3).map((r, i) => ({ ...r, rank: Math.min(ranks[i]!, 3) }));
+  // Winner in the middle: [2nd, 1st, 3rd], dropping places that don't exist.
+  const order = [top[1], top[0], top[2]].filter((r) => r !== undefined);
+  return (
+    <div className={classes.podium} role="img" aria-label={`Top clubs: ${top.map((r) => r.name).join(', ')}`}>
+      {order.map((r) => (
+        <div key={r.key} className={classes.step}>
+          <div className={classes.stepName}>{r.name}</div>
+          <div className={classes.stepMedals}>
+            {MEDALS.map((m) => (
+              <span key={m.key} className={`${classes.stepCount} ${r[m.key] ? m.className : classes.zero}`}>
+                <IconMedal size={16} />
+                {r[m.key]}
+              </span>
+            ))}
+          </div>
+          <div className={`${classes.block} ${classes[`block${r.rank}`]}`}>{r.rank}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function MedalTable({
   nameHeader,
   rows,
@@ -179,12 +217,7 @@ function MedalTable({
   nameHeader: string;
   rows: (MedalCounts & { key: string; name: string; sub?: string })[];
 }) {
-  const ranks: number[] = [];
-  rows.forEach((r, i) => {
-    const prev = rows[i - 1];
-    const same = prev && prev.gold === r.gold && prev.silver === r.silver && prev.bronze === r.bronze;
-    ranks.push(same ? ranks[i - 1]! : i + 1);
-  });
+  const ranks = medalRanks(rows);
 
   return (
     <Table.ScrollContainer minWidth={440}>
