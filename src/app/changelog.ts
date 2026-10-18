@@ -15,6 +15,13 @@ export const CHANGELOG: Release[] = [
     ],
   },
   {
+    version: '1.3.2',
+    date: '2026-10-18',
+    changes: [
+      'The compulsory figures list now includes figures 42 to 53 (the combined junior and senior figures from the 2026 World Skate regulations).',
+    ],
+  },
+  {
     version: '1.3.1',
     date: '2026-10-08',
     changes: [
