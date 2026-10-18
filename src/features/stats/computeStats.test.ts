@@ -112,38 +112,31 @@ describe('computeCompetitionStats', () => {
     ]);
   });
 
-  it('lists winning margins widest first and skips shared firsts', () => {
-    const wide = event(
+  it('ranks skaters by medals, giving each member of a pair the medal and leaving out the unplaced', () => {
+    const e1 = event(
       '1',
       [
         ['a', ['s1']],
         ['b', ['s2']],
+        ['c', ['s3']],
       ],
-      [place('a', 1, 5), place('b', 2, 1)],
+      [place('a', 1, 2), place('b', 2, 1), place('c', 3, 0)],
     );
-    const close = event(
+    const e2 = event(
       '2',
       [
-        ['a', ['s1']],
-        ['b', ['s2']],
+        ['a', ['s1', 's2']],
+        ['c', ['s3']],
       ],
-      [place('a', 1, 2.5, '6B'), place('b', 2, 2.5)],
+      [place('a', 1, 1), place('c', 4, 0)],
     );
-    const shared = event(
-      '3',
-      [
-        ['a', ['s1']],
-        ['b', ['s2']],
-      ],
-      [
-        { ...place('a', 1, 2, '8'), tied: true },
-        { ...place('b', 1, 2, '8'), tied: true },
-      ],
-    );
-    const { margins } = computeCompetitionStats([close, wide, shared], skaters);
-    expect(margins.map((m) => [m.eventName, m.margin, m.rule])).toEqual([
-      ['Event 1', 4, '5'],
-      ['Event 2', 0, '6B'],
+    const { skaterMedals } = computeCompetitionStats([e1, e2], skaters);
+    expect(skaterMedals.map((m) => [m.name, m.gold, m.silver, m.bronze])).toEqual([
+      ['Amy', 2, 0, 0],
+      ['Beth', 1, 1, 0],
+      ['Cat', 0, 0, 1],
     ]);
+    const none = computeCompetitionStats([event('3', [['c', ['s3']]], [place('c', 4, 0)])], skaters);
+    expect(none.skaterMedals).toEqual([]);
   });
 });

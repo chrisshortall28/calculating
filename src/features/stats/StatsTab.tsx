@@ -1,13 +1,11 @@
-import { Badge, Card, Group, Loader, Progress, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core';
+import { Card, Loader, Progress, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo } from 'react';
 import { useParams } from 'react-router';
 import { useSkaters } from '../../app/data';
 import { loadCompetitionEvents } from '../../pdf/loadEvent';
-import { formatVictories, ordinalLabel, ruleLabel } from '../../scoring/rules';
-import { computeCompetitionStats, type WinningMargin } from './computeStats';
-
-const TOP = 5;
+import { ordinalLabel } from '../../scoring/rules';
+import { computeCompetitionStats } from './computeStats';
 
 export function StatsTab() {
   const { compId } = useParams() as { compId: string };
@@ -29,8 +27,7 @@ export function StatsTab() {
   const maxEntries = Math.max(...stats.clubRows.map((c) => c.entries));
   // Only skaters who skated more than once are worth ranking.
   const busiest = stats.busiest.filter((s) => s.events > 1).slice(0, 10);
-  const widest = stats.margins.slice(0, TOP);
-  const narrowest = [...stats.margins].reverse().slice(0, TOP);
+  const topSkaters = stats.skaterMedals.slice(0, 10);
 
   return (
     <Stack gap="lg" mt="md">
@@ -76,6 +73,42 @@ export function StatsTab() {
           A place shared under rule 8 gives each skater who shares it that place’s medal.
         </Text>
       </Section>
+
+      {topSkaters.length > 0 && (
+        <Section title="Skater medal table">
+          <Table.ScrollContainer minWidth={420}>
+            <Table>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Skater</Table.Th>
+                  <Table.Th>Club</Table.Th>
+                  <Table.Th ta="right">Gold</Table.Th>
+                  <Table.Th ta="right">Silver</Table.Th>
+                  <Table.Th ta="right">Bronze</Table.Th>
+                  <Table.Th ta="right">Total</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {topSkaters.map((m) => (
+                  <Table.Tr key={m.id}>
+                    <Table.Td>{m.name}</Table.Td>
+                    <Table.Td>{m.club}</Table.Td>
+                    <Table.Td ta="right">{m.gold}</Table.Td>
+                    <Table.Td ta="right">{m.silver}</Table.Td>
+                    <Table.Td ta="right">{m.bronze}</Table.Td>
+                    <Table.Td ta="right" fw={600}>
+                      {m.gold + m.silver + m.bronze}
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+          <Text size="xs" c="dimmed">
+            The ten skaters with the most medals. Each member of a pair or team gets its medal.
+          </Text>
+        </Section>
+      )}
 
       <Section title="Entries per club">
         <Table.ScrollContainer minWidth={420}>
@@ -130,17 +163,6 @@ export function StatsTab() {
           </Table.ScrollContainer>
         </Section>
       )}
-
-      {stats.margins.length > 0 && (
-        <SimpleGrid cols={{ base: 1, md: 2 }}>
-          <Section title="Biggest winning margins">
-            <Margins rows={widest} />
-          </Section>
-          <Section title="Closest wins">
-            <Margins rows={narrowest} />
-          </Section>
-        </SimpleGrid>
-      )}
     </Stack>
   );
 }
@@ -166,35 +188,5 @@ function Section({ title, children }: { title: string; children: React.ReactNode
         {children}
       </Stack>
     </Card>
-  );
-}
-
-/** Lead over second place in majority victories (the CIPA measure of who won). */
-function Margins({ rows }: { rows: WinningMargin[] }) {
-  return (
-    <Stack gap="xs">
-      {rows.map((m) => (
-        <Group key={m.eventId} justify="space-between" wrap="nowrap" align="flex-start">
-          <div>
-            <Text size="sm" fw={500}>
-              {m.winner}
-            </Text>
-            <Text size="xs" c="dimmed">
-              {m.eventName}
-            </Text>
-          </div>
-          <Group gap={6} wrap="nowrap">
-            {m.rule !== '5' && (
-              <Badge variant="light" color="gray">
-                Rule {ruleLabel(m.rule)}
-              </Badge>
-            )}
-            <Text size="sm" fw={600}>
-              {m.margin === 0 ? 'level' : `+${formatVictories(m.margin)}`}
-            </Text>
-          </Group>
-        </Group>
-      ))}
-    </Stack>
   );
 }

@@ -11,7 +11,7 @@ export const CHANGELOG: Release[] = [
     version: '1.4.0',
     date: '2026-10-18',
     changes: [
-      'Competitions have a new Stats tab with a medal table by club, entries per club, the busiest skaters, and the biggest and closest winning margins. It covers the events that have every mark entered and updates as marks go in.',
+      'Competitions have a new Stats tab with medal tables for clubs and skaters, entries per club, and the busiest skaters. It covers the events that have every mark entered and updates as marks go in.',
     ],
   },
   {

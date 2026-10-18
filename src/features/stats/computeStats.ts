@@ -1,5 +1,4 @@
 import type { Id, Skater } from '../../domain/types';
-import type { PlacementRule } from '../../scoring';
 import type { EventData } from '../../pdf/loadEvent';
 
 export const NO_CLUB = 'No club';
@@ -24,16 +23,18 @@ export interface BusySkater {
   events: number;
   /** Best place in any counted event. */
   bestPlace: number;
+  gold: number;
+  silver: number;
+  bronze: number;
 }
 
-export interface WinningMargin {
-  eventId: Id;
-  eventName: string;
-  winner: string;
-  /** Majority victories ahead of second place (halves possible). */
-  margin: number;
-  /** The rule that decided first place; `5` when there was no tie to break. */
-  rule: PlacementRule;
+export interface SkaterMedalRow {
+  id: Id;
+  name: string;
+  club: string;
+  gold: number;
+  silver: number;
+  bronze: number;
 }
 
 export interface CompetitionStats {
@@ -45,8 +46,8 @@ export interface CompetitionStats {
   medals: MedalRow[];
   clubRows: ClubRow[];
   busiest: BusySkater[];
-  /** Counted events with a single winner, widest margin first. */
-  margins: WinningMargin[];
+  /** Skaters with at least one medal, most gold first. */
+  skaterMedals: SkaterMedalRow[];
 }
 
 /**
@@ -61,7 +62,6 @@ export function computeCompetitionStats(events: EventData[], skaters: Skater[]):
   const clubs = new Map<string, { entries: number; skaters: Set<Id> }>();
   const busy = new Map<Id, BusySkater>();
   const allSkaters = new Set<Id>();
-  const margins: WinningMargin[] = [];
   let entries = 0;
 
   for (const data of counted) {
@@ -97,22 +97,17 @@ export function computeCompetitionStats(events: EventData[], skaters: Skater[]):
           club: skater?.club || NO_CLUB,
           events: 0,
           bestPlace: Infinity,
+          gold: 0,
+          silver: 0,
+          bronze: 0,
         };
         b.events++;
         b.bestPlace = Math.min(b.bestPlace, place.place);
+        if (place.place === 1) b.gold++;
+        else if (place.place === 2) b.silver++;
+        else if (place.place === 3) b.bronze++;
         busy.set(id, b);
       }
-    }
-
-    const [first, second] = data.result.overall;
-    if (first && second && first.place !== second.place) {
-      margins.push({
-        eventId: data.event.id,
-        eventName: data.event.name,
-        winner: rows.get(first.entryId)?.name ?? '?',
-        margin: first.majorityVictories - second.majorityVictories,
-        rule: first.rule,
-      });
     }
   }
 
@@ -131,6 +126,12 @@ export function computeCompetitionStats(events: EventData[], skaters: Skater[]):
     busiest: [...busy.values()].sort(
       (a, b) => b.events - a.events || a.bestPlace - b.bestPlace || a.name.localeCompare(b.name),
     ),
-    margins: margins.sort((a, b) => b.margin - a.margin),
+    skaterMedals: [...busy.values()]
+      .filter((b) => b.gold + b.silver + b.bronze > 0)
+      .map(({ id, name, club, gold, silver, bronze }) => ({ id, name, club, gold, silver, bronze }))
+      .sort(
+        (a, b) =>
+          b.gold - a.gold || b.silver - a.silver || b.bronze - a.bronze || a.name.localeCompare(b.name),
+      ),
   };
 }
