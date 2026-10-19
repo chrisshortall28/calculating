@@ -3,6 +3,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import {
   IconCalendarEvent,
+  IconChartBar,
   IconChevronDown,
   IconDownload,
   IconListNumbers,
@@ -30,6 +31,7 @@ const TABS = [
   { value: 'skaters', label: 'Skaters', icon: <IconUsers size={18} /> },
   { value: 'judges', label: 'Judges', icon: <IconJudge size={18} /> },
   { value: 'dances', label: 'Dances', icon: <IconMusic size={18} /> },
+  { value: 'stats', label: 'Stats', icon: <IconChartBar size={18} /> },
   { value: 'settings', label: 'Settings', icon: <IconSettings size={18} /> },
 ];
 

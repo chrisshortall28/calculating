@@ -8,6 +8,7 @@ import { EventsTab } from '../features/events/EventsTab';
 import { SkatersTab } from '../features/roster/SkatersTab';
 import { JudgesTab } from '../features/roster/JudgesTab';
 import { DancesTab } from '../features/roster/DancesTab';
+import { StatsTab } from '../features/stats/StatsTab';
 import { CompetitionSettingsTab } from '../features/competitions/CompetitionSettingsTab';
 import { EventPage } from '../features/events/EventPage';
 import { HomePage } from '../features/home/HomePage';
@@ -32,6 +33,7 @@ const router = createBrowserRouter(
             { path: 'skaters', element: <SkatersTab /> },
             { path: 'judges', element: <JudgesTab /> },
             { path: 'dances', element: <DancesTab /> },
+            { path: 'stats', element: <StatsTab /> },
             { path: 'settings', element: <CompetitionSettingsTab /> },
           ],
         },
