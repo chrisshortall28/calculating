@@ -19,7 +19,8 @@ body {
 
 /* Dropdowns (pickers, menus): a clear edge and a shadow, so an open list stands apart from the
    page beneath it. Mantine's default border is barely visible on a white page. */
-.mantine-Popover-dropdown {
+.mantine-Popover-dropdown,
+.mantine-Menu-dropdown {
   --popover-border-color: light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-3));
   box-shadow: var(--mantine-shadow-md);
 }
