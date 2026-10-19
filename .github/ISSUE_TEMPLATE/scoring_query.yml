@@ -1,0 +1,43 @@
+name: Scoring query
+description: A placing or tie-break looks wrong, or the CIPA manual is unclear
+labels: [scoring]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Podium follows the [2009 CIPA manual](https://github.com/chrisshortall28/calculating/blob/main/public/2009%20-%20The%20CIPA%20System%20of%20Scoring.pdf).
+        Please use **fictional names only**.
+  - type: textarea
+    id: result
+    attributes:
+      label: What does Podium show?
+      description: The placings and the rule shown for any tied places.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What do you expect, and why?
+      description: Quote or cite the CIPA manual (rule number and page) if you can.
+    validations:
+      required: true
+  - type: textarea
+    id: marks
+    attributes:
+      label: The marks
+      description: Paste the judges' marks, or attach an exported `.pod` file with fictional data.
+    validations:
+      required: true
+  - type: dropdown
+    id: discipline
+    attributes:
+      label: Event type
+      options:
+        - Dance (compulsory dances and free dance)
+        - Figures & Free
+        - Not sure
+  - type: input
+    id: version
+    attributes:
+      label: Podium version
+      description: Shown in the What's New popup.

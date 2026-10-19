@@ -1,0 +1,52 @@
+name: Bug report
+description: Something in Podium isn't working as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please use **fictional names only**: don't post real skaters' details.
+        If you think a *placing* is wrong, use the "Scoring query" form instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the Scoring tab
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Podium version
+      description: Shown in the What's New popup.
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How are you using it?
+      options:
+        - In the browser
+        - Installed as an app (PWA)
+        - Running from source
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: Chrome 130 on Windows 11
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, console errors, or attach an exported `.pod` file (fictional data only).
