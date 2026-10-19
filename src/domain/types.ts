@@ -10,6 +10,8 @@ export interface Competition {
   secondaryColor?: string;
   /** The programme's welcome message (blank lines separate paragraphs); unset = a standard welcome. */
   welcome?: string;
+  /** Default for the competition's events: later compulsory dances and figures start partway down the field. */
+  rotateStartOrder?: boolean;
   createdAt: number;
   updatedAt: number;
 }
@@ -49,6 +51,8 @@ export interface CompEvent {
   judgeIds: Id[];
   /** The event's referee (a person from the judges roster; may also sit on the panel). Gives no marks. */
   refereeId?: Id;
+  /** Rotating start order for this event: follow the competition's default, or force it on or off. */
+  rotateStartOrder?: 'default' | 'on' | 'off';
   status: EventStatus;
 }
 

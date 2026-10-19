@@ -38,6 +38,7 @@ export type EventDetails = Pick<
   | 'hasShort'
   | 'hasLong'
   | 'factors'
+  | 'rotateStartOrder'
 >;
 
 /** Factors as the Calculator types them (1.5), rather than as stored (150 hundredths). */
@@ -92,6 +93,7 @@ const emptyEvent: FormValues = {
   ...danceEventDefaults(),
   discipline: '',
   factors: toDecimal(NO_FACTORS),
+  rotateStartOrder: 'default',
 };
 
 export function EventDetailsForm({
@@ -348,6 +350,19 @@ export function EventDetailsForm({
               </Input.Wrapper>
             )}
           </>
+        )}
+        {v.discipline && (
+          <Select
+            label="Rotating start order"
+            description="Later compulsory dances or figures start partway down the field"
+            allowDeselect={false}
+            data={[
+              { value: 'default', label: 'Use the competition’s setting' },
+              { value: 'on', label: 'Rotate' },
+              { value: 'off', label: 'Don’t rotate' },
+            ]}
+            {...form.getInputProps('rotateStartOrder')}
+          />
         )}
         <Group justify="flex-end">
           {keepAdding && (

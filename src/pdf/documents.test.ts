@@ -36,6 +36,7 @@ function sampleEvent(): EventData {
       status: 'final',
     },
     segments,
+    firstSkaters: new Map<string, number>(),
     rows,
     judges,
     referee: { id: 'r', competitionId: 'c', name: 'Kate' },
@@ -164,6 +165,19 @@ describe('judgeSheets', () => {
     }));
     return { ...sampleEvent(), segments };
   };
+
+  it('marks who skates first in each rotating dance, in that dance’s Comments box', () => {
+    const d = {
+      ...withDances(2),
+      firstSkaters: new Map([
+        ['cd:0', 0],
+        ['cd:1', 1],
+      ]),
+    };
+    // 3 judges + the referee, each with one sheet; Amy skates the first dance first, Beth the second.
+    expect(texts(judgeSheets([d])).filter((t) => t === 'Skates First')).toHaveLength(8);
+    expect(texts(judgeSheets([withDances(2)]))).not.toContain('Skates First');
+  });
 
   it('fits up to four dances on one sheet per official', () => {
     const pages = judgeSheets([withDances(4)]);

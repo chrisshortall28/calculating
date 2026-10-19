@@ -145,6 +145,15 @@ resolved", opening at page 4, and is precached so it opens offline. If it is ren
 No such events in Podium, so not implemented: original dance (rules 3 and 7B's O.D. steps).
 Worked examples live in `src/scoring/scoring.test.ts`.
 
+### Rotating start order
+
+The CIPA manual says nothing about skating order, so this is Podium's own optional feature and never
+affects scoring. With it on (a competition default in Settings, overridable per event), the field is
+split into one group per compulsory dance or figure, the bigger groups first, and each part starts with
+the first skater of its group: 8 skaters and 2 dances start with #1 and #5; 13 skaters and 3 dances
+with #1, #6 and #10 (`src/domain/startOrder.ts`). The judge sheets and the scoring grid keep the
+entries' order and mark who skates first.
+
 ### Compulsory figures
 
 The 53 figures are built in (`src/domain/figures.ts`), shown as e.g. "39. Paragraph Loops BOI -

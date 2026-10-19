@@ -1,5 +1,6 @@
 import { db } from '../db/db';
 import { byId, entryClub, entryMembers, entryName } from '../domain/entryName';
+import { effectiveRotate, firstSkaters } from '../domain/startOrder';
 import { eventSegments, eventTieBreakMarks, type Segment } from '../domain/segments';
 import type { CompEvent, Competition, Id, Judge, SegmentKey } from '../domain/types';
 import { markKey, indexMarks } from '../domain/markIndex';
@@ -17,6 +18,8 @@ export interface EventData {
   competition: Competition;
   event: CompEvent;
   segments: Segment[];
+  /** Rotating start order: segment id -> position in `rows` of the entry that skates it first. */
+  firstSkaters: Map<string, number>;
   rows: EventRow[];
   judges: Judge[];
   referee?: Judge;
@@ -51,6 +54,7 @@ export async function loadEventData(eventId: Id): Promise<EventData> {
     competition,
     event,
     segments,
+    firstSkaters: firstSkaters(segments, entries.length, effectiveRotate(event, competition)),
     rows: entries.map((e) => ({
       id: e.id,
       name: entryName(e, skaters),

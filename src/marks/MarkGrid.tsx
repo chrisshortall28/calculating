@@ -36,6 +36,8 @@ interface Props {
   focusedInputRef?: RefObject<HTMLInputElement | null>;
   /** changes to this value re-focus the first empty cell (e.g. switching segment) */
   focusKey?: string;
+  /** The row that skates first in this part, when the start order rotates; marked beside its number. */
+  firstRowId?: Id;
 }
 
 /**
@@ -57,6 +59,7 @@ export function MarkGrid(props: Props) {
     numberPad,
     focusedInputRef,
     focusKey,
+    firstRowId,
   } = props;
   const cols = judges.length * markKeys.length;
   const refs = useRef(new Map<string, HTMLInputElement>());
@@ -151,7 +154,13 @@ export function MarkGrid(props: Props) {
         <tbody>
           {rows.map((row, r) => (
             <tr key={row.id} className={active?.row === r ? classes.activeRow : undefined}>
-              <td className={classes.startNo}>{r + 1}</td>
+              <td
+                className={`${classes.startNo} ${row.id === firstRowId ? classes.firstSkater : ''}`}
+                title={row.id === firstRowId ? 'Skates first in this part' : undefined}
+              >
+                {r + 1}
+                {row.id === firstRowId && <span className={classes.firstTag}>1st</span>}
+              </td>
               <td className={classes.entryCell} title={row.sub ? `${row.label} — ${row.sub}` : row.label}>
                 <Text size="sm" fw={500} truncate>
                   {row.label}

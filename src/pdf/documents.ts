@@ -102,8 +102,12 @@ function judgeSheetPage(
   const columns = segments.map((s) => ({
     name: s.name,
     subs: [
-      { label: 'Comments', width: '*' as const },
-      ...s.markKeys.map((k) => ({ label: markKeyLabel(k) || 'Mark', width: MARK_WIDTH })),
+      { label: 'Comments', width: '*' as const, segmentId: s.id },
+      ...s.markKeys.map((k) => ({
+        label: markKeyLabel(k) || 'Mark',
+        width: MARK_WIDTH,
+        segmentId: undefined,
+      })),
     ],
   }));
   const subCols = columns.flatMap((c) => c.subs);
@@ -144,7 +148,12 @@ function judgeSheetPage(
           { text: [r.club, r.members].filter(Boolean).join(' · '), style: 'small' },
         ],
       },
-      ...subCols.map(() => ({ text: '' })),
+      // With a rotating start order the rows keep their order; the first skater's Comments box says so.
+      ...subCols.map((c) =>
+        c.segmentId !== undefined && d.firstSkaters.get(c.segmentId) === i
+          ? { text: 'Skates First', style: 'small', bold: true }
+          : { text: '' },
+      ),
       ...(isLast ? [{ text: '' }, { text: '' }] : []),
     ]),
   ];
