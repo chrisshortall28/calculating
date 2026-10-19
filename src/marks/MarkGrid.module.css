@@ -125,3 +125,19 @@
   border-radius: 50%;
   color: var(--mantine-color-text);
 }
+
+/* A small ring in the corner of a mark cell: this entry skates first in that dance or figure. */
+.markTd {
+  position: relative;
+}
+
+.firstMark {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--mantine-primary-color-filled);
+  border-radius: 50%;
+  pointer-events: none;
+}

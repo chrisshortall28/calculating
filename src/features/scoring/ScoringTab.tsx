@@ -53,11 +53,11 @@ export function ScoringTab({ event }: { event: CompEvent }) {
   const locked = event.status === 'final';
 
   // With a rotating start order, the grid keeps the paper sheet's order and tags who skates first.
-  const firstIndex =
-    competition && segment
-      ? firstSkaters(segments, entries.length, effectiveRotate(event, competition)).get(segment.id)
-      : undefined;
-  const firstRowId = firstIndex === undefined ? undefined : entries[firstIndex]?.id;
+  const firstEntryIds = new Map<string, string>();
+  if (competition)
+    for (const [segId, index] of firstSkaters(segments, entries.length, effectiveRotate(event, competition)))
+      if (entries[index]) firstEntryIds.set(segId, entries[index].id);
+  const firstRowId = segment ? firstEntryIds.get(segment.id) : undefined;
 
   const judges = event.judgeIds.map((id) => ({ id, name: judgeMap.get(id)?.name ?? '?' }));
   const rows = useMemo(
@@ -239,6 +239,7 @@ export function ScoringTab({ event }: { event: CompEvent }) {
                 }}
                 sums={sheet?.sums ?? new Map()}
                 ranks={sheet?.ranks}
+                firstEntryIds={firstEntryIds}
                 direction={direction}
                 autoAdvance={autoAdvance}
                 readOnly={locked}
