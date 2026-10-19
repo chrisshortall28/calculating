@@ -116,7 +116,13 @@ export function EventDetailsForm({
   const nameRef = useRef<HTMLInputElement>(null);
   const dances = useDances(competitionId);
   const form = useForm<FormValues>({
-    initialValues: initial ? { ...initial, factors: toDecimal(initial.factors) } : emptyEvent,
+    initialValues: initial
+      ? {
+          ...initial,
+          rotateStartOrder: initial.rotateStartOrder ?? 'default',
+          factors: toDecimal(initial.factors),
+        }
+      : emptyEvent,
     validate: {
       name: (v) => (v.trim() ? null : 'Name is required'),
       discipline: (v) => (v ? null : 'Choose the event type'),
