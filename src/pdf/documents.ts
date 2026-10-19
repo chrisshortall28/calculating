@@ -205,13 +205,23 @@ export function judgeSheets(events: EventData[], blankCount = 3, perDance = fals
       ? d.judges.map((_, i) => ({ role: 'Judge', label: `J${i + 1}`, name: '' }))
       : Array.from({ length: blankCount }, (_, i) => ({ role: 'Judge', label: `J${i + 1}`, name: '' }));
     officials.push({ role: 'Referee', label: '', name: '' });
+    const compulsory = d.segments.filter((s) => s.kind === 'compulsory').length;
     if (perDance) {
       // One sheet per dance, figure or programme, with no totals (CIPA places only the whole event).
       for (const o of officials)
-        for (const seg of d.segments)
+        d.segments.forEach((seg, i) => {
+          // Compulsory parts say which one they are of the event, so the judge can't mix the sheets up.
+          const noun = d.event.discipline === 'figures' ? 'Figure' : 'Dance';
+          const number = seg.kind === 'compulsory' ? ` (${noun} ${i + 1} of ${compulsory})` : '';
           pages.push(
-            judgeSheetPage(d, o, [seg], { index: 0, count: 1, label: ` — ${seg.name}`, totals: false }),
+            judgeSheetPage(d, o, [seg], {
+              index: 0,
+              count: 1,
+              label: ` — ${seg.name}${number}`,
+              totals: false,
+            }),
           );
+        });
       continue;
     }
     const parts = sheetParts(d.segments);

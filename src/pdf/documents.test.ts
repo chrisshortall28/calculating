@@ -185,7 +185,10 @@ describe('judgeSheets', () => {
     expect(pages).toHaveLength(3 * 4); // 3 dances x (3 judges + referee)
     const t = texts(pages);
     expect(t).toEqual(
-      expect.arrayContaining(['Event — Judge’s sheet — Dance 1', 'Event — Judge’s sheet — Dance 3']),
+      expect.arrayContaining([
+        'Event — Judge’s sheet — Dance 1 (Dance 1 of 3)',
+        'Event — Judge’s sheet — Dance 3 (Dance 3 of 3)',
+      ]),
     );
     expect(t).not.toContain('Total points');
     expect(texts(judgeSheets([d]))).toContain('Total points');
