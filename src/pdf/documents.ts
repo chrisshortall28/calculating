@@ -97,13 +97,13 @@ function judgeSheetPage(
   part: {
     index: number;
     count: number;
-    /** Heading suffix; defaults to "(1 of 2)" when the event takes several sheets. */ label?: string;
+    /** Heading subtitle; defaults to "Sheet 1 of 2" when the event takes several sheets. */ label?: string;
     /** Show Total points and Place (default: on the last sheet). */ totals?: boolean;
   },
 ): Content[] {
   const MARK_WIDTH = 38;
   const isLast = part.totals ?? part.index === part.count - 1;
-  const partLabel = part.label ?? (part.count > 1 ? ` (${part.index + 1} of ${part.count})` : '');
+  const partLabel = part.label ?? (part.count > 1 ? `Sheet ${part.index + 1} of ${part.count}` : undefined);
   const columns = segments.map((s) => ({
     name: s.name,
     subs: [
@@ -164,7 +164,7 @@ function judgeSheetPage(
   ];
 
   return [
-    ...header(d, `${role}’s sheet${partLabel}`),
+    ...header(d, partLabel),
     {
       columns: [
         {
@@ -217,7 +217,7 @@ export function judgeSheets(events: EventData[], blankCount = 3, perDance = fals
             judgeSheetPage(d, o, [seg], {
               index: 0,
               count: 1,
-              label: ` — ${seg.name}${number}`,
+              label: `${seg.name}${number}`,
               totals: false,
             }),
           );
