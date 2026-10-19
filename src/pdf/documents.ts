@@ -94,16 +94,25 @@ function judgeSheetPage(
   d: EventData,
   { role, label, name }: Official,
   segments: EventData['segments'],
-  part: { index: number; count: number },
+  part: {
+    index: number;
+    count: number;
+    /** Heading subtitle; defaults to "Sheet 1 of 2" when the event takes several sheets. */ label?: string;
+    /** Show Total points and Place (default: on the last sheet). */ totals?: boolean;
+  },
 ): Content[] {
   const MARK_WIDTH = 38;
-  const isLast = part.index === part.count - 1;
-  const partLabel = part.count > 1 ? ` (${part.index + 1} of ${part.count})` : '';
+  const isLast = part.totals ?? part.index === part.count - 1;
+  const partLabel = part.label ?? (part.count > 1 ? `Sheet ${part.index + 1} of ${part.count}` : undefined);
   const columns = segments.map((s) => ({
     name: s.name,
     subs: [
-      { label: 'Comments', width: '*' as const },
-      ...s.markKeys.map((k) => ({ label: markKeyLabel(k) || 'Mark', width: MARK_WIDTH })),
+      { label: 'Comments', width: '*' as const, segmentId: s.id },
+      ...s.markKeys.map((k) => ({
+        label: markKeyLabel(k) || 'Mark',
+        width: MARK_WIDTH,
+        segmentId: undefined,
+      })),
     ],
   }));
   const subCols = columns.flatMap((c) => c.subs);
@@ -144,13 +153,18 @@ function judgeSheetPage(
           { text: [r.club, r.members].filter(Boolean).join(' · '), style: 'small' },
         ],
       },
-      ...subCols.map(() => ({ text: '' })),
+      // With a rotating start order the rows keep their order; the first skater's Comments box says so.
+      ...subCols.map((c) =>
+        c.segmentId !== undefined && d.firstSkaters.get(c.segmentId) === i
+          ? { text: 'Skates First', style: 'small', bold: true }
+          : { text: '' },
+      ),
       ...(isLast ? [{ text: '' }, { text: '' }] : []),
     ]),
   ];
 
   return [
-    ...header(d, `${role}’s sheet${partLabel}`),
+    ...header(d, partLabel),
     {
       columns: [
         {
@@ -183,7 +197,7 @@ function judgeSheetPage(
  * One sheet per judge on the panel (or `blankCount` unnamed sheets if no judges are assigned
  * yet), followed by a sheet for the referee (unnamed if no referee is assigned yet).
  */
-export function judgeSheets(events: EventData[], blankCount = 3): Content[] {
+export function judgeSheets(events: EventData[], blankCount = 3, perDance = false): Content[] {
   const pages: Content[][] = [];
   for (const d of events) {
     if (d.segments.length === 0) continue;
@@ -191,6 +205,25 @@ export function judgeSheets(events: EventData[], blankCount = 3): Content[] {
       ? d.judges.map((_, i) => ({ role: 'Judge', label: `J${i + 1}`, name: '' }))
       : Array.from({ length: blankCount }, (_, i) => ({ role: 'Judge', label: `J${i + 1}`, name: '' }));
     officials.push({ role: 'Referee', label: '', name: '' });
+    const compulsory = d.segments.filter((s) => s.kind === 'compulsory').length;
+    if (perDance) {
+      // One sheet per dance, figure or programme, with no totals (CIPA places only the whole event).
+      for (const o of officials)
+        d.segments.forEach((seg, i) => {
+          // Compulsory parts say which one they are of the event, so the judge can't mix the sheets up.
+          const noun = d.event.discipline === 'figures' ? 'Figure' : 'Dance';
+          const number = seg.kind === 'compulsory' ? ` (${noun} ${i + 1} of ${compulsory})` : '';
+          pages.push(
+            judgeSheetPage(d, o, [seg], {
+              index: 0,
+              count: 1,
+              label: `${seg.name}${number}`,
+              totals: false,
+            }),
+          );
+        });
+      continue;
+    }
     const parts = sheetParts(d.segments);
     for (const o of officials)
       parts.forEach((segments, index) =>
@@ -503,8 +536,8 @@ export function resultsDocument(
 }
 
 /** Judges' sheets are handed out loose, one or more per official, so they carry no page numbers. */
-export function judgeSheetsDocument(events: EventData[]): TDocumentDefinitions {
-  return document(judgeSheets(events), true, undefined, false);
+export function judgeSheetsDocument(events: EventData[], perDance = false): TDocumentDefinitions {
+  return document(judgeSheets(events, 3, perDance), true, undefined, false);
 }
 
 /** `pageHeader` is repeated at the top of every page. */

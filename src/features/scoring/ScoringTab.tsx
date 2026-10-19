@@ -2,10 +2,11 @@ import { Alert, Box, Card, Group, Kbd, Stack, Text } from '@mantine/core';
 import { useLocalStorage } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useJudges, useSkaters } from '../../app/data';
+import { useCompetition, useJudges, useSkaters } from '../../app/data';
 import { clearMarks, setEventStatus, setMark } from '../../db/repo';
 import { byId, entryClub, entryHeading, entryName, entryNoun } from '../../domain/entryName';
 import { eventTieBreakMarks, segmentNoun } from '../../domain/segments';
+import { effectiveRotate, firstSkaters } from '../../domain/startOrder';
 import type { CompEvent, SegmentKey } from '../../domain/types';
 import { judgeEventRanks } from '../../scoring';
 import type { Direction } from '../../marks/gridNav';
@@ -27,6 +28,7 @@ export function ScoringTab({ event }: { event: CompEvent }) {
   const { loading, segments, entries, markMap, result } = useEventResult(event);
   const skaters = byId(useSkaters(event.competitionId));
   const judgeMap = byId(useJudges(event.competitionId));
+  const competition = useCompetition(event.competitionId);
   const [direction, setDirection] = useLocalStorage<Direction>({
     key: 'podium.direction',
     defaultValue: 'down',
@@ -49,6 +51,13 @@ export function ScoringTab({ event }: { event: CompEvent }) {
   const segment = segments.find((s) => s.id === activeId) ?? segments[0];
   const segResult = result.segments.find((s) => s.segmentId === segment?.id);
   const locked = event.status === 'final';
+
+  // With a rotating start order, the grid keeps the paper sheet's order and tags who skates first.
+  const firstEntryIds = new Map<string, string>();
+  if (competition)
+    for (const [segId, index] of firstSkaters(segments, entries.length, effectiveRotate(event, competition)))
+      if (entries[index]) firstEntryIds.set(segId, entries[index].id);
+  const firstRowId = segment ? firstEntryIds.get(segment.id) : undefined;
 
   const judges = event.judgeIds.map((id) => ({ id, name: judgeMap.get(id)?.name ?? '?' }));
   const rows = useMemo(
@@ -230,6 +239,7 @@ export function ScoringTab({ event }: { event: CompEvent }) {
                 }}
                 sums={sheet?.sums ?? new Map()}
                 ranks={sheet?.ranks}
+                firstEntryIds={firstEntryIds}
                 direction={direction}
                 autoAdvance={autoAdvance}
                 readOnly={locked}
@@ -252,6 +262,7 @@ export function ScoringTab({ event }: { event: CompEvent }) {
                     void setEventStatus(event.id, 'scoring');
                 }}
                 ordinals={ordinals}
+                firstRowId={firstRowId}
                 direction={direction}
                 autoAdvance={autoAdvance}
                 readOnly={locked}

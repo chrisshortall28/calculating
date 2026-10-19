@@ -113,3 +113,31 @@
 .roomy {
   --cell-px: 12px;
 }
+
+/* Who skates first in this dance or figure, when the start order rotates: a ring round the number. */
+.firstSkater {
+  display: inline-block;
+  min-width: 22px;
+  padding: 1px 3px;
+  line-height: 18px;
+  text-align: center;
+  border: 2px solid var(--mantine-primary-color-filled);
+  border-radius: 50%;
+  color: var(--mantine-color-text);
+}
+
+/* A small ring in the corner of a mark cell: this entry skates first in that dance or figure. */
+.markTd {
+  position: relative;
+}
+
+.firstMark {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--mantine-primary-color-filled);
+  border-radius: 50%;
+  pointer-events: none;
+}

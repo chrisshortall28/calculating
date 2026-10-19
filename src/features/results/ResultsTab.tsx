@@ -1,22 +1,10 @@
-import {
-  Accordion,
-  Alert,
-  Badge,
-  Button,
-  Card,
-  Group,
-  Stack,
-  Table,
-  Text,
-  Title,
-  Tooltip,
-} from '@mantine/core';
+import { Accordion, Alert, Badge, Button, Card, Group, Menu, Stack, Table, Text, Title } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconFileText, IconPrinter } from '@tabler/icons-react';
+import { IconChevronDown, IconFileTypePdf } from '@tabler/icons-react';
 import { Fragment, useState } from 'react';
 import { useJudges, useSkaters } from '../../app/data';
 import { byId, entryClub, entryHeading, entryName } from '../../domain/entryName';
-import { factorSummary, markKeyLabel } from '../../domain/segments';
+import { factorSummary, markKeyLabel, segmentNoun } from '../../domain/segments';
 import type { CompEvent, Competition } from '../../domain/types';
 import { formatTenths } from '../../marks/parseMark';
 import { printJudgeSheets, printResults } from '../../pdf/actions';
@@ -57,44 +45,55 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
 
   return (
     <Stack>
-      <Group>
-        <Button
-          variant="default"
-          leftSection={<IconPrinter size={16} />}
-          loading={busy === 'sheets'}
-          onClick={() => run('sheets', () => printJudgeSheets({ eventId: event.id }, event.name))}
-        >
-          Judge sheets PDF
-        </Button>
-        <Button
-          leftSection={<IconFileText size={16} />}
-          disabled={!result.complete}
-          loading={busy === 'standard'}
-          onClick={() => run('standard', () => printResults({ eventId: event.id }, event.name, 'standard'))}
-        >
-          Results PDF
-        </Button>
-        <Button
-          variant="light"
-          leftSection={<IconFileText size={16} />}
-          disabled={!result.complete}
-          loading={busy === 'withMarks'}
-          onClick={() => run('withMarks', () => printResults({ eventId: event.id }, event.name, 'withMarks'))}
-        >
-          Results with marks PDF
-        </Button>
-        <Tooltip label="Placings and tie-break rules only — no victories, points or judge rankings" withArrow>
-          <Button
-            variant="light"
-            color="grape"
-            leftSection={<IconFileText size={16} />}
-            disabled={!result.complete}
-            loading={busy === 'guest'}
-            onClick={() => run('guest', () => printResults({ eventId: event.id }, event.name, 'guest'))}
-          >
-            Guest judges PDF
-          </Button>
-        </Tooltip>
+      <Group justify="flex-end">
+        <Menu position="bottom-end">
+          <Menu.Target>
+            <Button
+              leftSection={<IconFileTypePdf size={16} />}
+              rightSection={<IconChevronDown size={14} />}
+              loading={busy !== null}
+            >
+              PDF
+            </Button>
+          </Menu.Target>
+          <Menu.Dropdown>
+            <Menu.Item
+              onClick={() => run('sheets', () => printJudgeSheets({ eventId: event.id }, event.name))}
+            >
+              Judge sheets
+            </Menu.Item>
+            <Menu.Item
+              onClick={() =>
+                run('sheetsPerDance', () => printJudgeSheets({ eventId: event.id }, event.name, true))
+              }
+            >
+              Judge sheets, a sheet per {segmentNoun(event)}
+            </Menu.Item>
+            <Menu.Divider />
+            <Menu.Item
+              disabled={!result.complete}
+              onClick={() =>
+                run('standard', () => printResults({ eventId: event.id }, event.name, 'standard'))
+              }
+            >
+              Results
+            </Menu.Item>
+            <Menu.Item
+              disabled={!result.complete}
+              onClick={() =>
+                run('withMarks', () => printResults({ eventId: event.id }, event.name, 'withMarks'))
+              }
+            >
+              Results with marks
+            </Menu.Item>
+            <Menu.Item
+              disabled={!result.complete}
+              onClick={() => run('guest', () => printResults({ eventId: event.id }, event.name, 'guest'))}
+            >
+              Results for guest judges (placings only)
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
       </Group>
 
       {!result.complete && (

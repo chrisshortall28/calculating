@@ -11,11 +11,13 @@ import {
 } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
-import { useEntries, useSkaters } from '../../app/data';
+import { useCompetition, useDances, useEntries, useSkaters } from '../../app/data';
 import { SortableList } from '../../app/SortableList';
 import { db } from '../../db/db';
 import { addEntry, deleteEntry, entryTypeLabel, reorderEntries, updateEntry } from '../../db/repo';
+import { eventSegments } from '../../domain/segments';
 import { shuffled } from '../../domain/shuffle';
+import { effectiveRotate, firstSkaters } from '../../domain/startOrder';
 import { byId, entryClub, entryMembers, entryName } from '../../domain/entryName';
 import type { PastedRow } from '../../domain/pasteList';
 import type { CompEvent, Entry } from '../../domain/types';
@@ -26,6 +28,12 @@ export function EntriesTab({ event }: { event: CompEvent }) {
   const entries = useEntries(event.id) ?? [];
   const skaterList = useSkaters(event.competitionId) ?? [];
   const skaters = byId(skaterList);
+  const competition = useCompetition(event.competitionId);
+  const dances = useDances(event.competitionId);
+  const segments = eventSegments(event, dances ?? []);
+  const firsts = competition
+    ? firstSkaters(segments, entries.length, effectiveRotate(event, competition))
+    : new Map<string, number>();
   const markCounts = useLiveQuery(async () => {
     const counts = new Map<string, number>();
     await db.marks
@@ -132,6 +140,24 @@ export function EntriesTab({ event }: { event: CompEvent }) {
           </Button>
         </Group>
       </Group>
+
+      {firsts.size > 0 && (
+        <Paper withBorder px="sm" py={6}>
+          <Text size="sm" fw={500}>
+            Rotating start order — skates first
+          </Text>
+          {segments
+            .filter((sg) => firsts.has(sg.id))
+            .map((sg) => {
+              const at = firsts.get(sg.id)!;
+              return (
+                <Text key={sg.id} size="sm" c="dimmed">
+                  {sg.name}: #{at + 1} {entries[at] ? entryName(entries[at], skaters) : ''}
+                </Text>
+              );
+            })}
+        </Paper>
+      )}
 
       <div>
         <SortableList

@@ -1,4 +1,4 @@
-import { Button, Card, Group, Stack, Text, Title } from '@mantine/core';
+import { Button, Card, Group, Stack, Switch, Text, Title } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { useNavigate, useParams } from 'react-router';
@@ -45,6 +45,17 @@ export function CompetitionSettingsTab() {
             await updateCompetition(compId, values);
             notifications.show({ color: 'green', message: 'Competition details saved' });
           }}
+        />
+      </Card>
+      <Card withBorder>
+        <Title order={5} mb="sm">
+          Skating order
+        </Title>
+        <Switch
+          label="Rotate the start order between compulsory dances and figures"
+          description="The field is split into one group per dance or figure, and each one starts with the first skater of its group (8 skaters, 2 dances: #1 then #5). Judge sheets and the scoring grid keep the original order and show who skates first. Each event can override this."
+          checked={!!competition.rotateStartOrder}
+          onChange={(e) => updateCompetition(compId, { rotateStartOrder: e.currentTarget.checked })}
         />
       </Card>
       <Card withBorder>

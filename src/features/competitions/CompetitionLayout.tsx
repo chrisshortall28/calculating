@@ -6,11 +6,11 @@ import {
   IconChartBar,
   IconChevronDown,
   IconDownload,
+  IconFileTypePdf,
   IconListNumbers,
   IconMapPin,
   IconMusic,
   IconPencil,
-  IconPrinter,
   IconSettings,
   IconUsers,
 } from '@tabler/icons-react';
@@ -92,10 +92,10 @@ export function CompetitionLayout() {
                 <Button
                   variant="white"
                   color="navy.9"
-                  leftSection={<IconPrinter size={16} />}
+                  leftSection={<IconFileTypePdf size={16} />}
                   rightSection={<IconChevronDown size={14} />}
                 >
-                  Print
+                  PDF
                 </Button>
               </Menu.Target>
               <Menu.Dropdown>
@@ -108,6 +108,12 @@ export function CompetitionLayout() {
                 >
                   Judge sheets — all events
                 </Menu.Item>
+                <Menu.Item
+                  onClick={() => printJudgeSheets({ competitionId: competition.id }, competition.name, true)}
+                >
+                  Judge sheets, a sheet per dance — all events
+                </Menu.Item>
+                <Menu.Divider />
                 <Menu.Item onClick={() => printAllResults('standard')}>
                   Results — all complete events
                 </Menu.Item>

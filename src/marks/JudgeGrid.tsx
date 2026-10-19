@@ -28,6 +28,8 @@ interface Props {
   focusedInputRef?: RefObject<HTMLInputElement | null>;
   /** changes to this value re-focus the first empty cell (e.g. switching judge) */
   focusKey?: string;
+  /** segmentId -> the entry that skates it first, when the start order rotates; marked in that cell. */
+  firstEntryIds?: Map<string, Id>;
 }
 
 /**
@@ -51,6 +53,7 @@ export function JudgeGrid(props: Props) {
     numberPad,
     focusedInputRef,
     focusKey,
+    firstEntryIds,
   } = props;
   const columns = segments.flatMap((s) => s.markKeys.map((key) => ({ key, segment: s })));
   const cols = columns.length;
@@ -148,7 +151,13 @@ export function JudgeGrid(props: Props) {
                 const cell = { row: r, col };
                 const part = markKeyLabel(key);
                 return (
-                  <td key={key} className={segment.markKeys[0] === key ? classes.judgeStart : undefined}>
+                  <td
+                    key={key}
+                    className={`${segment.markKeys[0] === key ? classes.judgeStart : ''} ${classes.markTd}`}
+                  >
+                    {firstEntryIds?.get(segment.id) === row.id && segment.markKeys[0] === key && (
+                      <span className={classes.firstMark} title="Skates first in this part" />
+                    )}
                     <MarkCell
                       value={getValue(key, judgeId, row.id)}
                       readOnly={readOnly}

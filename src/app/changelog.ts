@@ -8,6 +8,14 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.5.0',
+    date: '2026-10-19',
+    changes: [
+      'Optional rotating start order: turn it on for a competition (Settings) or for a single event, and the 2nd and later compulsory dances or figures start partway down the field (8 skaters, 2 dances: #1 then #5). Judge sheets and the scoring grid keep the original order, mark who skates first, and the Entries tab lists the first skater of each dance or figure.',
+      'Judge sheets can also be printed with a separate sheet for each dance or figure (no totals), from the PDF menu or an event’s Results tab.',
+    ],
+  },
+  {
     version: '1.4.0',
     date: '2026-10-18',
     changes: [

@@ -45,6 +45,7 @@ function event(id: string, name: string, entryType: EntryType, skaters: string[]
       status: 'final',
     },
     segments,
+    firstSkaters: new Map<string, number>(),
     rows,
     judges,
     referee: { id: 'r', competitionId: 'c', name: 'Kate Referee' },

@@ -63,6 +63,10 @@ resolved: the rule number in a Rule column (blank for rule 5), with fuller expla
 and in the with-marks PDF. The `guest` style shows placings only — no scores, rules or rule key. The Scoring tab shows no event result (CIPA has no per-dance places; per-judge dance rankings in the
 grid are display-only).
 
+**Rotating start order.** Optional (`Competition.rotateStartOrder` default, `CompEvent.rotateStartOrder` override);
+display-only, never read by `src/scoring/`. `src/domain/startOrder.ts` works out the first skater of each compulsory
+dance/figure; judge sheets, the mark grid and the Entries tab only mark them — rows stay in `startOrder`.
+
 **PDFs.** pdfmake is lazy-loaded (`src/pdf/pdfmake.ts`). `printJudgeSheets` / `printResults` in
 `src/pdf/actions.ts` must be called directly from a click handler so the PDF tab opens before any
 `await`. Document builders in `documents.ts` are pure and tested by flattening the content tree

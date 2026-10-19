@@ -36,6 +36,7 @@ function sampleEvent(): EventData {
       status: 'final',
     },
     segments,
+    firstSkaters: new Map<string, number>(),
     rows,
     judges,
     referee: { id: 'r', competitionId: 'c', name: 'Kate' },
@@ -165,12 +166,37 @@ describe('judgeSheets', () => {
     return { ...sampleEvent(), segments };
   };
 
+  it('marks who skates first in each rotating dance, in that dance’s Comments box', () => {
+    const d = {
+      ...withDances(2),
+      firstSkaters: new Map([
+        ['cd:0', 0],
+        ['cd:1', 1],
+      ]),
+    };
+    // 3 judges + the referee, each with one sheet; Amy skates the first dance first, Beth the second.
+    expect(texts(judgeSheets([d])).filter((t) => t === 'Skates First')).toHaveLength(8);
+    expect(texts(judgeSheets([withDances(2)]))).not.toContain('Skates First');
+  });
+
+  it('prints a sheet per dance, without totals, when asked', () => {
+    const d = withDances(3);
+    const pages = judgeSheets([d], 3, true);
+    expect(pages).toHaveLength(3 * 4); // 3 dances x (3 judges + referee)
+    const t = texts(pages);
+    expect(t).toEqual(
+      expect.arrayContaining(['Event — Dance 1 (Dance 1 of 3)', 'Event — Dance 3 (Dance 3 of 3)']),
+    );
+    expect(t).not.toContain('Total points');
+    expect(texts(judgeSheets([d]))).toContain('Total points');
+  });
+
   it('fits up to four dances on one sheet per official', () => {
     const pages = judgeSheets([withDances(4)]);
     expect(pages).toHaveLength(4); // 3 judges + referee
     const t = texts(pages[0]);
     expect(t).toEqual(expect.arrayContaining(['Dance 1', 'Dance 4', 'Total points', 'Place']));
-    expect(t).not.toContain('Judge’s sheet (1 of 2)');
+    expect(t).not.toContain('Event — Sheet 1 of 2');
   });
 
   it('shares more dances evenly across sheets, with the totals on the last', () => {
@@ -178,24 +204,18 @@ describe('judgeSheets', () => {
     expect(pages).toHaveLength(8); // 2 sheets each for 3 judges + referee
     const first = texts(pages[0]);
     const second = texts(pages[1]);
-    expect(first).toEqual(expect.arrayContaining(['Event — Judge’s sheet (1 of 2)', 'Dance 1', 'Dance 3']));
+    expect(first).toEqual(expect.arrayContaining(['Event — Sheet 1 of 2', 'Dance 1', 'Dance 3']));
     expect(first).not.toContain('Dance 4');
     expect(first).not.toContain('Total points');
     expect(second).toEqual(
-      expect.arrayContaining([
-        'Event — Judge’s sheet (2 of 2)',
-        'Dance 4',
-        'Dance 5',
-        'Total points',
-        'Place',
-      ]),
+      expect.arrayContaining(['Event — Sheet 2 of 2', 'Dance 4', 'Dance 5', 'Total points', 'Place']),
     );
   });
 
   it('names the event and official once, above the table, and has no page numbers', () => {
     const doc = judgeSheetsDocument([sampleEvent()]);
     const t = texts((doc.content as unknown[])[0]); // J1's sheet
-    expect(t.filter((s) => s.includes('Event'))).toEqual(['Event — Judge’s sheet']);
+    expect(t.filter((s) => s.includes('Event'))).toEqual(['Event']);
     expect(t.filter((s) => s.includes('Helen'))).toEqual([]);
     expect(t.filter((s) => s.includes('J1'))).toEqual(['J1  ______________________________']);
     const footer = (d: TDocumentDefinitions) =>
