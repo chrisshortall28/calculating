@@ -179,6 +179,18 @@ describe('judgeSheets', () => {
     expect(texts(judgeSheets([withDances(2)]))).not.toContain('Skates First');
   });
 
+  it('prints a sheet per dance, without totals, when asked', () => {
+    const d = withDances(3);
+    const pages = judgeSheets([d], 3, true);
+    expect(pages).toHaveLength(3 * 4); // 3 dances x (3 judges + referee)
+    const t = texts(pages);
+    expect(t).toEqual(
+      expect.arrayContaining(['Event — Judge’s sheet — Dance 1', 'Event — Judge’s sheet — Dance 3']),
+    );
+    expect(t).not.toContain('Total points');
+    expect(texts(judgeSheets([d]))).toContain('Total points');
+  });
+
   it('fits up to four dances on one sheet per official', () => {
     const pages = judgeSheets([withDances(4)]);
     expect(pages).toHaveLength(4); // 3 judges + referee

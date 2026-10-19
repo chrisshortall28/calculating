@@ -108,6 +108,11 @@ export function CompetitionLayout() {
                 >
                   Judge sheets — all events
                 </Menu.Item>
+                <Menu.Item
+                  onClick={() => printJudgeSheets({ competitionId: competition.id }, competition.name, true)}
+                >
+                  Judge sheets, a sheet per dance — all events
+                </Menu.Item>
                 <Menu.Item onClick={() => printAllResults('standard')}>
                   Results — all complete events
                 </Menu.Item>

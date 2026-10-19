@@ -94,11 +94,16 @@ function judgeSheetPage(
   d: EventData,
   { role, label, name }: Official,
   segments: EventData['segments'],
-  part: { index: number; count: number },
+  part: {
+    index: number;
+    count: number;
+    /** Heading suffix; defaults to "(1 of 2)" when the event takes several sheets. */ label?: string;
+    /** Show Total points and Place (default: on the last sheet). */ totals?: boolean;
+  },
 ): Content[] {
   const MARK_WIDTH = 38;
-  const isLast = part.index === part.count - 1;
-  const partLabel = part.count > 1 ? ` (${part.index + 1} of ${part.count})` : '';
+  const isLast = part.totals ?? part.index === part.count - 1;
+  const partLabel = part.label ?? (part.count > 1 ? ` (${part.index + 1} of ${part.count})` : '');
   const columns = segments.map((s) => ({
     name: s.name,
     subs: [
@@ -192,7 +197,7 @@ function judgeSheetPage(
  * One sheet per judge on the panel (or `blankCount` unnamed sheets if no judges are assigned
  * yet), followed by a sheet for the referee (unnamed if no referee is assigned yet).
  */
-export function judgeSheets(events: EventData[], blankCount = 3): Content[] {
+export function judgeSheets(events: EventData[], blankCount = 3, perDance = false): Content[] {
   const pages: Content[][] = [];
   for (const d of events) {
     if (d.segments.length === 0) continue;
@@ -200,6 +205,15 @@ export function judgeSheets(events: EventData[], blankCount = 3): Content[] {
       ? d.judges.map((_, i) => ({ role: 'Judge', label: `J${i + 1}`, name: '' }))
       : Array.from({ length: blankCount }, (_, i) => ({ role: 'Judge', label: `J${i + 1}`, name: '' }));
     officials.push({ role: 'Referee', label: '', name: '' });
+    if (perDance) {
+      // One sheet per dance, figure or programme, with no totals (CIPA places only the whole event).
+      for (const o of officials)
+        for (const seg of d.segments)
+          pages.push(
+            judgeSheetPage(d, o, [seg], { index: 0, count: 1, label: ` — ${seg.name}`, totals: false }),
+          );
+      continue;
+    }
     const parts = sheetParts(d.segments);
     for (const o of officials)
       parts.forEach((segments, index) =>
@@ -512,8 +526,8 @@ export function resultsDocument(
 }
 
 /** Judges' sheets are handed out loose, one or more per official, so they carry no page numbers. */
-export function judgeSheetsDocument(events: EventData[]): TDocumentDefinitions {
-  return document(judgeSheets(events), true, undefined, false);
+export function judgeSheetsDocument(events: EventData[], perDance = false): TDocumentDefinitions {
+  return document(judgeSheets(events, 3, perDance), true, undefined, false);
 }
 
 /** `pageHeader` is repeated at the top of every page. */

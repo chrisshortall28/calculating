@@ -67,6 +67,16 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
           Judge sheets PDF
         </Button>
         <Button
+          variant="default"
+          leftSection={<IconPrinter size={16} />}
+          loading={busy === 'sheetsPerDance'}
+          onClick={() =>
+            run('sheetsPerDance', () => printJudgeSheets({ eventId: event.id }, event.name, true))
+          }
+        >
+          Judge sheets, a sheet per dance
+        </Button>
+        <Button
           leftSection={<IconFileText size={16} />}
           disabled={!result.complete}
           loading={busy === 'standard'}
