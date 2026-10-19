@@ -4,70 +4,69 @@
  */
 export interface Figure {
   id: string;
+  /** Name with the edges skated, e.g. "Threes FO - BI". */
   name: string;
-  /** Edges skated, without the starting foot: e.g. "FO - BI". Empty for 42-53, whose edges are in the name. */
-  direction: string;
 }
 
-const list: [string, string][] = [
-  ['Eights', 'FO - FO'],
-  ['Eights', 'FI - FI'],
-  ['Eights', 'BO - BO'],
-  ['Eights', 'BI - BI'],
-  ['Change Eights', 'FOI - FIO'],
-  ['Change Eights', 'BOI - BIO'],
-  ['Threes', 'FO - FO'],
-  ['Threes', 'FO - BI'],
-  ['Threes', 'FI - BO'],
-  ['Double Threes', 'FO - FO'],
-  ['Double Threes', 'FI - FI'],
-  ['Double Threes', 'BO - BO'],
-  ['Double Threes', 'BI - BI'],
-  ['Loops', 'FO - FO'],
-  ['Loops', 'FI - FI'],
-  ['Loops', 'BO - BO'],
-  ['Loops', 'BI - BI'],
-  ['Brackets', 'FO - BI'],
-  ['Brackets', 'FI - BO'],
-  ['Rockers', 'FO - BO'],
-  ['Rockers', 'FI - BI'],
-  ['Counters', 'FO - BO'],
-  ['Counters', 'FI - BI'],
-  ['One Foot Eights', 'FOI - FIO'],
-  ['One Foot Eights', 'BOI - BIO'],
-  ['Change Threes', 'FOI - BOI'],
-  ['Change Threes', 'FIO - BIO'],
-  ['Change Double Threes', 'FOI - FIO'],
-  ['Change Double Threes', 'BOI - BIO'],
-  ['Change Loops', 'FOI - FIO'],
-  ['Change Loops', 'BOI - BIO'],
-  ['Change Brackets', 'FOI - BO'],
-  ['Change Brackets', 'FIO - BIO'],
-  ['Paragraph Threes', 'FO - FI'],
-  ['Paragraph Threes', 'BO - BI'],
-  ['Paragraph Double Threes', 'FO - FI'],
-  ['Paragraph Double Threes', 'BO - BI'],
-  ['Paragraph Loops', 'FOI - FIO'],
-  ['Paragraph Loops', 'BOI - BIO'],
-  ['Paragraph Brackets', 'FO - FI'],
-  ['Paragraph Brackets', 'BO - BI'],
+const list: string[] = [
+  'Eights FO - FO',
+  'Eights FI - FI',
+  'Eights BO - BO',
+  'Eights BI - BI',
+  'Change Eights FOI - FIO',
+  'Change Eights BOI - BIO',
+  'Threes FO - FO',
+  'Threes FO - BI',
+  'Threes FI - BO',
+  'Double Threes FO - FO',
+  'Double Threes FI - FI',
+  'Double Threes BO - BO',
+  'Double Threes BI - BI',
+  'Loops FO - FO',
+  'Loops FI - FI',
+  'Loops BO - BO',
+  'Loops BI - BI',
+  'Brackets FO - BI',
+  'Brackets FI - BO',
+  'Rockers FO - BO',
+  'Rockers FI - BI',
+  'Counters FO - BO',
+  'Counters FI - BI',
+  'One Foot Eights FOI - FIO',
+  'One Foot Eights BOI - BIO',
+  'Change Threes FOI - BOI',
+  'Change Threes FIO - BIO',
+  'Change Double Threes FOI - FIO',
+  'Change Double Threes BOI - BIO',
+  'Change Loops FOI - FIO',
+  'Change Loops BOI - BIO',
+  'Change Brackets FOI - BO',
+  'Change Brackets FIO - BIO',
+  'Paragraph Threes FO - FI',
+  'Paragraph Threes BO - BI',
+  'Paragraph Double Threes FO - FI',
+  'Paragraph Double Threes BO - BI',
+  'Paragraph Loops FOI - FIO',
+  'Paragraph Loops BOI - BIO',
+  'Paragraph Brackets FO - FI',
+  'Paragraph Brackets BO - BI',
   // 42-53 (junior and senior) combine several turns in one figure. They are listed by the turns in
   // order and the edge they start on, as the regulations describe them.
-  ['Counter FO, Bracket & Counter FI', ''],
-  ['Rocker FO & Double Three FO', ''],
-  ['Rocker FI & Double Three FI', ''],
-  ['Counter BO, Bracket & Counter BI', ''],
-  ['Double Three FO, Rocker & Paragraph Double Three B', ''],
-  ['Bracket FO, Counter & Paragraph Bracket B', ''],
-  ['Double Three BO, Rocker & Paragraph Double Three F', ''],
-  ['Bracket BO, Counter & Paragraph Bracket F', ''],
-  ['Double Three FO, Counter & Paragraph Double Three B', ''],
-  ['Bracket FO, Rocker & Paragraph Bracket B', ''],
-  ['Double Three BO, Counter & Paragraph Double Three F', ''],
-  ['Bracket BO, Rocker & Paragraph Bracket F', ''],
+  'Counter FO, Bracket & Counter FI',
+  'Rocker FO & Double Three FO',
+  'Rocker FI & Double Three FI',
+  'Counter BO, Bracket & Counter BI',
+  'Double Three FO, Rocker & Paragraph Double Three B',
+  'Bracket FO, Counter & Paragraph Bracket B',
+  'Double Three BO, Rocker & Paragraph Double Three F',
+  'Bracket BO, Counter & Paragraph Bracket F',
+  'Double Three FO, Counter & Paragraph Double Three B',
+  'Bracket FO, Rocker & Paragraph Bracket B',
+  'Double Three BO, Counter & Paragraph Double Three F',
+  'Bracket BO, Rocker & Paragraph Bracket F',
 ];
 
-export const FIGURES: Figure[] = list.map(([name, direction], i) => ({ id: String(i + 1), name, direction }));
+export const FIGURES: Figure[] = list.map((name, i) => ({ id: String(i + 1), name }));
 
 const byId = new Map(FIGURES.map((f) => [f.id, f]));
 
@@ -76,5 +75,5 @@ export const getFigure = (id: string) => byId.get(id);
 /** "39. Paragraph Loops BOI - BIO" */
 export function figureLabel(id: string): string {
   const f = byId.get(id);
-  return f ? `${f.id}. ${f.name}${f.direction ? ` ${f.direction}` : ''}` : `Unknown figure ${id}`;
+  return f ? `${f.id}. ${f.name}` : `Unknown figure ${id}`;
 }
