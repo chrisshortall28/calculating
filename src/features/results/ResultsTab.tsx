@@ -45,52 +45,56 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
 
   return (
     <Stack>
-      <Menu position="bottom-start">
-        <Menu.Target>
-          <Button
-            variant="default"
-            w="fit-content"
-            leftSection={<IconFileTypePdf size={16} />}
-            rightSection={<IconChevronDown size={14} />}
-            loading={busy !== null}
-          >
-            PDF
-          </Button>
-        </Menu.Target>
-        <Menu.Dropdown>
-          <Menu.Item onClick={() => run('sheets', () => printJudgeSheets({ eventId: event.id }, event.name))}>
-            Judge sheets
-          </Menu.Item>
-          <Menu.Item
-            onClick={() =>
-              run('sheetsPerDance', () => printJudgeSheets({ eventId: event.id }, event.name, true))
-            }
-          >
-            Judge sheets, a sheet per {segmentNoun(event)}
-          </Menu.Item>
-          <Menu.Divider />
-          <Menu.Item
-            disabled={!result.complete}
-            onClick={() => run('standard', () => printResults({ eventId: event.id }, event.name, 'standard'))}
-          >
-            Results
-          </Menu.Item>
-          <Menu.Item
-            disabled={!result.complete}
-            onClick={() =>
-              run('withMarks', () => printResults({ eventId: event.id }, event.name, 'withMarks'))
-            }
-          >
-            Results with marks
-          </Menu.Item>
-          <Menu.Item
-            disabled={!result.complete}
-            onClick={() => run('guest', () => printResults({ eventId: event.id }, event.name, 'guest'))}
-          >
-            Results for guest judges (placings only)
-          </Menu.Item>
-        </Menu.Dropdown>
-      </Menu>
+      <Group justify="flex-end">
+        <Menu position="bottom-end">
+          <Menu.Target>
+            <Button
+              leftSection={<IconFileTypePdf size={16} />}
+              rightSection={<IconChevronDown size={14} />}
+              loading={busy !== null}
+            >
+              PDF
+            </Button>
+          </Menu.Target>
+          <Menu.Dropdown>
+            <Menu.Item
+              onClick={() => run('sheets', () => printJudgeSheets({ eventId: event.id }, event.name))}
+            >
+              Judge sheets
+            </Menu.Item>
+            <Menu.Item
+              onClick={() =>
+                run('sheetsPerDance', () => printJudgeSheets({ eventId: event.id }, event.name, true))
+              }
+            >
+              Judge sheets, a sheet per {segmentNoun(event)}
+            </Menu.Item>
+            <Menu.Divider />
+            <Menu.Item
+              disabled={!result.complete}
+              onClick={() =>
+                run('standard', () => printResults({ eventId: event.id }, event.name, 'standard'))
+              }
+            >
+              Results
+            </Menu.Item>
+            <Menu.Item
+              disabled={!result.complete}
+              onClick={() =>
+                run('withMarks', () => printResults({ eventId: event.id }, event.name, 'withMarks'))
+              }
+            >
+              Results with marks
+            </Menu.Item>
+            <Menu.Item
+              disabled={!result.complete}
+              onClick={() => run('guest', () => printResults({ eventId: event.id }, event.name, 'guest'))}
+            >
+              Results for guest judges (placings only)
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
+      </Group>
 
       {!result.complete && (
         <Alert color="yellow" variant="light">
