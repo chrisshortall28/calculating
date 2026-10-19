@@ -155,11 +155,10 @@ export function MarkGrid(props: Props) {
           {rows.map((row, r) => (
             <tr key={row.id} className={active?.row === r ? classes.activeRow : undefined}>
               <td
-                className={`${classes.startNo} ${row.id === firstRowId ? classes.firstSkater : ''}`}
+                className={classes.startNo}
                 title={row.id === firstRowId ? 'Skates first in this part' : undefined}
               >
-                {r + 1}
-                {row.id === firstRowId && <span className={classes.firstTag}>1st</span>}
+                {row.id === firstRowId ? <span className={classes.firstSkater}>{r + 1}</span> : r + 1}
               </td>
               <td className={classes.entryCell} title={row.sub ? `${row.label} — ${row.sub}` : row.label}>
                 <Text size="sm" fw={500} truncate>
