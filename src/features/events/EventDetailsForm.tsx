@@ -16,7 +16,7 @@ import { useForm } from '@mantine/form';
 import { useRef, type ComponentProps } from 'react';
 import { IconPlus, IconX } from '@tabler/icons-react';
 import { useDances } from '../../app/data';
-import { FIGURES } from '../../domain/figures';
+import { FIGURES, figureLabel } from '../../domain/figures';
 import { cfKey, danceEventDefaults, defaultFactors, NO_FACTORS } from '../../domain/segments';
 import {
   MAX_COMPULSORY_DANCES,
@@ -69,7 +69,7 @@ const ENTRY_TYPES: Record<EventDiscipline, { value: EntryType; label: string }[]
   ],
 };
 
-const FIGURE_OPTIONS = FIGURES.map((f) => ({ value: f.id, label: `${f.id}. ${f.name} ${f.direction}` }));
+const FIGURE_OPTIONS = FIGURES.map((f) => ({ value: f.id, label: figureLabel(f.id) }));
 
 const toDecimal = (f: CompEvent['factors']) => ({
   figures: f.figures / 100,

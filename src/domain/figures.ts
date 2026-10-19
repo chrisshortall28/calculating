@@ -5,7 +5,7 @@
 export interface Figure {
   id: string;
   name: string;
-  /** Edges skated, without the starting foot: e.g. "FO - BI". */
+  /** Edges skated, without the starting foot: e.g. "FO - BI". Empty for 42-53, whose edges are in the name. */
   direction: string;
 }
 
@@ -53,18 +53,18 @@ const list: [string, string][] = [
   ['Paragraph Brackets', 'BO - BI'],
   // 42-53 (junior and senior) combine several turns in one figure. They are listed by the turns in
   // order and the edge they start on, as the regulations describe them.
-  ['Counter, Bracket & Counter', 'FO'],
-  ['Rocker & Double Three', 'FO'],
-  ['Rocker & Double Three', 'FI'],
-  ['Counter, Bracket & Counter', 'BO'],
-  ['Double Three, Rocker & Paragraph Double Three', 'FO'],
-  ['Bracket, Counter & Paragraph Bracket', 'FO'],
-  ['Double Three, Rocker & Paragraph Double Three', 'B'],
-  ['Bracket, Counter & Paragraph Bracket', 'BO'],
-  ['Double Three, Counter & Paragraph Double Three', 'F'],
-  ['Bracket, Rocker & Paragraph Bracket', 'FO'],
-  ['Double Three, Counter & Paragraph Double Three', 'BO'],
-  ['Bracket, Rocker & Paragraph Bracket', 'BO'],
+  ['Counter FO, Bracket & Counter FI', ''],
+  ['Rocker FO & Double Three FO', ''],
+  ['Rocker FI & Double Three FI', ''],
+  ['Counter BO, Bracket & Counter BI', ''],
+  ['Double Three FO, Rocker & Paragraph Double Three B', ''],
+  ['Bracket FO, Counter & Paragraph Bracket B', ''],
+  ['Double Three B, Rocker & Paragraph Double Three F', ''],
+  ['Bracket BO, Counter & Paragraph Bracket F', ''],
+  ['Double Three F, Counter & Paragraph Double Three B', ''],
+  ['Bracket FO, Rocker & Paragraph Bracket B', ''],
+  ['Double Three BO, Counter & Paragraph Double Three F', ''],
+  ['Bracket BO, Rocker & Paragraph Bracket F', ''],
 ];
 
 export const FIGURES: Figure[] = list.map(([name, direction], i) => ({ id: String(i + 1), name, direction }));
@@ -76,5 +76,5 @@ export const getFigure = (id: string) => byId.get(id);
 /** "39. Paragraph Loops BOI - BIO" */
 export function figureLabel(id: string): string {
   const f = byId.get(id);
-  return f ? `${f.id}. ${f.name} ${f.direction}` : `Unknown figure ${id}`;
+  return f ? `${f.id}. ${f.name}${f.direction ? ` ${f.direction}` : ''}` : `Unknown figure ${id}`;
 }
