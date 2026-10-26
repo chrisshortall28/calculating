@@ -122,7 +122,8 @@ describe('writeDanceEvent', () => {
 const samples = process.env.LEGACY_SAMPLES ?? 'examples/legacy';
 describe.skipIf(!existsSync(`${samples}/comp1`))('rebuilding real event files', () => {
   const dir = `${samples}/comp1`;
-  const rebuilt = readdirSync(dir)
+  // Skipped suites still run their body, so only read the folder when it is there.
+  const rebuilt = (existsSync(dir) ? readdirSync(dir) : [])
     .filter((f) => /\.ROL$/i.test(f))
     .sort()
     .flatMap((f) => {
