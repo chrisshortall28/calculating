@@ -86,9 +86,9 @@ function Review({
   return (
     <Stack>
       <Text size="sm">
-        Dance events with compulsory dances or a free dance are exported as one <code>DATAnnnB.ROL</code> file
-        each, together in a <code>.zip</code>. Unzip them into a folder to open in Calculating For Windows.
-        Check an exported competition there before relying on it.
+        Events are exported as one <code>DATAnnnB.ROL</code> file each, together in a <code>.zip</code>. Unzip
+        them into a folder to open in Calculating For Windows. Check an exported competition there before
+        relying on it.
       </Text>
 
       {result.files.length === 0 ? (
