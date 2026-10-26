@@ -86,7 +86,8 @@ competitions and `convertLegacyCompetition` turns one into a `CompetitionFile` p
 `LegacyImportModal` (Import legacy button) reviews and writes with `importCompetition`. Only Solo Dance,
 Single and Pairs events convert. Tests build files with `src/legacy/fixtures.ts`; the real sample files are
 not in the repo (they hold real names), so `src/legacy/samples.test.ts` runs only when `LEGACY_SAMPLES`
-points at the folder holding `comp1`, `comp2`.
+points at the folder holding `comp1`, `comp2`. `src/legacy/golden.test.ts` replays an anonymised copy of `comp1` (`src/legacy/golden/`) against the
+legacy app's own printed results for all 73 events; update it only for a deliberate scoring or import change.
 
 **Offline.** `vite-plugin-pwa` precaches everything, including PDFs in `public/`
 (`workbox.globPatterns` in `vite.config.ts`); updates wait for the user to click Reload.
