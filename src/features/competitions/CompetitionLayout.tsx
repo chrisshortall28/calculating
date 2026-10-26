@@ -135,7 +135,7 @@ export function CompetitionLayout() {
                   leftSection={<IconDownload size={16} />}
                   rightSection={<IconChevronDown size={14} />}
                 >
-                  Export file
+                  Export
                 </Button>
               </Menu.Target>
               <Menu.Dropdown>

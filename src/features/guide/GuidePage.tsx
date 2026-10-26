@@ -137,9 +137,9 @@ export function GuidePage() {
                 page.
               </List.Item>
               <List.Item>
-                Click <b>Export file</b> at the top right and choose <b>Podium file (.pod)</b>. Your browser
-                saves a <code>.pod</code> file named after the competition, the date and the time (usually in
-                your Downloads folder).
+                Click <b>Export</b> at the top right and choose <b>Podium file (.pod)</b>. Your browser saves
+                a <code>.pod</code> file named after the competition, the date and the time (usually in your
+                Downloads folder).
               </List.Item>
             </List>
             <Text>
@@ -203,9 +203,9 @@ export function GuidePage() {
             </Text>
             <Text>
               A competition can also be exported for the old Calculating For Windows program. Open the
-              competition, click <b>Export file</b> and choose <b>Calculating For Windows files (.zip)</b>.
-              The dialog lists what will be exported and anything that had to be cut short or changed. Unzip
-              the files into a folder and open it in Calculating For Windows.
+              competition, click <b>Export</b> and choose <b>Calculating For Windows files (.zip)</b>. The
+              dialog lists what will be exported and anything that had to be cut short or changed. Unzip the
+              files into a folder and open it in Calculating For Windows.
             </Text>
             <Text c="dimmed" size="sm">
               Only dance events with compulsory dances or a free dance can be exported so far; figures events
