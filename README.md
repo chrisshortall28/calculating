@@ -31,7 +31,8 @@ and results PDFs ready to print.
 - 💾 **Backup and transfer.** Export a competition to a `.pod` file and import it on another
   device (older `.json` backups still import). [`examples/podium-demo.pod`](examples/podium-demo.pod) is a
   fictional competition to try: it has events with no ties and events showing each tie-break rule.
-  Competitions from the old Calculating For Windows program can be imported from its event files.
+  Competitions from the old Calculating For Windows program can be imported from its event files,
+  and dance events exported back for it.
 - 🌙 **Light and dark themes**, and competitions can take their club colours.
 
 ## 📸 Screenshots

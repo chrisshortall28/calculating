@@ -37,7 +37,7 @@ export interface WriteEvent {
 
 export const MAX_JUDGES = 9;
 export const MAX_DANCES = 4;
-export const MAX_NAME = 39;
+export const MAX_NAME = 40;
 export const MAX_CLUB = 8;
 
 /** Writes a Solo Dance event file the application opens (every checksum correct). */
@@ -49,7 +49,7 @@ export function writeDanceEvent(event: WriteEvent): Uint8Array {
   const view = new DataView(file.buffer);
   const profile = DANCE_PROFILES[event.kind];
   const text = (at: number, value: string, length: number) => {
-    for (let i = 0; i < Math.min(value.length, length - 1); i++) file[at + i] = value.charCodeAt(i) & 0xff;
+    for (let i = 0; i < Math.min(value.length, length); i++) file[at + i] = value.charCodeAt(i) & 0xff;
   };
 
   // Header: the kind's constants, the event's fields, then what follows from the file's size.

@@ -63,3 +63,13 @@ export function legacyDanceName(code: number, position: number): { name: string;
   const name = DANCE_NAMES[code - 1];
   return name ? { name, known: true } : { name: `Dance ${code}`, known: false };
 }
+
+const simple = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
+const CODES = new Map(DANCE_NAMES.map((name, i) => [simple(name), i + 1]));
+// Podium spells the numbered dances out ("Fourteen Step"), the application with digits.
+CODES.set('14step', 7).set('14stepplus', 35);
+
+/** The application's number for a dance by name (any spelling of it), or undefined if it has none. */
+export function legacyDanceCode(name: string): number | undefined {
+  return CODES.get(simple(name));
+}

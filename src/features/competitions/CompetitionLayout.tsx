@@ -24,6 +24,7 @@ import { updateCompetition } from '../../db/repo';
 import { printJudgeSheets, printProgramme, printResults } from '../../pdf/actions';
 import type { ResultsStyle } from '../../pdf/documents';
 import { CompetitionDetailsForm, detailsOf } from './CompetitionDetailsForm';
+import { LegacyExportModal } from './LegacyExportModal';
 import { useExportCompetition } from './useExportCompetition';
 
 const TABS = [
@@ -42,6 +43,7 @@ export function CompetitionLayout() {
   const location = useLocation();
   const exportCompetition = useExportCompetition();
   const [editing, { open: openEdit, close: closeEdit }] = useDisclosure(false);
+  const [exportingLegacy, { open: openLegacyExport, close: closeLegacyExport }] = useDisclosure(false);
   const current = location.pathname.split('/')[3] || 'events';
 
   if (competition === undefined) return <Loader />;
@@ -125,14 +127,22 @@ export function CompetitionLayout() {
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
-            <Button
-              color={colors.secondary}
-              autoContrast
-              leftSection={<IconDownload size={16} />}
-              onClick={() => exportCompetition(competition.id)}
-            >
-              Export file
-            </Button>
+            <Menu position="bottom-end">
+              <Menu.Target>
+                <Button
+                  color={colors.secondary}
+                  autoContrast
+                  leftSection={<IconDownload size={16} />}
+                  rightSection={<IconChevronDown size={14} />}
+                >
+                  Export file
+                </Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item onClick={() => exportCompetition(competition.id)}>Podium file (.pod)</Menu.Item>
+                <Menu.Item onClick={openLegacyExport}>Calculating For Windows files (.zip)…</Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
           </>
         }
       >
@@ -145,6 +155,11 @@ export function CompetitionLayout() {
       <Container size="lg">
         <Outlet />
       </Container>
+      <LegacyExportModal
+        competitionId={competition.id}
+        opened={exportingLegacy}
+        onClose={closeLegacyExport}
+      />
       <Modal opened={editing} onClose={closeEdit} title="Edit competition details">
         <CompetitionDetailsForm
           initial={detailsOf(competition)}

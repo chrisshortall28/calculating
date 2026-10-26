@@ -8,6 +8,14 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.7.0',
+    date: '2026-10-26',
+    changes: [
+      'Export a competition for the old Calculating For Windows program: open the competition, click Export file and choose Calculating For Windows files (.zip). Dance events with compulsory dances or a free dance are exported, one file each, with the results the old program expects; anything that cannot be exported is listed first.',
+      'Export file is now a menu: Podium file (.pod) is the same as before.',
+    ],
+  },
+  {
     version: '1.6.0',
     date: '2026-10-26',
     changes: [

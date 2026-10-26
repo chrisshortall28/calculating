@@ -138,20 +138,35 @@ Verified with the real application and all 82 sample files:
   app reject the event.**
 - **Slots** (dance events): `4*ceil(N/4) + 8` for N entries (12 for 1 to 4, 16 for 5 to 8, 20 for 9
   to 12, 24 for 13 to 16). Two files had more rows than that (entries removed later).
-- **Tail** (dance events), after the slots, `s*s + 40*s + 54` bytes for s slots, in two sections
-  that each end with a CRC:
+- **Tail** (dance events), after the slots, `s*s + 40*s + 54` bytes for s slots (so a file is
+  `2360 + 3072*s + s*s + 40*s + 54` bytes), in two sections that each end with a CRC:
   1. `18 + s*(s+2)` bytes: header words `[size, 1, s, s, s+2, s, s]`, two zero bytes, then s rows
      of `[u16 row number][s bytes]`: the **table of victories**, row i, column j = the victories
      entry i has over entry j, times 10 (matches a victory table computed from the marks).
-  2. `36 + 38*s` bytes: header words `[0, 34+38*s, 1, s, s, 38, s, s, 1, N, 0, 1, 0, 0, 0, 0, 0]`, then
-     s result rows of 38 bytes (contents not yet decoded), then the CRC.
+  2. `36 + 38*s` bytes: header words `[0, 34+38*s, phase, s, s, 38, s, s, 1, N, 0, phase, 0, 0, 0, 0, 0]`
+     (phase 1 for compulsory dances, 3 for a free dance; the same value is word 1 of section 1),
+     then s result rows of 38 bytes, then the CRC. **Result rows** (19 words) are in order of place;
+     words: 0 the entry's number (from 1), 1 the rule code (none 0, 6A/6B 1, 7B 22, 7C 26, 7A 28),
+     2 the place, 3 majority victories x10, 4 separate majority victories x10 among the tied
+     entries (6A/6B; 0 if not tied), 5 the free dance B marks total in tenths (0 without a free
+     dance), 7 total victories x10, 8 and 9 the total sum split into whole marks and thousandths,
+     12 a bit mask of the tie-break steps tried (1 majority, 2 separate victories, 4 and 8 the B
+     marks at Steps 10A and 10B, 16 total victories, 32 total sums); the rest are 0. Every field was
+     checked against Podium's scoring for 464 rows.
+- **Header bytes that follow from the file**: 260-263 hold the file size + 2; 289-290 hold 12 x slots;
+  292 holds the slots; two 16-byte descriptors (at 324 for compulsory dances or 356 for a free
+  dance, and 128 bytes further on) hold the offset and length of the results list and of the table of
+  victories. The other 46 non-zero bytes are the same in every event of a kind (see `profiles.ts`).
+  The sums beside the marks and the entry's total are 32-bit thousandths at 2161 (compulsory) or 2251
+  (free dance A + B), with the judges every 4 bytes and the total 40 bytes on.
 - **Edited marks**: with the block CRC (and the sums beside the marks, which are recalculated)
   correct, the app opens the file even when the tail's victory table is out of date, so it
   recalculates results itself.
 
-Rebuilding real files from their parsed contents with these rules (header and tail from the same
-file) reproduces them byte for byte (a two-dance event, a three-entry event, a free dance event),
-including every checksum, sum and entry number.
+`src/legacy/write.ts` writes a dance event from these rules alone. Its files open in the real
+application (events, input data and the results view checked with generated files), and for the real
+events of the sample competition they match the application's own files byte for byte, apart from
+cells and rows of entries removed earlier, which the application keeps in the table of victories.
 
 ## Checked against the legacy application's printed results
 

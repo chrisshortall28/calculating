@@ -84,7 +84,11 @@ format version) change there, plus a Dexie version bump in `db.ts`.
 (`DATAnnnB.ROL`, one per event; layout in `docs/legacy-format.md`) with `readLegacyFiles`, groups them into
 competitions and `convertLegacyCompetition` turns one into a `CompetitionFile` plus warnings, which
 `LegacyImportModal` (Import legacy button) reviews and writes with `importCompetition`. Only Solo Dance,
-Single and Pairs events convert. Tests build files with `src/legacy/fixtures.ts`; the real sample files are
+Single and Pairs events convert.
+`src/legacy/write.ts` / `export.ts` go the other way (`exportLegacyEvents`, via `LegacyExportModal`) for dance events
+with compulsory dances or a free dance, writing every checksum and the results tables the application
+expects; `src/io/zip.ts` zips the files. Figures events and combined compulsory + free dance events are not
+exported yet. Tests build files with `src/legacy/fixtures.ts`; the real sample files are
 not in the repo (they hold real names), so `src/legacy/samples.test.ts` runs only when `LEGACY_SAMPLES`
 points at the folder holding `comp1`, `comp2`.
 
