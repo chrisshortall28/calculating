@@ -51,6 +51,15 @@ export function defaultFactors(figureCount: number, hasShort: boolean, hasLong: 
   };
 }
 
+/**
+ * The free dance's factor, in hundredths, in a dance event, as Calculating For Windows applies it: half
+ * the number of compulsory dances, so the compulsory dances together and the free dance (its A and B
+ * marks) each make up half of the total: one dance ×½ (1 : ½), two dances ×1 (1 : 1), three ×1½. A free
+ * dance with no compulsory dances has nothing to weigh against: ×1.
+ */
+export const danceFreeFactor = (compulsoryDances: number) =>
+  compulsoryDances > 0 ? 50 * compulsoryDances : 100;
+
 export function eventSegments(event: CompEvent, dances: Map<Id, Dance> | Dance[]): Segment[] {
   if (event.discipline === 'figures') {
     const segments: Segment[] = event.figures.map((f) => ({
@@ -87,7 +96,13 @@ export function eventSegments(event: CompEvent, dances: Map<Id, Dance> | Dance[]
     factor: 100,
   }));
   if (event.hasFreeDance) {
-    segments.push({ id: 'fd', kind: 'free', name: 'Free Dance', markKeys: ['fd:A', 'fd:B'], factor: 100 });
+    segments.push({
+      id: 'fd',
+      kind: 'free',
+      name: 'Free Dance',
+      markKeys: ['fd:A', 'fd:B'],
+      factor: danceFreeFactor(event.compulsoryDanceIds.length),
+    });
   }
   return segments;
 }
@@ -134,13 +149,22 @@ export function markKeyLabel(key: SegmentKey): string {
 }
 
 /**
- * The factors a figures event's sums use, e.g. "figures ×2, short programme ×1, free programme ×3";
- * blank when there is nothing to multiply (dance events, or a single kind of part).
+ * The factors an event's sums use, e.g. "figures ×2, short programme ×1, free programme ×3" or
+ * "compulsory dances ×1, free dance ×0.5"; blank when there is nothing to multiply (a single kind of
+ * part).
  */
 export function factorSummary(
-  event: Pick<CompEvent, 'discipline' | 'figures' | 'hasShort' | 'hasLong' | 'factors'>,
+  event: Pick<
+    CompEvent,
+    'discipline' | 'figures' | 'hasShort' | 'hasLong' | 'factors' | 'compulsoryDanceIds' | 'hasFreeDance'
+  >,
 ) {
-  if (event.discipline !== 'figures') return '';
+  if (event.discipline !== 'figures') {
+    const dances = event.compulsoryDanceIds.length;
+    return event.hasFreeDance && dances > 0
+      ? `compulsory dances ×1, free dance ×${danceFreeFactor(dances) / 100}`
+      : '';
+  }
   const parts: [string, number][] = [
     ...(event.figures.length > 0 ? [['figures', event.factors.figures] as [string, number]] : []),
     ...(event.hasShort ? [['short programme', event.factors.short] as [string, number]] : []),

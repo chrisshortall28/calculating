@@ -120,6 +120,80 @@ recalculates using the CIPA rules.
   Penelope Preece (points 7.3, 6.1, 6.0, 4.9, 4.8, 4.4, 3.5).
 - Free dance marks are called "A marks" and "B marks" in the legacy application too.
 
+## Checksums and file structure (needed to write files)
+
+The application validates every file with CRC-16 checksums, and refuses an edited file whose
+checksums are wrong (an assertion in `roldrv.cpp`, "iNum == TC.Id", when the event is opened).
+Verified with the real application and all 82 sample files:
+
+- **CRC-16/ARC** (polynomial 0xA001 reflected, init 0, no final xor), stored little-endian in the 2
+  bytes right after the data it covers.
+- **Header (2360 bytes) = six sections**, each followed by its CRC: data 0-253 (CRC at 254), 256-1021
+  (CRC at 1022), 1024-2045 (2046), 2048-2149 (2150), 2152-2253 (2254), 2256-2357 (2358). Editing
+  the names (inside the first section) without fixing its CRC is accepted, but fix it anyway.
+- **Entry blocks**: from offset 2360, one block of 3072 bytes per slot: 3070 data bytes, then the
+  CRC. The first 2 bytes of a block's data are the entry's number (0 for the first entry, and so on;
+  0 in unused slots) and its name starts 2 bytes in. So the offsets used above for an entry record are
+  relative to block start + 2. **Changing any mark without recalculating the block's CRC makes the
+  app reject the event.**
+- **Slots** (dance events): `4*ceil(N/4) + 8` for N entries (12 for 1 to 4, 16 for 5 to 8, 20 for 9
+  to 12, 24 for 13 to 16). Two files had more rows than that (entries removed later).
+- **Tail** (dance events), after the slots, `s*s + 40*s + 54` bytes for s slots (so a file is
+  `2360 + 3072*s + s*s + 40*s + 54` bytes), in two sections that each end with a CRC:
+  1. `18 + s*(s+2)` bytes: header words `[size, 1, s, s, s+2, s, s]`, two zero bytes, then s rows
+     of `[u16 row number][s bytes]`: the **table of victories**, row i, column j = the victories
+     entry i has over entry j, times 10 (matches a victory table computed from the marks).
+  2. `36 + 38*s` bytes: header words `[0, 34+38*s, phase, s, s, 38, s, s, 1, N, 0, phase, 0, 0, 0, 0, 0]`
+     (phase 1 for compulsory dances, 3 for a free dance; the same value is word 1 of section 1),
+     then s result rows of 38 bytes, then the CRC. **Result rows** (19 words) are in order of place;
+     words: 0 the entry's number (from 1), 1 the rule code (none 0, 6A/6B 1, 7B 22, 7C 26, 7A 28),
+     2 the place, 3 majority victories x10, 4 separate majority victories x10 among the tied
+     entries (6A/6B; 0 if not tied), 5 the free dance B marks total in tenths (0 without a free
+     dance), 7 total victories x10, 8 and 9 the total sum split into whole marks and thousandths,
+     12 a bit mask of the tie-break steps tried (1 majority, 2 separate victories, 4 and 8 the B
+     marks at Steps 10A and 10B, 16 total victories, 32 total sums); the rest are 0. Every field was
+     checked against Podium's scoring for 464 rows.
+- **Header bytes that follow from the file**: 260-263 hold the file size + 2; 289-290 hold 12 x slots;
+  292 holds the slots; two 16-byte descriptors (at 324 for compulsory dances or 356 for a free
+  dance, and 128 bytes further on) hold the offset and length of the results list and of the table of
+  victories. The other 46 non-zero bytes are the same in every event of a kind (see `profiles.ts`).
+  The sums beside the marks and the entry's total are 32-bit thousandths at 2161 (compulsory) or 2251
+  (free dance A + B), with the judges every 4 bytes and the total 40 bytes on.
+- **Edited marks**: with the block CRC (and the sums beside the marks, which are recalculated)
+  correct, the app opens the file even when the tail's victory table is out of date, so it
+  recalculates results itself.
+
+`src/legacy/write.ts` writes a dance event from these rules alone. Its files open in the real
+application (events, input data and the results view checked with generated files), and for the real
+events of the sample competition they match the application's own files byte for byte, apart from
+cells and rows of entries removed earlier, which the application keeps in the table of victories.
+
+## Combined events (compulsory dances plus a free dance)
+
+Verified with an event made in the application (1 compulsory dance, a free dance, 3 skaters):
+
+- The kind's header settings are those of both kinds together (compulsory: 1549 and 1553; free dance:
+  1645 and 1649), and both start-order lists (2054 and 2262) are filled.
+- The tail holds a pair of tables (victories, results) for **three phases, stored in the order 1, 6, 3**:
+  1 = the compulsory dances alone, 3 = the free dance alone, 6 = both together. The phase code is in
+  each table's header, and each phase has two 16-byte descriptors in the header at `324 + 16*(phase-1)`
+  (results) and 128 bytes further on (victories), giving the offset and length of its tables. Phases
+  after the first follow two zero bytes, so a file is
+  `2360 + 3072*s + phases*(s*s + 40*s + 54) + 2*(phases-1)` bytes.
+- Each entry's judge sums are 45 bytes apart by phase from record offset 2161: block
+  `2161 + 45*(phase-1)`. The combined sum is the compulsory sums plus the free dance sums times the
+  **free dance factor**, kept in header bytes 1649 and 1650 as a fraction. The application's defaults:
+  1 compulsory dance + free dance 1/2 (its sample has 1650 = 2), 2 dances + free dance 1/1, so half the
+  number of compulsory dances. Podium uses the same (`danceFreeFactor`), writes it on export and warns
+  on import when a file's factor is something else.
+- Phase tables are scored on their own: a part alone is unfactored; the B-mark total (results word 5) is
+  the free dance B marks in any phase that includes the free dance.
+- In a newly made event the application fills the unused cells of the table of victories with 255; the
+  writer leaves them zero, which the application accepts.
+
+Rebuilding the application's own combined event with the writer reproduces it byte for byte apart from
+those unused cells.
+
 ## Checked against the legacy application's printed results
 
 The user supplied the legacy app's results PDF for the whole `comp1` competition. Converting the files

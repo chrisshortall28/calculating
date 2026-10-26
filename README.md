@@ -31,7 +31,8 @@ and results PDFs ready to print.
 - 💾 **Backup and transfer.** Export a competition to a `.pod` file and import it on another
   device (older `.json` backups still import). [`examples/podium-demo.pod`](examples/podium-demo.pod) is a
   fictional competition to try: it has events with no ties and events showing each tie-break rule.
-  Competitions from the old Calculating For Windows program can be imported from its event files.
+  Competitions from the old Calculating For Windows program can be imported from its event files,
+  and dance events exported back for it.
 - 🌙 **Light and dark themes**, and competitions can take their club colours.
 
 ## 📸 Screenshots
@@ -102,7 +103,11 @@ compulsory figures, and a short and/or free programme). Compulsory dances and fi
 per judge; the free dance and each programme an A and a B (artistic impression) mark.
 
 1. **Sums**: each judge's sum for an entry is the total of all their marks in the event (A+B for
-   the free dance and programmes). Dance marks are not factored. In a Figures & Free event each
+   the free dance and programmes). Compulsory dances are not factored, and nor is a free dance on its
+   own. In a dance event with compulsory dances and a free dance, the free dance (its A and B marks)
+   is multiplied by half the number of compulsory dances, as in Calculating For Windows, so the
+   dances together and the free dance each make up half the total: 1 dance + free dance is 1 : ½,
+   2 dances + free dance 1 : 1. In a Figures & Free event each
    part's marks are multiplied by the event's factor for it (to two decimal places, editable in
    Setup). The defaults: short and free programmes 1 : 3; figures with both programmes one per
    figure, 1, 3 (two figures: 2 : 1 : 3); any other mix, all 1.

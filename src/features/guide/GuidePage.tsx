@@ -137,8 +137,9 @@ export function GuidePage() {
                 page.
               </List.Item>
               <List.Item>
-                Click <b>Export file</b> at the top right. Your browser saves a <code>.pod</code> file named
-                after the competition, the date and the time (usually in your Downloads folder).
+                Click <b>Export</b> at the top right and choose <b>Podium file (.pod)</b>. Your browser saves
+                a <code>.pod</code> file named after the competition, the date and the time (usually in your
+                Downloads folder).
               </List.Item>
             </List>
             <Text>
@@ -196,6 +197,22 @@ export function GuidePage() {
               is for solos, duos, couples or teams, so Podium guesses from the names: check the type of each
               dance event. Podium works out the placings itself, so they should match the old program’s
               results.
+            </Text>
+            <Text fw={700} mt="sm">
+              Export for Calculating For Windows
+            </Text>
+            <Text>
+              A competition can also be exported for the old Calculating For Windows program. Open the
+              competition, click <b>Export</b> and choose <b>Calculating For Windows files (.zip)</b>. The
+              dialog lists what will be exported and anything that had to be cut short or changed. Unzip the
+              files into a folder and open it in Calculating For Windows.
+            </Text>
+            <Text c="dimmed" size="sm">
+              Only dance events can be exported so far; figures events are listed as not exported. A dance the
+              old program does not have (it keeps its own list of 51) is exported as its unnamed “Dance No 1”,
+              “Dance No 2” and so on, unless the name is a slip away from one of its dances. Marks that have
+              not been entered yet are exported as 0.0. Check an exported competition in Calculating For
+              Windows before relying on it.
             </Text>
             <Text c="dimmed" size="sm">
               Because copies don’t sync, decide which device is the “working” one at any time. If two people

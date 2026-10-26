@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { FIGURES, figureLabel } from './figures';
 import {
   danceEventDefaults,
+  danceFreeFactor,
   defaultFactors,
   eventMarkKeys,
   eventSegments,
   eventTieBreakMarks,
+  factorSummary,
   markKeyLabel,
 } from './segments';
 import type { CompEvent } from './types';
@@ -33,6 +35,48 @@ describe('figures catalogue', () => {
     expect(figureLabel('42')).toBe('42. Counter FO, Bracket & Counter FI');
     expect(figureLabel('46')).toBe('46. Double Three FO, Rocker & Paragraph Double Three B');
     expect(figureLabel('53')).toBe('53. Bracket BO, Rocker & Paragraph Bracket F');
+  });
+});
+
+describe('the free dance factor in a dance event (hundredths)', () => {
+  const dance = (dances: string[], hasFreeDance: boolean) =>
+    event({ discipline: 'dance', compulsoryDanceIds: dances, hasFreeDance });
+  const factors = (e: CompEvent) => eventSegments(e, []).map((s) => s.factor);
+
+  it('is half the number of compulsory dances, as in Calculating For Windows', () => {
+    expect([0, 1, 2, 3, 4].map(danceFreeFactor)).toEqual([100, 50, 100, 150, 200]);
+  });
+
+  it.each([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])(
+    'scales so the free dance can score as many points as %i compulsory dances',
+    (dances) => {
+      // Each compulsory dance is one mark out of 10.0; the free dance is two (A and B).
+      const compulsoryMax = dances * 10;
+      const freeMax = (2 * 10 * danceFreeFactor(dances)) / 100;
+      expect(freeMax).toBe(compulsoryMax);
+    },
+  );
+
+  it('4 compulsory dances give up to 40 points and the free dance up to 20, so the free dance is ×2', () => {
+    expect(danceFreeFactor(4)).toBe(200);
+  });
+
+  it('1 compulsory dance + free dance: 1 : ½; 2 dances + free dance: 1 : 1', () => {
+    expect(factors(dance(['a'], true))).toEqual([100, 50]);
+    expect(factors(dance(['a', 'b'], true))).toEqual([100, 100, 100]);
+    expect(factors(dance(['a', 'b', 'c'], true))).toEqual([100, 100, 100, 150]);
+  });
+
+  it('leaves a single kind of part unfactored', () => {
+    expect(factors(dance(['a', 'b'], false))).toEqual([100, 100]);
+    expect(factors(dance([], true))).toEqual([100]);
+  });
+
+  it('is shown with the results when both kinds of part are skated', () => {
+    expect(factorSummary(dance(['a'], true))).toBe('compulsory dances ×1, free dance ×0.5');
+    expect(factorSummary(dance(['a', 'b'], true))).toBe('compulsory dances ×1, free dance ×1');
+    expect(factorSummary(dance(['a', 'b'], false))).toBe('');
+    expect(factorSummary(dance([], true))).toBe('');
   });
 });
 

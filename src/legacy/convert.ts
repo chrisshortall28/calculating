@@ -1,5 +1,5 @@
 import { FIGURES } from '../domain/figures';
-import { cfKey } from '../domain/segments';
+import { cfKey, danceFreeFactor } from '../domain/segments';
 import type { EntryType, EventFigure, Id, SegmentKey } from '../domain/types';
 import type { CompetitionFile } from '../io/competitionFile';
 import { legacyDanceName } from './dances';
@@ -228,6 +228,14 @@ export function convertLegacyCompetition(legacy: LegacyCompetition): LegacyConve
         keysInOrder.push(`cd:${id}`);
       });
       event.hasFreeDance = ev.hasLong;
+      // Podium weighs the free dance by the number of compulsory dances; the application lets it be changed.
+      const expected = danceFreeFactor(event.compulsoryDanceIds.length);
+      const factor = hundredths(ev.factors.long);
+      if (ev.hasLong && event.compulsoryDanceIds.length > 0 && factor !== expected) {
+        note(
+          `The free dance counts ×${factor / 100} in the file but Podium uses ×${expected / 100} with ${event.compulsoryDanceIds.length} compulsory ${event.compulsoryDanceIds.length === 1 ? 'dance' : 'dances'}, so the totals will differ from the application’s.`,
+        );
+      }
       keys = danceKeys(keysInOrder, event.hasFreeDance);
     } else {
       entryType = ev.kind === 'single' ? 'single' : 'pairs';

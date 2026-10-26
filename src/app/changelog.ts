@@ -8,6 +8,15 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.6.1',
+    date: '2026-10-26',
+    changes: [
+      'Export a competition for the old Calculating For Windows program: open the competition, click Export and choose Calculating For Windows files (.zip). Dance events (compulsory dances, a free dance, or both) are exported, one file each, with the results the old program expects; anything that cannot be exported is listed first.',
+      'The Export button is now a menu: Podium file (.pod) is the same as before.',
+      'Dance events with compulsory dances and a free dance now weigh the free dance as Calculating For Windows does: half the number of compulsory dances, so one dance and the free dance count 1 : ½ and two dances and the free dance 1 : 1. Results show the factors, and the old program’s own files agree.',
+    ],
+  },
+  {
     version: '1.6.0',
     date: '2026-10-26',
     changes: [
