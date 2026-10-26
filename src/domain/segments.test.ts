@@ -47,6 +47,20 @@ describe('the free dance factor in a dance event (hundredths)', () => {
     expect([0, 1, 2, 3, 4].map(danceFreeFactor)).toEqual([100, 50, 100, 150, 200]);
   });
 
+  it.each([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])(
+    'scales so the free dance can score as many points as %i compulsory dances',
+    (dances) => {
+      // Each compulsory dance is one mark out of 10.0; the free dance is two (A and B).
+      const compulsoryMax = dances * 10;
+      const freeMax = (2 * 10 * danceFreeFactor(dances)) / 100;
+      expect(freeMax).toBe(compulsoryMax);
+    },
+  );
+
+  it('4 compulsory dances give up to 40 points and the free dance up to 20, so the free dance is ×2', () => {
+    expect(danceFreeFactor(4)).toBe(200);
+  });
+
   it('1 compulsory dance + free dance: 1 : ½; 2 dances + free dance: 1 : 1', () => {
     expect(factors(dance(['a'], true))).toEqual([100, 50]);
     expect(factors(dance(['a', 'b'], true))).toEqual([100, 100, 100]);
