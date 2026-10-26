@@ -60,7 +60,7 @@ describe('readLegacyEvent', () => {
     expect(e.entries[1]!.club).toBe('Moonrake');
   });
 
-  it('reads a five-judge panel and ignores blocks that are flagged without marks', () => {
+  it('reads a five-judge panel, keeping a flagged block of zero marks (a no-show) and skipping unflagged blocks', () => {
     const e = read({
       name: 'Five',
       judges: ['a', 'b', 'c', 'd', 'e'],
@@ -68,7 +68,8 @@ describe('readLegacyEvent', () => {
       entries: [{ name: 'Tim', blocks: { 0: [10, 11, 12, 13, 14] }, emptyBlocks: [1] }],
     });
     expect(e.entries[0]!.blocks[0]).toEqual([10, 11, 12, 13, 14]);
-    expect(e.entries[0]!.blocks[1]).toBeNull();
+    expect(e.entries[0]!.blocks[1]).toEqual([0, 0, 0, 0, 0]);
+    expect(e.entries[0]!.blocks[2]).toBeNull();
   });
 });
 
@@ -245,6 +246,20 @@ describe('convertLegacyCompetition', () => {
       expect.stringContaining('could not be read'),
       expect.stringContaining('Dance number 99 is not known'),
     ]);
+  });
+
+  it('imports a no-show’s zero marks, as the legacy app scores it 0.0 and places it last', () => {
+    const { file, warnings } = convert({
+      name: 'No-show',
+      compulsory: [{ code: 20 }],
+      entries: [
+        { name: 'Ann', blocks: { 0: [10, 11, 12] } },
+        { name: 'Bo', emptyBlocks: [0] },
+      ],
+    });
+    const bo = file.entries[1]!.id;
+    expect(file.marks.filter((m) => m.entryId === bo).map((m) => m.tenths)).toEqual([0, 0, 0]);
+    expect(warnings.some((w) => w.level === 'info' && w.message.includes('a no-show'))).toBe(true);
   });
 
   it('skips marks the event has no place for', () => {

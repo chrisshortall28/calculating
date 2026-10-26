@@ -120,6 +120,19 @@ recalculates using the CIPA rules.
   Penelope Preece (points 7.3, 6.1, 6.0, 4.9, 4.8, 4.4, 3.5).
 - Free dance marks are called "A marks" and "B marks" in the legacy application too.
 
+## Checked against the legacy application's printed results
+
+The user supplied the legacy app's results PDF for the whole `comp1` competition. Converting the files
+and scoring every event with Podium's engine reproduces it exactly for all 73 events that both
+produce (468 rows: place, name and club, points, majority victories, every judge's placing). Two
+things this taught us:
+
+- An entry with a flagged block of **all-zero marks** is a no-show: the legacy app scores it 0.000 and
+  places it last (events `3A` and `26A`), so the zero marks are imported as real 0.0 marks. Dropping
+  them left those events incomplete, so Podium listed no results for them.
+- The legacy Rule column uses lower-case labels that match Podium's: `7a`, `7c` = 7A, 7C; `S.M.V.` =
+  6B (S.M.V.); `7b 10a` = 7B (the `10a` part is not understood, the order was the same).
+
 ## Second sample (`comp2`, small hand-made test events)
 
 Five nearly empty events: `Empty Solodance`, `More than 3 judges`, `Figures`, `Pairs`, `Free`. They

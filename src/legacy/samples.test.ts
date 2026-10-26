@@ -72,6 +72,18 @@ describe.skipIf(!have('comp1'))('legacy sample competition (comp1)', () => {
   });
 });
 
+describe.skipIf(!have('comp1'))('legacy no-shows (comp1)', () => {
+  const file = (have('comp1') ? load('comp1')[0]!.file : undefined) as CompetitionFile;
+
+  it('places an entry with all-zero marks last on 0.0, as the legacy application does', () => {
+    const novice = place(file, '3A Novice Solo');
+    expect(novice).toHaveLength(11);
+    expect(novice.at(-1)).toEqual({ name: 'Elizabeth McIlduff', place: 11, sum: 0 });
+    const team = place(file, '26A Super Fun Team');
+    expect(team.at(-1)).toEqual({ name: 'Meridian Hours', place: 5, sum: 0 });
+  });
+});
+
 describe.skipIf(!have('comp2'))('legacy sample events (comp2)', () => {
   const file = (have('comp2') ? load('comp2')[0]!.file : undefined) as CompetitionFile;
   const event = (name: string) => file.events.find((e) => e.name === name)!;

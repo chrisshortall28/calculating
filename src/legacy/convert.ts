@@ -275,6 +275,12 @@ export function convertLegacyCompetition(legacy: LegacyCompetition): LegacyConve
           ? { teamName: entry.name, ...(entry.club ? { club: entry.club } : {}) }
           : {}),
       });
+      if (entry.blocks.some((marks) => marks?.every((m) => m === 0))) {
+        note(
+          `“${entry.name}” has all marks 0.0 (a no-show in the legacy app); imported as 0.0, so it places last.`,
+          'info',
+        );
+      }
       entry.blocks.forEach((marks, k) => {
         if (!marks) return;
         const key = keys[k];

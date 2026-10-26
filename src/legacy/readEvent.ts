@@ -77,8 +77,9 @@ export function readLegacyEvent(fileName: string, b: Uint8Array): LegacyEvent {
     for (let k = 0; k < BLOCKS; k++) {
       const bo = at + BLOCK_AT + BLOCK_SIZE * k;
       const marks = Array.from({ length: judgeCount }, (_, j) => b[bo + 1 + j]!);
-      // A block holds marks when flagged; an all-zero block is an entry that did not skate.
-      blocks.push(b[bo] === 1 && marks.some((m) => m > 0) ? marks : null);
+      // A block holds marks when flagged. An all-zero block is kept: the legacy app scores an entry that
+      // did not skate as 0.0 and places it last, and the results only complete with those marks.
+      blocks.push(b[bo] === 1 ? marks : null);
     }
     entries.push({
       name: ascii(b, at, TEXT),

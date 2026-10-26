@@ -6,7 +6,7 @@ export interface FixtureEntry {
   club?: string;
   /** Marks in tenths per judge, by block (0-3 compulsory, 4-5 short A/B, 6-7 free/long A/B). */
   blocks?: Record<number, number[]>;
-  /** Flag a block as present but with no marks (an entry that did not skate). */
+  /** Flag a block as present with all-zero marks (an entry that did not skate). */
   emptyBlocks?: number[];
 }
 
