@@ -86,8 +86,7 @@ competitions and `convertLegacyCompetition` turns one into a `CompetitionFile` p
 `LegacyImportModal` (Import legacy button) reviews and writes with `importCompetition`. Only Solo Dance,
 Single and Pairs events convert. Tests build files with `src/legacy/fixtures.ts`; the real sample files are
 not in the repo (they hold real names), so `src/legacy/samples.test.ts` runs only when `LEGACY_SAMPLES`
-points at the folder holding `comp1`, `comp2`. `src/legacy/golden.test.ts` replays an anonymised copy of `comp1` (`src/legacy/golden/`) against the
-legacy app's own printed results for all 73 events; update it only for a deliberate scoring or import change.
+points at the folder holding `comp1`, `comp2`.
 
 **Offline.** `vite-plugin-pwa` precaches everything, including PDFs in `public/`
 (`workbox.globPatterns` in `vite.config.ts`); updates wait for the user to click Reload.
@@ -95,7 +94,9 @@ legacy app's own printed results for all 73 events; update it only for a deliber
 ## Conventions
 
 - Scoring semantics follow the CIPA manual; where it is ambiguous, ask the user rather than
-  choosing a rule interpretation. Add worked cases to `src/scoring/scoring.test.ts`.
+  choosing a rule interpretation. Add worked cases to `src/scoring/scoring.test.ts`. `src/scoring/golden.test.ts` scores 73 real events (marks in, placings out;
+  names made up) against the results the legacy Calculating For Windows app printed, covering every tie-break
+  rule; change its expectations only for a deliberate scoring change.
 - Releasing: bump `version` in `package.json` and add an entry to `src/app/changelog.ts`
   ("What's New?" popup).
 - The CIPA manual in `public/` is CIPA's document and not under Podium's 0BSD licence; link to it
