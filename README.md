@@ -31,6 +31,7 @@ and results PDFs ready to print.
 - 💾 **Backup and transfer.** Export a competition to a `.pod` file and import it on another
   device (older `.json` backups still import). [`examples/podium-demo.pod`](examples/podium-demo.pod) is a
   fictional competition to try: it has events with no ties and events showing each tie-break rule.
+  Competitions from the old Calculating For Windows program can be imported from its event files.
 - 🌙 **Light and dark themes**, and competitions can take their club colours.
 
 ## 📸 Screenshots
@@ -86,6 +87,7 @@ entry to `src/app/changelog.ts` (shown in the "What's New?" popup when the versi
 | `src/domain/`   | Types, segments (compulsory dances or figures, and the A/B-marked free dance and programmes), the figures catalogue, entry display helpers. |
 | `src/db/`       | Dexie schema and repository functions, which cascade deletes of marks.                                                                      |
 | `src/io/`       | Competition file export/import (versioned, validated with zod).                                                                             |
+| `src/legacy/`   | Reader and converter for Calculating For Windows event files (see [`docs/legacy-format.md`](docs/legacy-format.md)).                        |
 | `src/pdf/`      | Judge sheets, results and programme PDFs (pdfmake, lazy-loaded).                                                                            |
 | `src/features/` | Screens: home, competitions, events, rosters, scoring, results.                                                                             |
 | `public/`       | Icons, and the CIPA scoring manual (`2009 - The CIPA System of Scoring.pdf`) linked from the results.                                       |

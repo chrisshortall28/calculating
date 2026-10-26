@@ -29,6 +29,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { SectionHeader } from '../../app/SectionHeader';
 import { db } from '../../db/db';
+import { ImportLegacyButton } from '../competitions/LegacyImportModal';
 import { useImportCompetitionFile } from '../competitions/useImportCompetitionFile';
 import { CompetitionCard, NewCompetitionButton, useCompetitionStats } from '../competitions/CompetitionCard';
 import { HeroArt } from './HeroArt';
@@ -184,6 +185,9 @@ export function HomePage() {
                         </Button>
                       )}
                     </FileButton>
+                    <ImportLegacyButton variant="default" fullWidth>
+                      Import from Calculating For Windows
+                    </ImportLegacyButton>
                     <Button
                       component={Link}
                       to="/competitions"
