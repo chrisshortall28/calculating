@@ -59,13 +59,16 @@ are already in start order.
 | 1024 | 1 | **Number of judges** (3 and 5 seen; comp2 `More than 3 judges` has 5) |
 | 1026 + 40*i | 40 | Judge names, i = 0..8 (blank slots unused) |
 | 1386 | 40 | A tenth name, identical to judge 1 in the sample: probably the referee **(unverified)** |
-| 1546 | 1 | **Event type**: 8 = dance event (solo, duo, couples or team: not distinguished), 0 = singles Figures & Free, 1 = pairs, 3 = quartet (`25 Quartet`, a long programme with dance-style marks). Decoded from comp2 and one comp1 event each; 3 is unverified |
+| 1546 | 1 | **Event type** (the app's "Type" list): 8 = Solo Dance (solos, duos, couples and teams, not distinguished), 0 = Single, 1 = Pairs, 3 = Quartets. The app also offers Dance, Precision and Show, whose codes are unknown. Podium imports only Solo Dance, Single and Pairs and skips the rest |
 | 1551 | 1 | **Number of compulsory dances or figures** (0 to 4; 0 for an event with no compulsory part) |
 | 1597 | 1 | 1 when the event has a **short programme** (Figures & Free events) |
 | 1645 | 1 | 1 when the event has a **free dance / long programme** |
+| 1553, 1554 | 1+1 | **Factor for the compulsory part** as a fraction (numerator, denominator); applies to each figure's mark |
+| 1597, 1602 | 1+1 | **Factor for the short programme**: 1597 is both the on/off flag and the numerator, 1602 the denominator |
+| 1649, 1650 | 1+1 | **Factor for the long programme** (numerator, denominator) |
 | 1806 + 4*k | 2 | Compulsory item k (k = 0..3): byte 0 is the **dance code** (dance events, see below) or the **figure number** (Figures events; matches Podium's catalogue order 1:1); byte 1 is the **side** for figures, an ASCII `l` (108) or `r` (114), or 0 when unspecified |
 
-Other flag bytes (1549, 1553, 1554, 1599, 1601, 1602, 1647, 1649, 1650) vary with the event type but
+Factors verified on an event set to "Compulsory 2, Short 1/2, Long 3/2" (2/1, 1/2, 3/2): in Podium's hundredths 200, 50 and 150. A pairs event with the app's defaults reads short 1 and long 3, the same as Podium's own defaults. Other flag bytes (1549, 1599, 1601, 1647) vary with the event type but
 are undecoded; they look like "configured" markers and phase numbering. Not in the files that we
 have found: the factors (weights) of an event, and the entry type within dance events. The log
 `roller.tlg` numbers phases 1-4 compulsory, 5 short programme, 7 long programme/free dance.
