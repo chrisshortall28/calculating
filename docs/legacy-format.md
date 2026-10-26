@@ -131,7 +131,9 @@ things this taught us:
   places it last (events `3A` and `26A`), so the zero marks are imported as real 0.0 marks. Dropping
   them left those events incomplete, so Podium listed no results for them.
 - The legacy Rule column uses lower-case labels that match Podium's: `7a`, `7c` = 7A, 7C; `S.M.V.` =
-  6B (S.M.V.); `7b 10a` = 7B (the `10a` part is not understood, the order was the same).
+  6B (S.M.V.); `7b 10a` = rule 7B at Step 10A of the CIPA manual (the free dance B marks), which Podium
+  shows as "7B". The legacy app labels a rule with its step where the manual has one (10A for 7-B on the
+  free dance, 10B for the short programme, 10C for 7-C), so Podium's 7B/7C labels carry the same meaning.
 
 ## Second sample (`comp2`, small hand-made test events)
 
