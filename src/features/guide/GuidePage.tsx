@@ -166,6 +166,37 @@ export function GuidePage() {
                 file’s version, or <b>Import as copy</b> to keep both.
               </List.Item>
             </List>
+            <Text fw={700} mt="sm">
+              Import from Calculating For Windows
+            </Text>
+            <Text>
+              Competitions kept in the old Calculating For Windows program can be brought into Podium. Each of
+              its events is a separate <code>DATAnnnB.ROL</code> file.
+            </Text>
+            <List type="ordered" spacing="xs">
+              <List.Item>
+                On the{' '}
+                <Anchor component={Link} to="/competitions">
+                  Competitions
+                </Anchor>{' '}
+                page click <b>Import legacy</b>.
+              </List.Item>
+              <List.Item>
+                Choose all of the competition’s event files, or drop the whole folder. Other files in it, such
+                as <code>roller.tlg</code>, are ignored.
+              </List.Item>
+              <List.Item>
+                Check the summary. Anything Podium could not bring across, or had to guess, is listed. Then
+                click <b>Import competition</b>.
+              </List.Item>
+            </List>
+            <Text c="dimmed" size="sm">
+              Solo Dance, Single and Pairs events are imported, with their judges, skaters and marks; other
+              event types (Quartets, Precision, Show) are skipped. The files do not say whether a dance event
+              is for solos, duos, couples or teams, so Podium guesses from the names: check the type of each
+              dance event. Podium works out the placings itself, so they should match the old program’s
+              results.
+            </Text>
             <Text c="dimmed" size="sm">
               Because copies don’t sync, decide which device is the “working” one at any time. If two people
               edit separate copies, their changes can’t be merged — one will have to be re-entered.

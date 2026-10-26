@@ -6,6 +6,7 @@ import { convertLegacyCompetition, groupLegacyEvents, guessDanceEntryType, parse
 import { legacyDanceName } from './dances';
 import { buildEventFile, type FixtureEvent } from './fixtures';
 import { LegacyFormatError, readLegacyEvent } from './readEvent';
+import { readLegacyFiles } from './readFiles';
 
 const read = (e: FixtureEvent, fileName = 'DATA001B.ROL') => readLegacyEvent(fileName, buildEventFile(e));
 const convert = (...events: FixtureEvent[]) =>
@@ -272,5 +273,35 @@ describe('importing a converted competition', () => {
     expect(await db.competitions.get(id)).toMatchObject({ name: 'Test Competition', date: '2026-08-09' });
     expect(await db.marks.count()).toBe(3);
     expect(await db.events.count()).toBe(1);
+  });
+});
+
+describe('readLegacyFiles', () => {
+  const file = (name: string, e?: FixtureEvent) => ({
+    name,
+    data: e ? buildEventFile(e) : new Uint8Array([1, 2, 3]),
+  });
+
+  it('groups event files into competitions in file-number order and ignores other files', () => {
+    const result = readLegacyFiles([
+      file('DATA10B.ROL', { name: 'Ten' }),
+      file('roller.tlg'),
+      file('DATA2B.ROL', { name: 'Two' }),
+      file('DATA3B.rol', { name: 'Other', competition: 'Another Competition' }),
+    ]);
+    expect(result.ignored).toEqual(['roller.tlg']);
+    expect(result.unreadable).toEqual([]);
+    expect(result.competitions.map((c) => [c.name, c.events.map((e) => e.name)])).toEqual([
+      ['Test Competition', ['Two', 'Ten']],
+      ['Another Competition', ['Other']],
+    ]);
+  });
+
+  it('reports a .ROL file that is not an event file instead of failing the rest', () => {
+    const result = readLegacyFiles([file('DATA1B.ROL'), file('DATA2B.ROL', { name: 'Two' })]);
+    expect(result.unreadable).toEqual([
+      { name: 'DATA1B.ROL', message: expect.stringContaining('not a Calculating') },
+    ]);
+    expect(result.competitions[0]!.events).toHaveLength(1);
   });
 });

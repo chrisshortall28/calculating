@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router';
 import { PageHero } from '../../app/PageHero';
 import { db } from '../../db/db';
+import { ImportLegacyButton } from './LegacyImportModal';
 import { useImportCompetitionFile } from './useImportCompetitionFile';
 import { CompetitionCard, NewCompetitionButton, useCompetitionStats } from './CompetitionCard';
 
@@ -28,6 +29,7 @@ export function CompetitionsPage() {
                 </Button>
               )}
             </FileButton>
+            <ImportLegacyButton variant="white" color="navy.9" />
             <NewCompetitionButton />
           </>
         }

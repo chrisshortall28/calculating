@@ -8,6 +8,13 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.6.0',
+    date: '2026-10-26',
+    changes: [
+      'Import competitions from the old Calculating For Windows program: on the Competitions page click Import legacy, choose the competition’s event (.ROL) files, check the summary and import. Solo Dance, Single and Pairs events come across with their judges, skaters and marks; anything skipped or guessed is listed before you import.',
+    ],
+  },
+  {
     version: '1.5.0',
     date: '2026-10-19',
     changes: [
