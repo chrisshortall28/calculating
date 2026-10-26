@@ -2,9 +2,9 @@
  * The header bytes of a Solo Dance event that no field of the event decides: the "EF" signature,
  * the settings the application sets for the event's kind, and bytes that are the same in every
  * file. All the other header bytes are zero, set from the event, or follow from the file's size
- * (see write.ts). Found by zeroing every known field in all 74 dance events of a real competition:
- * exactly two distinct headers remain, one for events with compulsory dances and one for free dance
- * events.
+ * (see write.ts). Found by zeroing every known field in all 74 dance events of a real competition
+ * (exactly two distinct headers remain, for events with compulsory dances and for free dance
+ * events) and in a combined event: the two together.
  */
 type Constants = [offset: number, value: number][];
 
@@ -53,25 +53,33 @@ const COMMON: Constants = [
   [2258, 2],
 ];
 
-export type DanceKind = 'compulsory' | 'free';
+/**
+ * The parts of a dance event the application keeps tables for, by its code: the compulsory dances
+ * (1), the free dance (3), and both together (6).
+ */
+export type PhaseCode = 1 | 3 | 6;
+
+export type DanceKind = 'compulsory' | 'free' | 'combined';
 
 export interface DanceProfile {
   constants: Constants;
-  /** Where the start-order list begins (entry numbers 1, 2, 3 ...). */
-  startOrderAt: number;
-  /** The first of the two 16-byte table descriptors the kind uses (the second is 128 bytes on). */
-  descriptorAt: number;
+  /** Where the start-order lists begin (entry numbers 1, 2, 3 ...), one for each kind of part. */
+  startOrderAt: number[];
+  /** The phases whose tables the file holds, in the order they are stored. */
+  phases: PhaseCode[];
 }
 
+const COMPULSORY: Constants = [
+  [1549, 1],
+  [1553, 1],
+];
+const FREE: Constants = [
+  [1645, 1],
+  [1649, 1],
+];
+
 export const DANCE_PROFILES: Record<DanceKind, DanceProfile> = {
-  compulsory: {
-    constants: [...COMMON, [332, 1], [460, 1], [1549, 1], [1553, 1]],
-    startOrderAt: 2054,
-    descriptorAt: 324,
-  },
-  free: {
-    constants: [...COMMON, [364, 3], [492, 3], [1645, 1], [1649, 1]],
-    startOrderAt: 2262,
-    descriptorAt: 356,
-  },
+  compulsory: { constants: [...COMMON, ...COMPULSORY], startOrderAt: [2054], phases: [1] },
+  free: { constants: [...COMMON, ...FREE], startOrderAt: [2262], phases: [3] },
+  combined: { constants: [...COMMON, ...COMPULSORY, ...FREE], startOrderAt: [2054, 2262], phases: [1, 6, 3] },
 };

@@ -168,6 +168,31 @@ application (events, input data and the results view checked with generated file
 events of the sample competition they match the application's own files byte for byte, apart from
 cells and rows of entries removed earlier, which the application keeps in the table of victories.
 
+## Combined events (compulsory dances plus a free dance)
+
+Verified with an event made in the application (1 compulsory dance, a free dance, 3 skaters):
+
+- The kind's header settings are those of both kinds together (compulsory: 1549 and 1553; free dance:
+  1645 and 1649), and both start-order lists (2054 and 2262) are filled.
+- The tail holds a pair of tables (victories, results) for **three phases, stored in the order 1, 6, 3**:
+  1 = the compulsory dances alone, 3 = the free dance alone, 6 = both together. The phase code is in
+  each table's header, and each phase has two 16-byte descriptors in the header at `324 + 16*(phase-1)`
+  (results) and 128 bytes further on (victories), giving the offset and length of its tables. Phases
+  after the first follow two zero bytes, so a file is
+  `2360 + 3072*s + phases*(s*s + 40*s + 54) + 2*(phases-1)` bytes.
+- Each entry's judge sums are 45 bytes apart by phase from record offset 2161: block
+  `2161 + 45*(phase-1)`. The combined sum is the compulsory sums plus the free dance sums times the
+  **free dance factor**, kept in header bytes 1649 and 1650 as a fraction (the application's default for
+  a combined event is 1/2: its sample has 1650 = 2; the CIPA manual says there is no factoring in dance,
+  and so does Podium, so exported files say 1/1).
+- Phase tables are scored on their own: a part alone is unfactored; the B-mark total (results word 5) is
+  the free dance B marks in any phase that includes the free dance.
+- In a newly made event the application fills the unused cells of the table of victories with 255; the
+  writer leaves them zero, which the application accepts.
+
+Rebuilding the application's own combined event with the writer reproduces it byte for byte apart from
+those unused cells.
+
 ## Checked against the legacy application's printed results
 
 The user supplied the legacy app's results PDF for the whole `comp1` competition. Converting the files

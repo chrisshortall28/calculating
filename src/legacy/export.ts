@@ -1,9 +1,9 @@
 import { eventSegments, eventTieBreakMarks } from '../domain/segments';
 import type { Dance } from '../domain/types';
 import type { CompetitionFile } from '../io/competitionFile';
-import { calculateEvent } from '../scoring';
 import { matchLegacyDance } from './dances';
-import { tailFromResult } from './tail';
+import { DANCE_PROFILES, type DanceKind } from './profiles';
+import { phaseTails } from './tail';
 import type { LegacyWarning } from './types';
 import { MAX_CLUB, MAX_DANCES, MAX_JUDGES, MAX_NAME, writeDanceEvent, type WriteEntry } from './write';
 
@@ -59,6 +59,7 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
   const unnamedDances = new Map<string, Set<string>>(); // dance name -> events it is in
   const nearDances = new Map<string, string>(); // name typed -> the application's dance
   const unmarked = new Map<string, number>(); // event -> marks not entered yet
+  const combined: string[] = []; // events with compulsory dances and a free dance
 
   for (const event of events) {
     const skip = (reason: string) => result.skipped.push({ event: event.name, reason });
@@ -83,7 +84,11 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
       continue;
     }
 
-    const kind = event.hasFreeDance ? 'free' : 'compulsory';
+    const kind: DanceKind = !event.hasFreeDance
+      ? 'compulsory'
+      : event.compulsoryDanceIds.length > 0
+        ? 'combined'
+        : 'free';
     const truncate = (value: string, kind: ShortenedKind) => {
       const cut = value.slice(0, SHORTENED[kind].length);
       if (cut !== value) {
@@ -108,9 +113,10 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
     });
 
     // Block k of an entry: compulsory dance k, or (free dance) A in block 6 and B in block 7.
-    const blockKeys = event.hasFreeDance
-      ? (['fd:A', 'fd:B'] as const).map((key, i) => [key, 6 + i] as const)
-      : event.compulsoryDanceIds.map((id, k) => [`cd:${id}` as const, k] as const);
+    const blockKeys = [
+      ...event.compulsoryDanceIds.map((id, k) => [`cd:${id}` as const, k] as const),
+      ...(event.hasFreeDance ? (['fd:A', 'fd:B'] as const).map((key, i) => [key, 6 + i] as const) : []),
+    ];
     let missing = 0;
     const exported: WriteEntry[] = entries.map((entry) => {
       const skaters = entry.skaterIds.map((id) => skaterOf.get(id)).filter((s) => s !== undefined);
@@ -134,19 +140,13 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
     if (missing > 0) unmarked.set(event.name, missing);
 
     const entryIds = entries.map((e) => e.id);
-    const scored = calculateEvent({
-      entryIds,
-      judgeIds: event.judgeIds,
-      segments: eventSegments(event, file.dances),
-      mark: (key, judgeId, entryId) => marks.get(`${event.id}|${key}|${judgeId}|${entryId}`) ?? 0,
-      tieBreakMarks: eventTieBreakMarks(event),
-    });
     const bTotals = entryIds.map((id) =>
       event.hasFreeDance
         ? event.judgeIds.reduce((a, j) => a + (marks.get(`${event.id}|fd:B|${j}|${id}`) ?? 0), 0)
         : 0,
     );
 
+    if (kind === 'combined') combined.push(event.name);
     result.files.push({
       name: `DATA${String(result.files.length + 1).padStart(3, '0')}B.ROL`,
       event: event.name,
@@ -160,11 +160,27 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
         kind,
         dances,
         entries: exported,
-        tail: tailFromResult(scored, entryIds, bTotals),
+        tails: phaseTails(
+          DANCE_PROFILES[kind].phases,
+          {
+            entryIds,
+            judgeIds: event.judgeIds,
+            segments: eventSegments(event, file.dances),
+            mark: (key, judgeId, entryId) => marks.get(`${event.id}|${key}|${judgeId}|${entryId}`) ?? 0,
+            tieBreakMarks: eventTieBreakMarks(event),
+          },
+          bTotals,
+        ),
       }),
     });
   }
   result.warnings.push(...summarise(shortened, unnamedDances, nearDances, unmarked));
+  if (combined.length > 0) {
+    result.warnings.push({
+      level: 'info',
+      message: `${combined.length === 1 ? '1 event has' : `${combined.length} events have`} compulsory dances and a free dance. The free dance is exported with a factor of 1, as in Podium (the CIPA manual has no factoring in dance); the application’s own default is 1/2, so change the factor there to match if you prefer.`,
+    });
+  }
   return result;
 }
 
@@ -231,9 +247,6 @@ function unsupportedReason(event: FileEvent): string | undefined {
   if (event.discipline === 'figures') return 'figures events can not be exported yet.';
   if (event.compulsoryDanceIds.length > MAX_DANCES) {
     return `it has more than ${MAX_DANCES} compulsory dances.`;
-  }
-  if (event.hasFreeDance && event.compulsoryDanceIds.length > 0) {
-    return 'events with compulsory dances and a free dance can not be exported yet.';
   }
   if (!event.hasFreeDance && event.compulsoryDanceIds.length === 0) return 'it has no dances.';
   return undefined;

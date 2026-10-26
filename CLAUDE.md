@@ -87,8 +87,7 @@ competitions and `convertLegacyCompetition` turns one into a `CompetitionFile` p
 Single and Pairs events convert.
 `src/legacy/write.ts` / `export.ts` go the other way (`exportLegacyEvents`, via `LegacyExportModal`) for dance events
 with compulsory dances or a free dance, writing every checksum and the results tables the application
-expects; `src/io/zip.ts` zips the files. Figures events and combined compulsory + free dance events are not
-exported yet. Tests build files with `src/legacy/fixtures.ts`; the real sample files are
+expects; `src/io/zip.ts` zips the files. Figures events are not exported yet. Tests build files with `src/legacy/fixtures.ts`; the real sample files are
 not in the repo (they hold real names), so `src/legacy/samples.test.ts` runs only when `LEGACY_SAMPLES`
 points at the folder holding `comp1`, `comp2`.
 

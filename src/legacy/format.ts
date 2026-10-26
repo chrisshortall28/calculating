@@ -35,8 +35,12 @@ export const RESULT_ROW_SIZE = 38;
 export const RESULTS_HEADER_SIZE = 34;
 export const resultsSectionLength = (slots: number) => RESULTS_HEADER_SIZE + RESULT_ROW_SIZE * slots;
 
-export const tailSize = (slots: number) => victoriesSectionSize(slots) + resultsSectionLength(slots) + 2;
-export const eventFileSize = (slots: number) => HEADER_SIZE + BLOCK_SIZE * slots + tailSize(slots);
+/** One phase's pair of tables: the table of victories, then the results list and its CRC. */
+export const phaseTailSize = (slots: number) => victoriesSectionSize(slots) + resultsSectionLength(slots) + 2;
+/** The tail holds a pair of tables for each phase, with two zero bytes before each later one. */
+export const tailSize = (slots: number, phases = 1) => phases * phaseTailSize(slots) + 2 * (phases - 1);
+export const eventFileSize = (slots: number, phases = 1) =>
+  HEADER_SIZE + BLOCK_SIZE * slots + tailSize(slots, phases);
 
 export interface ChecksumProblem {
   where: string;
@@ -55,14 +59,28 @@ export function checksumProblems(file: Uint8Array): ChecksumProblem[] {
     if (stored !== calculated) problems.push({ where, stored, calculated });
   };
   for (const [start, end] of HEADER_SECTIONS) check(`header ${start}-${end}`, start, end);
+  // The size says how many slots and phases the file has.
   let slots = 0;
-  while (slots < 200 && eventFileSize(slots + 1) <= file.length) slots++;
-  if (eventFileSize(slots) !== file.length) {
+  let phases = 0;
+  for (let s = 1; s <= 200 && !phases; s++) {
+    for (let p = 1; p <= 6; p++) {
+      if (eventFileSize(s, p) === file.length) [slots, phases] = [s, p];
+    }
+  }
+  if (!phases) {
     problems.push({ where: `file size ${file.length} fits no number of slots`, stored: -1, calculated: -1 });
+    return problems;
   }
   for (let k = 0; k < slots; k++) {
     const start = HEADER_SIZE + BLOCK_SIZE * k;
     check(`entry block ${k}`, start, start + BLOCK_SIZE - 2);
+  }
+  const victories = victoriesSectionSize(slots);
+  const results = resultsSectionLength(slots);
+  for (let p = 0; p < phases; p++) {
+    const at = HEADER_SIZE + BLOCK_SIZE * slots + p * (phaseTailSize(slots) + 2);
+    check(`phase ${p + 1} table of victories`, at, at + victories - 2);
+    check(`phase ${p + 1} results`, at + victories, at + victories + results);
   }
   return problems;
 }

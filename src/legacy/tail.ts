@@ -1,5 +1,7 @@
 import type { Id } from '../domain/types';
-import type { EventResult, PlacementRule } from '../scoring/types';
+import { calculateEvent } from '../scoring';
+import type { EventResult, PlacementRule, ScoringInput } from '../scoring/types';
+import type { PhaseCode } from './profiles';
 
 /**
  * What the application stores after an event's entries: the table of victories and the results in
@@ -79,4 +81,27 @@ export function tailFromResult(result: EventResult, entryIds: Id[], bMarkTenths:
     };
   });
   return { victories, rows };
+}
+
+/**
+ * The tables for each phase of a dance event: the compulsory dances alone (1), the free dance alone
+ * (3), and both together (6), each scored on its own. `bMarkTenths[i]` is entry i's total of the free
+ * dance B marks.
+ */
+export function phaseTails(
+  phases: PhaseCode[],
+  input: ScoringInput,
+  bMarkTenths: number[],
+): Record<PhaseCode, Tail> {
+  const tails = {} as Record<PhaseCode, Tail>;
+  for (const phase of phases) {
+    // A part scored alone is not factored; the combined phase uses the segments' factors.
+    const segments = input.segments
+      .filter((segment) => phase === 6 || segment.kind === (phase === 1 ? 'compulsory' : 'free'))
+      .map((segment) => (phase === 6 ? segment : { ...segment, factor: 100 }));
+    const result = calculateEvent({ ...input, segments });
+    const b = phase === 1 ? bMarkTenths.map(() => 0) : bMarkTenths;
+    tails[phase] = tailFromResult(result, input.entryIds, b);
+  }
+  return tails;
 }

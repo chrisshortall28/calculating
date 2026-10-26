@@ -5,12 +5,13 @@ import {
   eventFileSize,
   HEADER_SECTIONS,
   HEADER_SIZE,
+  phaseTailSize,
   RESULT_ROW_SIZE,
   resultsSectionLength,
   slotsFor,
   victoriesSectionSize,
 } from './format';
-import { DANCE_PROFILES, type DanceKind } from './profiles';
+import { DANCE_PROFILES, type DanceKind, type PhaseCode } from './profiles';
 import type { Tail } from './tail';
 
 export interface WriteEntry {
@@ -32,7 +33,13 @@ export interface WriteEvent {
   /** The application's dance numbers, one per compulsory dance (up to 4). */
   dances: number[];
   entries: WriteEntry[];
-  tail: Tail;
+  /**
+   * The free dance's weight in a combined event as a fraction (the application's own default is 1/2;
+   * 1/1 is what the CIPA manual says: no factoring in dance). Default 1/1.
+   */
+  freeFactor?: [numerator: number, denominator: number];
+  /** The tables of each phase the kind has (see profiles.ts). */
+  tails: Partial<Record<PhaseCode, Tail>>;
 }
 
 export const MAX_JUDGES = 9;
@@ -44,10 +51,10 @@ export const MAX_CLUB = 8;
 export function writeDanceEvent(event: WriteEvent): Uint8Array {
   const N = event.entries.length;
   const slots = slotsFor(N);
-  const size = eventFileSize(slots);
+  const profile = DANCE_PROFILES[event.kind];
+  const size = eventFileSize(slots, profile.phases.length);
   const file = new Uint8Array(size);
   const view = new DataView(file.buffer);
-  const profile = DANCE_PROFILES[event.kind];
   const text = (at: number, value: string, length: number) => {
     for (let i = 0; i < Math.min(value.length, length); i++) file[at + i] = value.charCodeAt(i) & 0xff;
   };
@@ -63,22 +70,32 @@ export function writeDanceEvent(event: WriteEvent): Uint8Array {
   file[1024] = event.judges.length;
   event.judges.forEach((judge, i) => text(1026 + 40 * i, judge, 40));
   text(1386, event.referee, 40);
+  const [factorNumerator, factorDenominator] = event.freeFactor ?? [1, 1];
+  if (event.kind !== 'compulsory') [file[1649], file[1650]] = [factorNumerator, factorDenominator];
   file[1551] = event.dances.length;
   event.dances.forEach((code, k) => (file[1806 + 4 * k] = code));
-  for (let i = 0; i < N; i++) file[profile.startOrderAt + i] = i + 1;
+  for (const at of profile.startOrderAt) for (let i = 0; i < N; i++) file[at + i] = i + 1;
 
   const tailAt = HEADER_SIZE + BLOCK_SIZE * slots;
   const victoriesSize = victoriesSectionSize(slots);
   const resultsLength = resultsSectionLength(slots);
+  // Where a phase's table of victories starts: later phases follow two zero bytes.
+  const victoriesAtPhase = (index: number) => tailAt + index * (phaseTailSize(slots) + 2);
   view.setUint32(260, size + 2, true);
   view.setUint16(289, 12 * slots, true);
   file[292] = slots;
-  const results = profile.descriptorAt;
-  view.setUint32(results, size - resultsLength, true);
-  view.setUint16(results + 4, resultsLength, true);
-  const victories = profile.descriptorAt + 128;
-  view.setUint32(victories, tailAt, true);
-  view.setUint16(victories + 4, victoriesSize, true);
+  // Each phase has two 16-byte descriptors in the header (results, then victories) saying where its tables are.
+  profile.phases.forEach((phase, index) => {
+    const results = 324 + 16 * (phase - 1);
+    const victories = results + 128;
+    const start = victoriesAtPhase(index);
+    view.setUint32(results, start + victoriesSize + 2, true);
+    view.setUint16(results + 4, resultsLength, true);
+    file[results + 8] = phase;
+    view.setUint32(victories, start, true);
+    view.setUint16(victories + 4, victoriesSize, true);
+    file[victories + 8] = phase;
+  });
   for (const [start, end] of HEADER_SECTIONS) view.setUint16(end, crc16(file.subarray(start, end)), true);
 
   // Entry blocks: the entry's number, its record, and the checksum.
@@ -97,59 +114,80 @@ export function writeDanceEvent(event: WriteEvent): Uint8Array {
       marks.forEach((m, j) => (file[at + 1 + j] = m));
       file[at + 10] = marks.reduce((a, m) => a + m, 0);
     });
-    // The sums of the judges' marks (thousandths), for the compulsory dances together and for the free dance.
-    const sums = (at: number, parts: (number[] | null)[]) => {
+    // The judges' sums (thousandths) for each phase: 45 bytes a phase from the record's offset 2161.
+    const sums = (phase: PhaseCode, parts: (number[] | null)[], free: (number[] | null)[] = []) => {
+      const at = record + 2161 + 45 * (phase - 1);
       file[at] = 1;
       let total = 0;
       for (let j = 0; j < judges; j++) {
-        const sum = parts.reduce((a, marks) => a + (marks?.[j] ?? 0), 0);
-        view.setUint32(at + 1 + 4 * j, sum * 100, true);
+        const marks = (list: (number[] | null)[]) => list.reduce((a, m) => a + (m?.[j] ?? 0), 0);
+        // In thousandths of a mark; the free dance counts at its factor in the combined sum.
+        const sum = Math.round(
+          100 * marks(parts) + (100 * marks(free) * factorNumerator) / factorDenominator,
+        );
+        view.setUint32(at + 1 + 4 * j, sum, true);
         total += sum;
       }
-      view.setUint32(at + 41, total * 100, true);
+      view.setUint32(at + 41, total, true);
     };
-    if (event.dances.length > 0) sums(record + 2161, entry.blocks.slice(0, event.dances.length));
-    if (event.kind === 'free') sums(record + 2251, [entry.blocks[6] ?? null, entry.blocks[7] ?? null]);
+    const compulsory = entry.blocks.slice(0, event.dances.length);
+    const free = [entry.blocks[6] ?? null, entry.blocks[7] ?? null];
+    for (const phase of profile.phases) {
+      if (phase === 1) sums(phase, compulsory);
+      else if (phase === 3) sums(phase, free);
+      else sums(phase, compulsory, free);
+    }
   });
   for (let r = 0; r < slots; r++) {
     const block = HEADER_SIZE + BLOCK_SIZE * r;
     view.setUint16(block + BLOCK_SIZE - 2, crc16(file.subarray(block, block + BLOCK_SIZE - 2)), true);
   }
 
-  // Tail: the table of victories, then the results in order of place.
-  // The phase the tables are for: 1 for compulsory dances, 3 for the free dance.
-  const phase = event.kind === 'free' ? 3 : 1;
-  [victoriesSize, phase, slots, slots, slots + 2, slots, slots].forEach((word, i) =>
-    view.setUint16(tailAt + 2 * i, word, true),
-  );
-  for (let r = 0; r < slots; r++) {
-    const row = tailAt + 16 + r * (slots + 2);
-    view.setUint16(row, r, true);
-    if (r < N) event.tail.victories[r]!.forEach((v, c) => (file[row + 2 + c] = v));
-  }
-  view.setUint16(tailAt + victoriesSize - 2, crc16(file.subarray(tailAt, tailAt + victoriesSize - 2)), true);
-  const resultsAt = tailAt + victoriesSize;
-  [0, resultsLength, phase, slots, slots, RESULT_ROW_SIZE, slots, slots, 1, N, 0, phase].forEach((word, i) =>
-    view.setUint16(resultsAt + 2 * i, word, true),
-  );
-  event.tail.rows.forEach((row, i) => {
-    const at = resultsAt + 34 + RESULT_ROW_SIZE * i;
-    [
-      row.entry,
-      row.ruleCode,
-      row.place,
-      row.majorityTenths,
-      row.separateTenths,
-      row.bMarkTenths,
-      0,
-      row.totalVictoriesTenths,
-      Math.floor(row.sum / 1000),
-      row.sum % 1000,
-      0,
-      0,
-      row.steps,
-    ].forEach((word, w) => view.setUint16(at + 2 * w, word, true));
+  // Tail: for each phase, the table of victories then the results in order of place.
+  profile.phases.forEach((phase, index) => {
+    const tail = event.tails[phase];
+    if (!tail) throw new Error(`No tables for phase ${phase}`);
+    const victoriesAt = victoriesAtPhase(index);
+    [victoriesSize, phase, slots, slots, slots + 2, slots, slots].forEach((word, i) =>
+      view.setUint16(victoriesAt + 2 * i, word, true),
+    );
+    for (let r = 0; r < slots; r++) {
+      const row = victoriesAt + 16 + r * (slots + 2);
+      view.setUint16(row, r, true);
+      if (r < N) tail.victories[r]!.forEach((v, c) => (file[row + 2 + c] = v));
+    }
+    view.setUint16(
+      victoriesAt + victoriesSize - 2,
+      crc16(file.subarray(victoriesAt, victoriesAt + victoriesSize - 2)),
+      true,
+    );
+    const resultsAt = victoriesAt + victoriesSize;
+    [0, resultsLength, phase, slots, slots, RESULT_ROW_SIZE, slots, slots, 1, N, 0, phase].forEach(
+      (word, i) => view.setUint16(resultsAt + 2 * i, word, true),
+    );
+    tail.rows.forEach((row, i) => {
+      const at = resultsAt + 34 + RESULT_ROW_SIZE * i;
+      [
+        row.entry,
+        row.ruleCode,
+        row.place,
+        row.majorityTenths,
+        row.separateTenths,
+        row.bMarkTenths,
+        0,
+        row.totalVictoriesTenths,
+        Math.floor(row.sum / 1000),
+        row.sum % 1000,
+        0,
+        0,
+        row.steps,
+      ].forEach((word, w) => view.setUint16(at + 2 * w, word, true));
+    });
+    view.setUint16(
+      resultsAt + resultsLength,
+      crc16(file.subarray(resultsAt, resultsAt + resultsLength)),
+      true,
+    );
   });
-  view.setUint16(resultsAt + resultsLength, crc16(file.subarray(resultsAt, resultsAt + resultsLength)), true);
   return file;
 }

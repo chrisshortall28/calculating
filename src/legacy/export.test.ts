@@ -163,17 +163,51 @@ describe('exportLegacyEvents', () => {
     );
     const five = file.events.find((e) => e.name === 'Five dances')!;
     five.compulsoryDanceIds.push(...['a', 'b', 'c'].map((id) => `extra-${id}`));
-    // Combined events (compulsory dances and a free dance) are not understood yet.
-    file.events.push({ ...file.events[0]!, id: 'combined', name: 'Combined', order: 9, hasFreeDance: true });
-    file.entries.push({ ...file.entries[0]!, id: 'combined-entry', eventId: 'combined' });
     const out = exportLegacyEvents(file);
     expect(out.files.map((f) => f.event)).toEqual(['Fine']);
     expect(Object.fromEntries(out.skipped.map((s) => [s.event, s.reason]))).toEqual({
       Figures: expect.stringContaining('figures events'),
       Empty: expect.stringContaining('no entries'),
       'Five dances': expect.stringContaining('more than 4 compulsory dances'),
-      Combined: expect.stringContaining('compulsory dances and a free dance'),
     });
+  });
+
+  it('exports an event with compulsory dances and a free dance, with the tables of its three phases', () => {
+    const file = podiumCompetition(
+      compulsory('Combined', {
+        entries: [
+          {
+            name: 'Anna Test',
+            club: 'ClubA',
+            blocks: { 0: [13, 13, 12], 1: [10, 12, 10], 6: [15, 16, 17], 7: [18, 22, 24] },
+          },
+          {
+            name: 'Bella Test',
+            club: 'ClubB',
+            blocks: { 0: [20, 20, 9], 1: [12, 15, 11], 6: [31, 32, 33], 7: [34, 35, 36] },
+          },
+        ],
+        hasLong: true,
+      }),
+    );
+    const out = exportLegacyEvents(file);
+    expect(out.skipped).toEqual([]);
+    expect(out.warnings).toEqual([
+      {
+        level: 'info',
+        message: expect.stringContaining(
+          '1 event has compulsory dances and a free dance. The free dance is exported with a factor of 1',
+        ),
+      },
+    ]);
+    const data = out.files[0]!.data;
+    expect(checksumProblems(data)).toEqual([]);
+    const back = readLegacyEvent('x', data);
+    expect(back).toMatchObject({ name: 'Combined', hasLong: true, compulsory: [{ code: 20 }, { code: 38 }] });
+    expect(back.entries.map((e) => e.blocks)).toEqual([
+      [[13, 13, 12], [10, 12, 10], null, null, null, null, [15, 16, 17], [18, 22, 24]],
+      [[20, 20, 9], [12, 15, 11], null, null, null, null, [31, 32, 33], [34, 35, 36]],
+    ]);
   });
 
   it('exports marks not entered yet as 0.0, with a warning', () => {
