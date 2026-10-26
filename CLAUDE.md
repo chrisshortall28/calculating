@@ -80,6 +80,14 @@ requirement; don't add steps or confirmations to mark entry.
 (`FORMAT_VERSION`). A change to the stored data model needs a matching schema (and possibly a
 format version) change there, plus a Dexie version bump in `db.ts`.
 
+**Legacy import.** `src/legacy/` (pure, no React or DB) reads Calculating For Windows event files
+(`DATAnnnB.ROL`, one per event; layout in `docs/legacy-format.md`) with `readLegacyFiles`, groups them into
+competitions and `convertLegacyCompetition` turns one into a `CompetitionFile` plus warnings, which
+`LegacyImportModal` (Import legacy button) reviews and writes with `importCompetition`. Only Solo Dance,
+Single and Pairs events convert. Tests build files with `src/legacy/fixtures.ts`; the real sample files are
+not in the repo (they hold real names), so `src/legacy/samples.test.ts` runs only when `LEGACY_SAMPLES`
+points at the folder holding `comp1`, `comp2`.
+
 **Offline.** `vite-plugin-pwa` precaches everything, including PDFs in `public/`
 (`workbox.globPatterns` in `vite.config.ts`); updates wait for the user to click Reload.
 
