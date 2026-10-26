@@ -1,4 +1,4 @@
-import { eventSegments, eventTieBreakMarks } from '../domain/segments';
+import { danceFreeFactor, eventSegments, eventTieBreakMarks } from '../domain/segments';
 import type { Dance } from '../domain/types';
 import type { CompetitionFile } from '../io/competitionFile';
 import { matchLegacyDance } from './dances';
@@ -59,7 +59,6 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
   const unnamedDances = new Map<string, Set<string>>(); // dance name -> events it is in
   const nearDances = new Map<string, string>(); // name typed -> the application's dance
   const unmarked = new Map<string, number>(); // event -> marks not entered yet
-  const combined: string[] = []; // events with compulsory dances and a free dance
 
   for (const event of events) {
     const skip = (reason: string) => result.skipped.push({ event: event.name, reason });
@@ -146,7 +145,6 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
         : 0,
     );
 
-    if (kind === 'combined') combined.push(event.name);
     result.files.push({
       name: `DATA${String(result.files.length + 1).padStart(3, '0')}B.ROL`,
       event: event.name,
@@ -160,6 +158,7 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
         kind,
         dances,
         entries: exported,
+        freeFactor: legacyFactor(danceFreeFactor(event.compulsoryDanceIds.length)),
         tails: phaseTails(
           DANCE_PROFILES[kind].phases,
           {
@@ -175,13 +174,15 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
     });
   }
   result.warnings.push(...summarise(shortened, unnamedDances, nearDances, unmarked));
-  if (combined.length > 0) {
-    result.warnings.push({
-      level: 'info',
-      message: `${combined.length === 1 ? '1 event has' : `${combined.length} events have`} compulsory dances and a free dance. The free dance is exported with a factor of 1, as in Podium (the CIPA manual has no factoring in dance); the application’s own default is 1/2, so change the factor there to match if you prefer.`,
-    });
-  }
   return result;
+}
+
+const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+
+/** A factor in hundredths as the application's fraction: 50 is 1/2, 100 is 1/1, 150 is 3/2. */
+export function legacyFactor(hundredths: number): [numerator: number, denominator: number] {
+  const divisor = gcd(hundredths, 100);
+  return [hundredths / divisor, 100 / divisor];
 }
 
 /** What a name was shortened to fit: its kind's wording and the application's limit. */

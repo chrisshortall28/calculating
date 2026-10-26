@@ -34,8 +34,9 @@ export interface WriteEvent {
   dances: number[];
   entries: WriteEntry[];
   /**
-   * The free dance's weight in a combined event as a fraction (the application's own default is 1/2;
-   * 1/1 is what the CIPA manual says: no factoring in dance). Default 1/1.
+   * The free dance's weight in a combined event as a fraction: half the number of compulsory dances
+   * (1/2 for one, 1/1 for two), which is the application's default and Podium's (`danceFreeFactor`).
+   * Default 1/1.
    */
   freeFactor?: [numerator: number, denominator: number];
   /** The tables of each phase the kind has (see profiles.ts). */

@@ -235,6 +235,28 @@ describe('convertLegacyCompetition', () => {
     expect(warnings.some((w) => w.event === 'Quartet' && w.message.startsWith('Skipped'))).toBe(true);
   });
 
+  it('warns when a combined event’s free dance factor differs from the one Podium uses', () => {
+    const marks = { 0: [10, 10, 10], 6: [20, 20, 20], 7: [22, 20, 22] };
+    const event = (compulsory: { code: number }[], long: [number, number]): FixtureEvent => ({
+      name: 'Combined',
+      compulsory,
+      hasLong: true,
+      factors: { long },
+      entries: [{ name: 'Ann', blocks: marks }],
+    });
+    const messages = (e: FixtureEvent) =>
+      convert(e)
+        .warnings.filter((w) => w.message.includes('free dance counts'))
+        .map((w) => w.message);
+    // The application's defaults: ½ with one compulsory dance, 1 with two.
+    expect(messages(event([{ code: 20 }], [1, 2]))).toEqual([]);
+    expect(messages(event([{ code: 20 }, { code: 38 }], [1, 1]))).toEqual([]);
+    // Anything else is the user's own setting there.
+    expect(messages(event([{ code: 20 }], [1, 1]))).toEqual([
+      'The free dance counts ×1 in the file but Podium uses ×0.5 with 1 compulsory dance, so the totals will differ from the application’s.',
+    ]);
+  });
+
   it('warns about unknown dances and unreadable dates', () => {
     const { file, warnings } = convert({
       name: 'X',

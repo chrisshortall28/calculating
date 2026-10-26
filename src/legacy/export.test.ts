@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { CompetitionFile } from '../io/competitionFile';
 import { convertLegacyCompetition, groupLegacyEvents } from './convert';
 import { legacyDanceCode, matchLegacyDance } from './dances';
-import { exportLegacyEvents, legacyDate } from './export';
+import { exportLegacyEvents, legacyDate, legacyFactor } from './export';
 import { buildEventFile, type FixtureEvent } from './fixtures';
 import { checksumProblems } from './format';
 import { readLegacyEvent } from './readEvent';
@@ -56,6 +56,18 @@ describe('matchLegacyDance', () => {
     '%j has no close dance',
     (name) => expect(matchLegacyDance(name)).toBeUndefined(),
   );
+});
+
+describe('legacyFactor', () => {
+  it('writes a factor in hundredths as the application’s fraction', () => {
+    expect([50, 100, 150, 200, 250].map(legacyFactor)).toEqual([
+      [1, 2],
+      [1, 1],
+      [3, 2],
+      [2, 1],
+      [5, 2],
+    ]);
+  });
 });
 
 describe('legacyDanceCode', () => {
@@ -136,6 +148,32 @@ describe('exportLegacyEvents', () => {
     ]);
   });
 
+  it('writes the free dance factor the application uses: ½ with one compulsory dance, 1 with two', () => {
+    const entries = [
+      {
+        name: 'Anna Test',
+        club: 'ClubA',
+        blocks: { 0: [13, 13, 12], 1: [10, 12, 10], 6: [15, 16, 17], 7: [18, 22, 24] },
+      },
+      {
+        name: 'Bella Test',
+        club: 'ClubB',
+        blocks: { 0: [20, 20, 9], 1: [12, 15, 11], 6: [31, 32, 33], 7: [34, 35, 36] },
+      },
+    ];
+    const factorOf = (event: FixtureEvent) => {
+      const data = exportLegacyEvents(podiumCompetition(event)).files[0]!.data;
+      return [data[1649], data[1650]];
+    };
+    expect(factorOf(compulsory('Two dances', { entries, hasLong: true }))).toEqual([1, 1]);
+    expect(factorOf(compulsory('One dance', { entries, hasLong: true, compulsory: [{ code: 20 }] }))).toEqual(
+      [1, 2],
+    );
+    expect(factorOf(compulsory('Free dance only', { entries, hasLong: true, compulsory: [] }))).toEqual([
+      1, 1,
+    ]);
+  });
+
   it('exports a team by its team name', () => {
     const file = podiumCompetition(compulsory('Super Fun Team'));
     file.entries[0] = {
@@ -192,14 +230,7 @@ describe('exportLegacyEvents', () => {
     );
     const out = exportLegacyEvents(file);
     expect(out.skipped).toEqual([]);
-    expect(out.warnings).toEqual([
-      {
-        level: 'info',
-        message: expect.stringContaining(
-          '1 event has compulsory dances and a free dance. The free dance is exported with a factor of 1',
-        ),
-      },
-    ]);
+    expect(out.warnings).toEqual([]);
     const data = out.files[0]!.data;
     expect(checksumProblems(data)).toEqual([]);
     const back = readLegacyEvent('x', data);

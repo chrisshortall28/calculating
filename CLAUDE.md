@@ -48,7 +48,7 @@ state store.
 the UI (`src/features/scoring/useEventResult.ts`) and, outside React, by the PDFs
 (`src/pdf/loadEvent.ts`). It implements the 2009 CIPA manual
 (`public/2009 - The CIPA System of Scoring.pdf`, rules on pages 4–13):
-judge sums over the whole event (each segment × its `factor`; sums are integers in thousandths,
+judge sums over the whole event (each segment × its `factor`, set by `eventSegments`: figures events' stored factors, and in a dance event with compulsory dances plus a free dance the free dance × half the number of compulsory dances, `danceFreeFactor`, as Calculating For Windows does, although the 2009 manual says dance is not factored; sums are integers in thousandths,
 `SUM_PER_POINT`) → table of victories (rules 2–3, equal sums split by `tieBreakMarks` in order: the
 free dance B mark; long then short programme B; none with figures) → majority victories (rule 4) →
 placing (rule 5) → ties broken by 6A/6B, 7B (once per tie-break mark), 7C, 7A, then shared (8). A rule that separates tied entries places all of them in its order; only entries

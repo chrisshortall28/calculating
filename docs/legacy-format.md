@@ -182,9 +182,10 @@ Verified with an event made in the application (1 compulsory dance, a free dance
   `2360 + 3072*s + phases*(s*s + 40*s + 54) + 2*(phases-1)` bytes.
 - Each entry's judge sums are 45 bytes apart by phase from record offset 2161: block
   `2161 + 45*(phase-1)`. The combined sum is the compulsory sums plus the free dance sums times the
-  **free dance factor**, kept in header bytes 1649 and 1650 as a fraction (the application's default for
-  a combined event is 1/2: its sample has 1650 = 2; the CIPA manual says there is no factoring in dance,
-  and so does Podium, so exported files say 1/1).
+  **free dance factor**, kept in header bytes 1649 and 1650 as a fraction. The application's defaults:
+  1 compulsory dance + free dance 1/2 (its sample has 1650 = 2), 2 dances + free dance 1/1, so half the
+  number of compulsory dances. Podium uses the same (`danceFreeFactor`), writes it on export and warns
+  on import when a file's factor is something else.
 - Phase tables are scored on their own: a part alone is unfactored; the B-mark total (results word 5) is
   the free dance B marks in any phase that includes the free dance.
 - In a newly made event the application fills the unused cells of the table of victories with 255; the

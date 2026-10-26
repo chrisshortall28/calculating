@@ -149,6 +149,54 @@ describe('table of victories and majority victories (rules 2–5)', () => {
   });
 });
 
+describe('the free dance factor (Calculating For Windows)', () => {
+  // One compulsory dance and a free dance; A is ahead in the dance, B in the free dance.
+  const marks = {
+    'cd:w': [
+      [9, 5],
+      [9, 5],
+      [9, 5],
+    ],
+    'fd:A': [
+      [5, 7.5],
+      [5, 7.5],
+      [5, 7.5],
+    ],
+    'fd:B': [
+      [5, 7.5],
+      [5, 7.5],
+      [5, 7.5],
+    ],
+  } as Partial<Record<SegmentKey, number[][]>>;
+  const places = (freeFactor: number) => {
+    const free: ScoringSegment = { ...FD, factor: freeFactor };
+    const r = calculateEvent(input(['A', 'B'], 3, [CD, free], marks));
+    return { places: r.overall.map((o) => [o.entryId, o.place]), sums: r.overall.map((o) => o.totalSum) };
+  };
+
+  it('weighs the free dance ×½ with one compulsory dance: A 9 + 5 beats B 5 + 7.5', () => {
+    // Per judge: A 9.0 + (5.0 + 5.0) × ½ = 14.0; B 5.0 + (7.5 + 7.5) × ½ = 12.5.
+    expect(places(50)).toEqual({
+      places: [
+        ['A', 1],
+        ['B', 2],
+      ],
+      sums: [42000, 37500],
+    });
+  });
+
+  it('weighs it ×1 with two compulsory dances, or equally when unfactored: B wins', () => {
+    // Per judge: A 9.0 + 10.0 = 19.0; B 5.0 + 15.0 = 20.0.
+    expect(places(100)).toEqual({
+      places: [
+        ['B', 1],
+        ['A', 2],
+      ],
+      sums: [60000, 57000],
+    });
+  });
+});
+
 describe('ties on majority victories (rules 6–8)', () => {
   it('places by majority victories, and shares the place when a cycle cannot be split', () => {
     // No tie: a beats b 2–1.
