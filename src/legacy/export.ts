@@ -54,9 +54,13 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
   );
   const events = [...file.events].sort((a, b) => a.order - b.order);
 
+  // What was changed to fit the application is summarised at the end, not listed one by one.
+  const shortened = new Map<ShortenedKind, Map<string, string>>();
+  const unnamedDances = new Map<string, Set<string>>(); // dance name -> events it is in
+  const nearDances = new Map<string, string>(); // name typed -> the application's dance
+  const unmarked = new Map<string, number>(); // event -> marks not entered yet
+
   for (const event of events) {
-    const note = (message: string, level: LegacyWarning['level'] = 'warning') =>
-      result.warnings.push({ level, event: event.name, message });
     const skip = (reason: string) => result.skipped.push({ event: event.name, reason });
     const unsupported = unsupportedReason(event);
     if (unsupported) {
@@ -80,26 +84,26 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
     }
 
     const kind = event.hasFreeDance ? 'free' : 'compulsory';
-    const truncate = (value: string, length: number, what: string) => {
-      if (value.length <= length) return value;
-      note(
-        `${what} “${value}” is longer than the application allows (${length} characters) and was cut short.`,
-      );
-      return value.slice(0, length);
+    const truncate = (value: string, kind: ShortenedKind) => {
+      const cut = value.slice(0, SHORTENED[kind].length);
+      if (cut !== value) {
+        if (!shortened.has(kind)) shortened.set(kind, new Map());
+        shortened.get(kind)!.set(value, cut);
+      }
+      return cut;
     };
 
     // Podium takes any dance name; the application only has its own list. A name that is a slip away
     // from one of them gets that dance, anything else the application's unnamed "Dance No n".
-    const dances = event.compulsoryDanceIds.map((id, position) => {
+    const dances = event.compulsoryDanceIds.map((id) => {
       const name = danceOf.get(id)?.name ?? '';
       const match = matchLegacyDance(name);
       if (!match) {
-        note(
-          `“${name}” is not one of the application’s dances, so it is exported as its unnamed “Dance No ${position + 1}”; the name is not kept.`,
-        );
+        if (!unnamedDances.has(name)) unnamedDances.set(name, new Set());
+        unnamedDances.get(name)!.add(event.name);
         return 0;
       }
-      if (!match.exact) note(`“${name}” was exported as the application’s “${match.name}”.`, 'info');
+      if (!match.exact) nearDances.set(name, match.name);
       return match.code;
     });
 
@@ -122,16 +126,12 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
         });
       }
       return {
-        name: truncate(name, MAX_NAME, 'The name'),
-        club: truncate(club, MAX_CLUB, 'The club'),
+        name: truncate(name, 'name'),
+        club: truncate(club, 'club'),
         blocks,
       };
     });
-    if (missing > 0) {
-      note(
-        `${missing} mark${missing === 1 ? ' is' : 's are'} not entered yet and were exported as 0.0; enter them again in the application.`,
-      );
-    }
+    if (missing > 0) unmarked.set(event.name, missing);
 
     const entryIds = entries.map((e) => e.id);
     const scored = calculateEvent({
@@ -151,16 +151,12 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
       name: `DATA${String(result.files.length + 1).padStart(3, '0')}B.ROL`,
       event: event.name,
       data: writeDanceEvent({
-        competition: truncate(file.competition.name, MAX_NAME, 'The competition name'),
-        venue: truncate(file.competition.venue, MAX_NAME, 'The venue'),
+        competition: truncate(file.competition.name, 'competition'),
+        venue: truncate(file.competition.venue, 'venue'),
         date: legacyDate(file.competition.date),
-        name: truncate(event.name, MAX_NAME, 'The event name'),
-        judges: event.judgeIds.map((id) =>
-          truncate(judgeName.get(id) ?? 'Judge', MAX_NAME, 'The judge’s name'),
-        ),
-        referee: event.refereeId
-          ? truncate(judgeName.get(event.refereeId) ?? '', MAX_NAME, 'The referee’s name')
-          : '',
+        name: truncate(event.name, 'event'),
+        judges: event.judgeIds.map((id) => truncate(judgeName.get(id) ?? 'Judge', 'judge')),
+        referee: event.refereeId ? truncate(judgeName.get(event.refereeId) ?? '', 'judge') : '',
         kind,
         dances,
         entries: exported,
@@ -168,7 +164,67 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
       }),
     });
   }
+  result.warnings.push(...summarise(shortened, unnamedDances, nearDances, unmarked));
   return result;
+}
+
+/** What a name was shortened to fit: its kind's wording and the application's limit. */
+const SHORTENED = {
+  club: { one: 'club name', many: 'club names', length: MAX_CLUB },
+  name: { one: 'skater or team name', many: 'skater or team names', length: MAX_NAME },
+  event: { one: 'event name', many: 'event names', length: MAX_NAME },
+  judge: { one: 'judge or referee name', many: 'judge or referee names', length: MAX_NAME },
+  competition: { one: 'competition name', many: 'competition names', length: MAX_NAME },
+  venue: { one: 'venue name', many: 'venue names', length: MAX_NAME },
+} as const;
+type ShortenedKind = keyof typeof SHORTENED;
+
+const quoted = (items: string[], most = 4) =>
+  items.length <= most
+    ? items.join(', ')
+    : `${items.slice(0, most).join(', ')} and ${items.length - most} more`;
+
+function summarise(
+  shortened: Map<ShortenedKind, Map<string, string>>,
+  unnamedDances: Map<string, Set<string>>,
+  nearDances: Map<string, string>,
+  unmarked: Map<string, number>,
+): LegacyWarning[] {
+  const warnings: LegacyWarning[] = [];
+  const add = (message: string, level: LegacyWarning['level'] = 'warning') =>
+    warnings.push({ level, message });
+  for (const kind of Object.keys(SHORTENED) as ShortenedKind[]) {
+    const names = shortened.get(kind);
+    if (!names) continue;
+    const { one, many, length } = SHORTENED[kind];
+    const [from, to] = [...names][0]!;
+    add(
+      `${names.size} ${names.size === 1 ? one : many} ${names.size === 1 ? 'was' : 'were'} shortened to fit the application’s ${length}-character limit (for example “${from}” became “${to}”).`,
+    );
+  }
+  if (unnamedDances.size > 0) {
+    const n = unnamedDances.size;
+    const list = [...unnamedDances].map(([name, inEvents]) =>
+      inEvents.size === 1 ? `“${name}”` : `“${name}” (${inEvents.size} events)`,
+    );
+    add(
+      `${n} ${n === 1 ? 'dance is' : 'dances are'} not in the application’s list, so ${n === 1 ? 'it was' : 'they were'} exported as its unnamed “Dance No n” (the name is not kept): ${quoted(list)}.`,
+    );
+  }
+  if (nearDances.size > 0) {
+    const n = nearDances.size;
+    add(
+      `${n} dance ${n === 1 ? 'name was' : 'names were'} matched to the nearest dance in the application: ${quoted([...nearDances].map(([typed, name]) => `“${typed}” as “${name}”`))}.`,
+      'info',
+    );
+  }
+  if (unmarked.size > 0) {
+    const total = [...unmarked.values()].reduce((a, n) => a + n, 0);
+    add(
+      `${total} mark${total === 1 ? '' : 's'} not entered yet ${total === 1 ? 'was' : 'were'} exported as 0.0, in ${unmarked.size === 1 ? 'event' : 'events'} ${quoted([...unmarked.keys()].map((name) => `“${name}”`))}; enter ${total === 1 ? 'it' : 'them'} in the application.`,
+    );
+  }
+  return warnings;
 }
 
 function unsupportedReason(event: FileEvent): string | undefined {

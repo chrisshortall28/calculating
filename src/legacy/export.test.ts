@@ -183,23 +183,32 @@ describe('exportLegacyEvents', () => {
     );
     const out = exportLegacyEvents(file);
     expect(out.files).toHaveLength(1);
-    expect(out.warnings.map((w) => w.message)).toEqual([
-      expect.stringMatching(/\d+ marks? (is|are) not entered yet/),
+    expect(out.warnings).toEqual([
+      {
+        level: 'warning',
+        message:
+          '2 marks not entered yet were exported as 0.0, in event “Partly marked”; enter them in the application.',
+      },
     ]);
     expect(checksumProblems(out.files[0]!.data)).toEqual([]);
   });
 
   it('cuts over-long text short, with a warning', () => {
-    const long = 'A very long club name';
     const file = podiumCompetition(
       compulsory('Long', {
         entries: [{ name: 'Ann', club: 'X', blocks: { 0: [10, 10, 10], 1: [10, 10, 10] } }],
       }),
     );
-    file.skaters[0]!.club = long;
+    file.skaters[0]!.club = 'A very long club name';
     const out = exportLegacyEvents(file);
     expect(readLegacyEvent('x', out.files[0]!.data).entries[0]!.club).toBe('A very l');
-    expect(out.warnings[0]!.message).toContain('longer than the application allows');
+    expect(out.warnings).toEqual([
+      {
+        level: 'warning',
+        message:
+          '1 club name was shortened to fit the application’s 8-character limit (for example “A very long club name” became “A very l”).',
+      },
+    ]);
   });
 
   it('exports a dance the application does not have as its unnamed dance, with a warning', () => {
@@ -207,8 +216,13 @@ describe('exportLegacyEvents', () => {
     file.dances[0]!.name = 'Bachata';
     const out = exportLegacyEvents(file);
     expect(readLegacyEvent('x', out.files[0]!.data).compulsory.map((c) => c.code)).toEqual([0, 38]);
-    expect(out.warnings[0]!.message).toContain('“Bachata” is not one of the application’s dances');
-    expect(out.warnings[0]!.message).toContain('“Dance No 1”');
+    expect(out.warnings).toEqual([
+      {
+        level: 'warning',
+        message:
+          '1 dance is not in the application’s list, so it was exported as its unnamed “Dance No n” (the name is not kept): “Bachata”.',
+      },
+    ]);
   });
 
   it('exports a mistyped dance name as the dance it is a slip away from, with a note', () => {
@@ -219,9 +233,24 @@ describe('exportLegacyEvents', () => {
     expect(out.warnings).toEqual([
       {
         level: 'info',
-        event: 'Typo',
-        message: '“Cannasta Tango” was exported as the application’s “Canasta Tango”.',
+        message:
+          '1 dance name was matched to the nearest dance in the application: “Cannasta Tango” as “Canasta Tango”.',
       },
+    ]);
+  });
+
+  it('summarises the same kind of change across events instead of repeating it', () => {
+    const file = podiumCompetition(compulsory('A'), compulsory('B'), compulsory('C'));
+    file.skaters[0]!.club = 'Long club number one';
+    file.skaters[1]!.club = 'Long club number two';
+    file.events[0]!.name = 'An event name that is far too long to fit in forty characters';
+    file.dances[0]!.name = 'Bachata'; // used by all three events
+    const out = exportLegacyEvents(file);
+    expect(out.files).toHaveLength(3);
+    expect(out.warnings.map((w) => w.message)).toEqual([
+      '2 club names were shortened to fit the application’s 8-character limit (for example “Long club number one” became “Long clu”).',
+      '1 event name was shortened to fit the application’s 40-character limit (for example “An event name that is far too long to fit in forty characters” became “An event name that is far too long to fi”).',
+      '1 dance is not in the application’s list, so it was exported as its unnamed “Dance No n” (the name is not kept): “Bachata” (3 events).',
     ]);
   });
 });
