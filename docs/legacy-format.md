@@ -75,22 +75,12 @@ have found: the factors (weights) of an event, and the entry type within dance e
 
 ### Dance codes
 
-Compulsory dances are stored as a numeric code, not a name. Observed (checked against `roller.tlg`):
-
-| Code | Dance | Code | Dance |
-| --- | --- | --- | --- |
-| 1 | Kleiner Waltz | 28 | Canasta Tango |
-| 7 | 14 Step | 29 | Olympic Foxtrot |
-| 9 | Harris Tango | 30 | Glide Waltz |
-| 10 | Rocker Foxtrot | 36 | Kent Tango |
-| 14 | Argentine Tango | 38 | City Blues |
-| 15 | Quickstep | 47 | Roller Samba |
-| 20 | Siesta Tango | 48 | Easy Paso |
-| 24 | Denver Shuffle | 0 | "Dance No 1" / "Dance No 2" (generic) |
-| 27 | Skaters March | | |
-
-This is only the codes the sample uses. The full table lives in the application; a code we do not
-know is imported as a dance named `Dance <code>` with a warning.
+Compulsory dances are stored as their number (1 to 51) in the application's own dance list; code 0 is
+the unnamed "Dance No 1", "Dance No 2" placeholder. The user supplied the full list, and it agrees
+with all 16 numbers cross-checked against `roller.tlg`. The table lives in `src/legacy/dances.ts`.
+A number beyond 51 imports as a dance named `Dance <number>` with a warning. Three names in the
+list look like typos or are unsure ("Colleigate", "Tango Delanco" next to "Tango Delanca", and
+"Gregory Rhumba" marked "TBC" by the user); they are kept as given.
 
 ## Entry records (from offset 2362, stride 3072)
 
@@ -154,8 +144,7 @@ the A-versus-B order within the short and long programmes is not yet confirmed a
 1. Which of the free dance A and B marks feeds the tie-break in the legacy app? Podium uses B
    (the legacy app calls them A and B too, so the mapping is presumably direct).
 2. Compare Podium's calculation with the `1A` placings once the importer exists (done: see above).
-3. The full dance code table (the user will provide it). Figure codes map 1:1, in order, to the
-   figure catalogue.
+3. (Done) The full dance list.
 4. Entry type within dance events (solo/duo/couples/team) is not stored; infer it from the name
    (` / `, a team name) and let the user correct it after import.
 5. Factors (weights) for figures, short and long programmes: where are they stored, and what are

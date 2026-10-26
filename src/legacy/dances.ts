@@ -1,30 +1,65 @@
 /**
- * The compulsory dances Calculating For Windows numbers. Only the codes seen in sample files are
- * known so far (checked against the application's log); any other code imports as "Dance <code>".
- * Spellings follow Podium's own dance list where they differ ("14 Step" is "Fourteen Step").
+ * Calculating For Windows' numbered list of compulsory dances (1 to 51). A dance is stored in an
+ * event file as its number. Spellings follow Podium's own dance list where they differ ("14 Step"
+ * is "Fourteen Step"); the rest are as the application names them.
  */
-const DANCE_NAMES: Record<number, string> = {
-  1: 'Kleiner Waltz',
-  7: 'Fourteen Step',
-  9: 'Harris Tango',
-  10: 'Rocker Foxtrot',
-  14: 'Argentine Tango',
-  15: 'Quickstep',
-  20: 'Siesta Tango',
-  24: 'Denver Shuffle',
-  27: 'Skaters March',
-  28: 'Canasta Tango',
-  29: 'Olympic Foxtrot',
-  30: 'Glide Waltz',
-  36: 'Kent Tango',
-  38: 'City Blues',
-  47: 'Roller Samba',
-  48: 'Easy Paso',
-};
+const DANCE_NAMES = [
+  'Kleiner Waltz',
+  'Swing Foxtrot',
+  'March',
+  'Palais Glide',
+  'European Waltz',
+  'Keats Foxtrot',
+  'Fourteen Step',
+  'Italian Foxtrot',
+  'Harris Tango',
+  'Rocker Foxtrot',
+  'Blues',
+  'Kilian',
+  'Starlight Waltz',
+  'Argentine Tango',
+  'Quickstep',
+  'Viennese Waltz',
+  'Paso Doble',
+  'Westminster Waltz',
+  'Iceland Tango',
+  'Siesta Tango',
+  'Association Waltz',
+  'Imperial Tango',
+  'Tudor Waltz',
+  'Denver Shuffle',
+  'Flirtation Waltz',
+  'Dench Blues',
+  'Skaters March',
+  'Canasta Tango',
+  'Olympic Foxtrot',
+  'Glide Waltz',
+  'Country Polka',
+  'Rhythm Blues',
+  'Federation Foxtrot',
+  'Terenzi Waltz',
+  'Fourteen Step Plus',
+  'Kent Tango',
+  'Carlos Tango',
+  'City Blues',
+  'Castel March',
+  'Tango Delanco',
+  'Gregory Rhumba',
+  'Colleigate',
+  'Tango Delanca',
+  'Kinder Waltz',
+  'La Vista Cha Cha',
+  'Werner Tango',
+  'Roller Samba',
+  'Easy Paso',
+  'Cha Cha Patin',
+  'Golden Samba',
+  'Midnight Blues',
+];
 
 /** Code 0 is the application's unnamed "Dance No 1", "Dance No 2" placeholder, numbered by position. */
 export function legacyDanceName(code: number, position: number): { name: string; known: boolean } {
   if (code === 0) return { name: `Dance No ${position + 1}`, known: true };
-  const name = DANCE_NAMES[code];
+  const name = DANCE_NAMES[code - 1];
   return name ? { name, known: true } : { name: `Dance ${code}`, known: false };
 }

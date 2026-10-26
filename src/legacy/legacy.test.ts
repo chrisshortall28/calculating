@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../db/db';
 import { importCompetition, parseCompetitionFile } from '../io/competitionFile';
 import { convertLegacyCompetition, groupLegacyEvents, guessDanceEntryType, parseLegacyDate } from './convert';
+import { legacyDanceName } from './dances';
 import { buildEventFile, type FixtureEvent } from './fixtures';
 import { LegacyFormatError, readLegacyEvent } from './readEvent';
 
@@ -67,6 +68,28 @@ describe('readLegacyEvent', () => {
     });
     expect(e.entries[0]!.blocks[0]).toEqual([10, 11, 12, 13, 14]);
     expect(e.entries[0]!.blocks[1]).toBeNull();
+  });
+});
+
+describe('legacyDanceName', () => {
+  it('names the dances by their number in the application’s list', () => {
+    expect([1, 7, 20, 28, 38, 47, 48, 51].map((code) => legacyDanceName(code, 0))).toEqual(
+      [
+        'Kleiner Waltz',
+        'Fourteen Step',
+        'Siesta Tango',
+        'Canasta Tango',
+        'City Blues',
+        'Roller Samba',
+        'Easy Paso',
+        'Midnight Blues',
+      ].map((name) => ({ name, known: true })),
+    );
+  });
+
+  it('numbers the unnamed dance 0 by position and flags a number beyond the list', () => {
+    expect(legacyDanceName(0, 1)).toEqual({ name: 'Dance No 2', known: true });
+    expect(legacyDanceName(52, 0)).toEqual({ name: 'Dance 52', known: false });
   });
 });
 
