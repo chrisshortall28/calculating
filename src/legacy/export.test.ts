@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { CompetitionFile } from '../io/competitionFile';
 import { convertLegacyCompetition, groupLegacyEvents } from './convert';
-import { legacyDanceCode } from './dances';
+import { legacyDanceCode, matchLegacyDance } from './dances';
 import { exportLegacyEvents, legacyDate } from './export';
 import { buildEventFile, type FixtureEvent } from './fixtures';
 import { checksumProblems } from './format';
@@ -40,6 +40,22 @@ describe('legacyDate', () => {
     ['2026-03-23', '23rd March 2026'],
     ['', ''],
   ])('%s', (iso, text) => expect(legacyDate(iso)).toBe(text));
+});
+
+describe('matchLegacyDance', () => {
+  it.each([
+    ['Canasta Tango', 28, true],
+    ['canasta  tango', 28, true],
+    ['14 Step', 7, true],
+    ['Cannasta Tango', 28, false],
+    ['Siesta Tangoo', 20, false],
+    ['Viennese Walz', 16, false],
+  ])('%s is dance %i', (name, code, exact) => expect(matchLegacyDance(name)).toMatchObject({ code, exact }));
+
+  it.each(['Bachata', 'Sweet Tango', 'And Foxtrot', 'Tango', 'Blue', 'Waltz', ''])(
+    '%j has no close dance',
+    (name) => expect(matchLegacyDance(name)).toBeUndefined(),
+  );
 });
 
 describe('legacyDanceCode', () => {
@@ -186,12 +202,27 @@ describe('exportLegacyEvents', () => {
     expect(out.warnings[0]!.message).toContain('longer than the application allows');
   });
 
-  it('exports an unknown dance as an unnamed dance, with a warning', () => {
+  it('exports a dance the application does not have as its unnamed dance, with a warning', () => {
     const file = podiumCompetition(compulsory('Odd'));
     file.dances[0]!.name = 'Bachata';
     const out = exportLegacyEvents(file);
     expect(readLegacyEvent('x', out.files[0]!.data).compulsory.map((c) => c.code)).toEqual([0, 38]);
     expect(out.warnings[0]!.message).toContain('“Bachata” is not one of the application’s dances');
+    expect(out.warnings[0]!.message).toContain('“Dance No 1”');
+  });
+
+  it('exports a mistyped dance name as the dance it is a slip away from, with a note', () => {
+    const file = podiumCompetition(compulsory('Typo'));
+    file.dances[0]!.name = 'Cannasta Tango';
+    const out = exportLegacyEvents(file);
+    expect(readLegacyEvent('x', out.files[0]!.data).compulsory.map((c) => c.code)).toEqual([28, 38]);
+    expect(out.warnings).toEqual([
+      {
+        level: 'info',
+        event: 'Typo',
+        message: '“Cannasta Tango” was exported as the application’s “Canasta Tango”.',
+      },
+    ]);
   });
 });
 

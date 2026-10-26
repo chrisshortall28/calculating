@@ -2,7 +2,7 @@ import { eventSegments, eventTieBreakMarks } from '../domain/segments';
 import type { Dance } from '../domain/types';
 import type { CompetitionFile } from '../io/competitionFile';
 import { calculateEvent } from '../scoring';
-import { legacyDanceCode } from './dances';
+import { matchLegacyDance } from './dances';
 import { tailFromResult } from './tail';
 import type { LegacyWarning } from './types';
 import { MAX_CLUB, MAX_DANCES, MAX_JUDGES, MAX_NAME, writeDanceEvent, type WriteEntry } from './write';
@@ -88,15 +88,19 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
       return value.slice(0, length);
     };
 
-    const dances = event.compulsoryDanceIds.map((id) => {
+    // Podium takes any dance name; the application only has its own list. A name that is a slip away
+    // from one of them gets that dance, anything else the application's unnamed "Dance No n".
+    const dances = event.compulsoryDanceIds.map((id, position) => {
       const name = danceOf.get(id)?.name ?? '';
-      const code = legacyDanceCode(name);
-      if (code === undefined) {
+      const match = matchLegacyDance(name);
+      if (!match) {
         note(
-          `“${name}” is not one of the application’s dances, so it is exported as an unnamed dance (rename it there).`,
+          `“${name}” is not one of the application’s dances, so it is exported as its unnamed “Dance No ${position + 1}”; the name is not kept.`,
         );
+        return 0;
       }
-      return code ?? 0;
+      if (!match.exact) note(`“${name}” was exported as the application’s “${match.name}”.`, 'info');
+      return match.code;
     });
 
     // Block k of an entry: compulsory dance k, or (free dance) A in block 6 and B in block 7.

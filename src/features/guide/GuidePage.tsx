@@ -209,8 +209,10 @@ export function GuidePage() {
             </Text>
             <Text c="dimmed" size="sm">
               Only dance events with compulsory dances or a free dance can be exported so far; figures events
-              and events with both compulsory dances and a free dance are listed as not exported. Marks that
-              have not been entered yet are exported as 0.0. Check an exported competition in Calculating For
+              and events with both compulsory dances and a free dance are listed as not exported. A dance the
+              old program does not have (it keeps its own list of 51) is exported as its unnamed “Dance No 1”,
+              “Dance No 2” and so on, unless the name is a slip away from one of its dances. Marks that have
+              not been entered yet are exported as 0.0. Check an exported competition in Calculating For
               Windows before relying on it.
             </Text>
             <Text c="dimmed" size="sm">
