@@ -8,8 +8,8 @@ export interface LegacyWarning {
   message: string;
 }
 
-/** The legacy "Type" of an event: only Solo Dance, Single and Pairs events are imported. */
-export type LegacyEventKind = 'dance' | 'single' | 'pairs' | 'unsupported';
+/** The legacy "Type" of an event: only Solo Dance, Couples Dance, Single and Pairs events are imported. */
+export type LegacyEventKind = 'dance' | 'couples' | 'single' | 'pairs' | 'unsupported';
 
 /** A compulsory dance (dance events, `code` is the legacy dance number) or figure (`code` is the figure number). */
 export interface LegacyCompulsory {
@@ -31,7 +31,7 @@ export type LegacyBlocks = (number[] | null)[];
 
 export interface LegacyEntry {
   name: string;
-  /** The lady's name in a pairs event. */
+  /** The second skater's name in a pairs or couples event. */
   partner: string;
   club: string;
   blocks: LegacyBlocks;
@@ -41,7 +41,7 @@ export interface LegacyEvent {
   fileName: string;
   competition: { name: string; venue: string; date: string };
   name: string;
-  /** The raw event type byte (8 = Solo Dance, 0 = Single, 1 = Pairs). */
+  /** The raw event type byte (8 = Solo Dance, 7 = Couples Dance, 0 = Single, 1 = Pairs). */
   typeCode: number;
   kind: LegacyEventKind;
   judges: string[];

@@ -192,11 +192,11 @@ export function GuidePage() {
               </List.Item>
             </List>
             <Text c="dimmed" size="sm">
-              Solo Dance, Single and Pairs events are imported, with their judges, skaters and marks; other
-              event types (Quartets, Precision, Show) are skipped. The files do not say whether a dance event
-              is for solos, duos, couples or teams, so Podium guesses from the names: check the type of each
-              dance event. Podium works out the placings itself, so they should match the old program’s
-              results.
+              Solo Dance, Couples Dance, Single and Pairs events are imported, with their judges, skaters and
+              marks; other event types (Quartets, Precision, Show) are skipped. The files do not say whether a
+              Solo Dance event is for solos, duos, couples or teams, so Podium guesses from the names: check
+              the type of each one. Podium works out the placings itself, so they should match the old
+              program’s results.
             </Text>
             <Text fw={700} mt="sm">
               Export for Calculating For Windows

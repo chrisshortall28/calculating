@@ -199,7 +199,16 @@ describe.skipIf(!existsSync(`${samples}/comp1`))('rebuilding real event files', 
 const combinedSample = (() => {
   if (process.env.LEGACY_COMBINED_SAMPLE) return process.env.LEGACY_COMBINED_SAMPLE;
   const dir = `${samples}/comp3`;
-  const file = existsSync(dir) ? readdirSync(dir).find((f) => /.ROL$/i.test(f)) : undefined;
+  // comp3 may also hold other kinds of event (Couples Dance), so take the first Solo Dance one with a free dance.
+  const file = existsSync(dir)
+    ? readdirSync(dir)
+        .filter((f) => /\.ROL$/i.test(f))
+        .sort()
+        .find((f) => {
+          const e = readLegacyEvent(f, new Uint8Array(readFileSync(`${dir}/${f}`)));
+          return e.kind === 'dance' && e.compulsory.length > 0 && e.hasLong;
+        })
+    : undefined;
   return file ? `${dir}/${file}` : undefined;
 })();
 describe.skipIf(!combinedSample || !existsSync(combinedSample))(

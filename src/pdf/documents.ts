@@ -80,6 +80,9 @@ interface Official {
 /** Most dances one landscape sheet can hold while leaving the Comments columns room to write in. */
 const DANCES_PER_SHEET = 4;
 
+/** Entries one landscape sheet lists in a column; a single dance's sheet with more takes a second column. */
+const ROWS_PER_COLUMN = 12;
+
 /** Splits the dances into as few sheets as fit, sharing them out evenly (5 dances → 3 + 2). */
 function sheetParts<T>(segments: T[]): T[][] {
   const count = Math.ceil(segments.length / DANCES_PER_SHEET);
@@ -99,6 +102,10 @@ function judgeSheetPage(
     count: number;
     /** Heading subtitle; defaults to "Sheet 1 of 2" when the event takes several sheets. */ label?: string;
     /** Show Total points and Place (default: on the last sheet). */ totals?: boolean;
+    /** The entries this sheet lists (default: all); the rest of a long event continues on another sheet. */
+    rows?: [from: number, to: number];
+    /** Lay a long list out as two side-by-side tables, the overflow on the right. */
+    twoColumns?: boolean;
   },
 ): Content[] {
   const MARK_WIDTH = 38;
@@ -117,7 +124,7 @@ function judgeSheetPage(
   }));
   const subCols = columns.flatMap((c) => c.subs);
 
-  const headRow1: TableCell[] = [
+  const headRow1 = (): TableCell[] => [
     { text: '#', style: 'th', rowSpan: 2 },
     { text: entryHeading[d.event.entryType], style: 'th', rowSpan: 2, alignment: 'left' },
     ...columns.flatMap((c) => {
@@ -132,36 +139,43 @@ function judgeSheetPage(
         ]
       : []),
   ];
-  const headRow2: TableCell[] = [
+  const headRow2 = (): TableCell[] => [
     {},
     {},
     ...subCols.map((s) => ({ text: s.label, style: 'th' })),
     ...(isLast ? [{}, {}] : []),
   ];
-  const body: TableCell[][] = [
-    headRow1,
-    headRow2,
-    ...d.rows.map((r, i) => [
-      {
-        text: String(i + 1),
-        alignment: 'center' as const,
-        margin: [0, 9, 0, 9] as [number, number, number, number],
-      },
-      {
-        stack: [
-          { text: r.name, bold: true },
-          { text: [r.club, r.members].filter(Boolean).join(' · '), style: 'small' },
-        ],
-      },
-      // With a rotating start order the rows keep their order; the first skater's Comments box says so.
-      ...subCols.map((c) =>
-        c.segmentId !== undefined && d.firstSkaters.get(c.segmentId) === i
-          ? { text: 'Skates First', style: 'small', bold: true }
-          : { text: '' },
-      ),
-      ...(isLast ? [{ text: '' }, { text: '' }] : []),
-    ]),
+  const [from, to] = part.rows ?? [0, d.rows.length];
+  const entryRow = (r: EventData['rows'][number], i: number): TableCell[] => [
+    {
+      text: String(i + 1),
+      alignment: 'center' as const,
+      margin: [0, 9, 0, 9] as [number, number, number, number],
+    },
+    {
+      stack: [
+        { text: r.name, bold: true },
+        { text: [r.club, r.members].filter(Boolean).join(' · '), style: 'small' },
+      ],
+    },
+    // With a rotating start order the rows keep their order; the first skater's Comments box says so.
+    ...subCols.map((c) =>
+      c.segmentId !== undefined && d.firstSkaters.get(c.segmentId) === i
+        ? { text: 'Skates First', style: 'small', bold: true }
+        : { text: '' },
+    ),
+    ...(isLast ? [{ text: '' }, { text: '' }] : []),
   ];
+  const entryTable = (start: number, end: number, nameWidth: number): Content => ({
+    table: {
+      headerRows: 2,
+      dontBreakRows: true,
+      // The Comments columns share the spare width.
+      widths: [18, nameWidth, ...subCols.map((s) => s.width), ...(isLast ? [44, 34] : [])],
+      body: [headRow1(), headRow2(), ...d.rows.slice(start, end).map((r, i) => entryRow(r, start + i))],
+    },
+  });
+  const split = part.twoColumns && to - from > ROWS_PER_COLUMN ? from + ROWS_PER_COLUMN : undefined;
 
   return [
     ...header(d, partLabel),
@@ -181,15 +195,12 @@ function judgeSheetPage(
       ],
       margin: [0, 0, 0, 8],
     },
-    {
-      table: {
-        headerRows: 2,
-        dontBreakRows: true,
-        // The Comments columns share the spare width.
-        widths: [18, 130, ...subCols.map((s) => s.width), ...(isLast ? [44, 34] : [])],
-        body,
-      },
-    },
+    split === undefined
+      ? entryTable(from, to, 130)
+      : {
+          columns: [entryTable(from, split, 130), entryTable(split, to, 130)],
+          columnGap: 14,
+        },
   ];
 }
 
@@ -197,7 +208,13 @@ function judgeSheetPage(
  * One sheet per judge on the panel (or `blankCount` unnamed sheets if no judges are assigned
  * yet), followed by a sheet for the referee (unnamed if no referee is assigned yet).
  */
-export function judgeSheets(events: EventData[], blankCount = 3, perDance = false): Content[] {
+export function judgeSheets(
+  events: EventData[],
+  blankCount = 3,
+  perDance = false,
+  /** Only the free parts (free dance, or the programmes), one sheet each, with no totals. */
+  freeOnly = false,
+): Content[] {
   const pages: Content[][] = [];
   for (const d of events) {
     if (d.segments.length === 0) continue;
@@ -206,21 +223,27 @@ export function judgeSheets(events: EventData[], blankCount = 3, perDance = fals
       : Array.from({ length: blankCount }, (_, i) => ({ role: 'Judge', label: `J${i + 1}`, name: '' }));
     officials.push({ role: 'Referee', label: '', name: '' });
     const compulsory = d.segments.filter((s) => s.kind === 'compulsory').length;
-    if (perDance) {
+    if (perDance || freeOnly) {
       // One sheet per dance, figure or programme, with no totals (CIPA places only the whole event).
       for (const o of officials)
         d.segments.forEach((seg, i) => {
+          if (freeOnly && seg.kind !== 'free') return;
           // Compulsory parts say which one they are of the event, so the judge can't mix the sheets up.
           const noun = d.event.discipline === 'figures' ? 'Figure' : 'Dance';
           const number = seg.kind === 'compulsory' ? ` (${noun} ${i + 1} of ${compulsory})` : '';
-          pages.push(
-            judgeSheetPage(d, o, [seg], {
-              index: 0,
-              count: 1,
-              label: `${seg.name}${number}`,
-              totals: false,
-            }),
-          );
+          // Two columns hold twice as many entries; a longer event carries on to another sheet.
+          const sheets = Math.ceil(d.rows.length / (2 * ROWS_PER_COLUMN)) || 1;
+          for (let s = 0; s < sheets; s++)
+            pages.push(
+              judgeSheetPage(d, o, [seg], {
+                index: 0,
+                count: 1,
+                label: `${seg.name}${number}${sheets > 1 ? ` · Sheet ${s + 1} of ${sheets}` : ''}`,
+                totals: false,
+                rows: [s * 2 * ROWS_PER_COLUMN, Math.min(d.rows.length, (s + 1) * 2 * ROWS_PER_COLUMN)],
+                twoColumns: true,
+              }),
+            );
         });
       continue;
     }
@@ -536,8 +559,12 @@ export function resultsDocument(
 }
 
 /** Judges' sheets are handed out loose, one or more per official, so they carry no page numbers. */
-export function judgeSheetsDocument(events: EventData[], perDance = false): TDocumentDefinitions {
-  return document(judgeSheets(events, 3, perDance), true, undefined, false);
+export function judgeSheetsDocument(
+  events: EventData[],
+  perDance = false,
+  freeOnly = false,
+): TDocumentDefinitions {
+  return document(judgeSheets(events, 3, perDance, freeOnly), true, undefined, false);
 }
 
 /** `pageHeader` is repeated at the top of every page. */

@@ -115,3 +115,24 @@ describe.skipIf(!have('comp2'))('legacy sample events (comp2)', () => {
     expect(file.marks.filter((m) => m.eventId === e.id).map((m) => m.tenths)).toEqual([10, 11, 12, 13, 14]);
   });
 });
+
+describe.skipIf(!have('comp3'))('legacy Couples Dance events (comp3)', () => {
+  const [conversion] = have('comp3') ? load('comp3') : [];
+  const file = conversion?.file as CompetitionFile;
+
+  it('imports them as couples events with both skaters and their dances', () => {
+    expect(conversion!.skippedEvents).toEqual([]);
+    expect(() => parseCompetitionFile(JSON.parse(JSON.stringify(file)))).not.toThrow();
+    const masters = file.events.find((e) => e.name === 'Masters Couples Dance')!;
+    expect(masters).toMatchObject({ entryType: 'couples', discipline: 'dance', hasFreeDance: false });
+    expect(masters.compulsoryDanceIds.map((id) => file.dances.find((d) => d.id === id)!.name)).toEqual([
+      'Glide Waltz',
+      'City Blues',
+    ]);
+    const entries = file.entries.filter((e) => e.eventId === masters.id);
+    expect(entries).toHaveLength(3);
+    const names = (entryIndex: number) =>
+      entries[entryIndex]!.skaterIds.map((id) => file.skaters.find((s) => s.id === id)!.name);
+    expect(names(0)).toEqual(['Anita Barnes', 'Graham Harvey']);
+  });
+});
