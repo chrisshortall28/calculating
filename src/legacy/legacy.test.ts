@@ -2,15 +2,25 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../db/db';
 import { importCompetition, parseCompetitionFile } from '../io/competitionFile';
-import { convertLegacyCompetition, groupLegacyEvents, guessDanceEntryType, parseLegacyDate } from './convert';
+import {
+  convertLegacyCompetition,
+  groupLegacyEvents,
+  guessDanceEntryType,
+  parseLegacyDate,
+  type LegacyChoices,
+} from './convert';
 import { legacyDanceName } from './dances';
 import { buildEventFile, type FixtureEvent } from './fixtures';
 import { LegacyFormatError, readLegacyEvent } from './readEvent';
 import { readLegacyFiles } from './readFiles';
 
 const read = (e: FixtureEvent, fileName = 'DATA001B.ROL') => readLegacyEvent(fileName, buildEventFile(e));
-const convert = (...events: FixtureEvent[]) =>
-  convertLegacyCompetition(groupLegacyEvents(events.map((e, i) => read(e, `DATA00${i + 1}B.ROL`)))[0]!);
+const convertWith = (choices: LegacyChoices, ...events: FixtureEvent[]) =>
+  convertLegacyCompetition(
+    groupLegacyEvents(events.map((e, i) => read(e, `DATA00${i + 1}B.ROL`)))[0]!,
+    choices,
+  );
+const convert = (...events: FixtureEvent[]) => convertWith({}, ...events);
 
 describe('readLegacyEvent', () => {
   it('rejects files that are not event files', () => {
@@ -268,6 +278,33 @@ describe('convertLegacyCompetition', () => {
       expect.stringContaining('could not be read'),
       expect.stringContaining('Dance number 99 is not known'),
     ]);
+  });
+
+  it('reports what the files do not say and uses the user’s answers instead of guessing', () => {
+    const event = {
+      name: 'X',
+      date: 'Date',
+      compulsory: [{ code: 99 }],
+      entries: [{ name: 'Ann / Bo', blocks: { 0: [10, 11, 12] } }],
+    };
+    const open = convert(event);
+    expect(open.issues).toEqual({
+      date: { text: 'Date' },
+      unknownDances: [{ code: 99, defaultName: 'Dance 99', events: ['X'] }],
+      guessedTypes: [{ index: 0, eventId: expect.any(String), event: 'X', entryType: 'duo' }],
+    });
+    expect(open.warnings.map((w) => w.kind)).toEqual(['date', 'entry-type', 'unknown-dance']);
+
+    const answered = convertWith(
+      { date: '2026-08-09', danceNames: { 99: ' Bachata ' }, entryTypes: { 0: 'solo' } },
+      event,
+    );
+    expect(answered.file.competition.date).toBe('2026-08-09');
+    expect(answered.file.dances.map((d) => d.name)).toEqual(['Bachata']);
+    expect(answered.file.events[0]!.entryType).toBe('solo');
+    expect(answered.file.skaters.map((s) => s.name)).toEqual(['Ann / Bo']);
+    expect(answered.warnings).toEqual([]);
+    expect(answered.issues.guessedTypes[0]!.entryType).toBe('solo');
   });
 
   it('imports a no-show’s zero marks, as the legacy app scores it 0.0 and places it last', () => {

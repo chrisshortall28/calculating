@@ -6,6 +6,8 @@ export interface LegacyWarning {
   /** The event the note is about, when it is about one. */
   event?: string;
   message: string;
+  /** Set when the review step lets the user settle it (see `LegacyConversion.issues`). */
+  kind?: 'date' | 'unknown-dance' | 'entry-type';
 }
 
 /** The legacy "Type" of an event: only Solo Dance, Couples Dance, Single and Pairs events are imported. */

@@ -12,6 +12,8 @@ import {
   Stack,
   Table,
   Text,
+  TextInput,
+  Tooltip,
 } from '@mantine/core';
 import { Dropzone } from '@mantine/dropzone';
 import { useDisclosure } from '@mantine/hooks';
@@ -21,10 +23,11 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { formatLongDate } from '../../app/format';
+import type { EntryType } from '../../domain/types';
 import { db } from '../../db/db';
 import { entryTypeLabel } from '../../db/repo';
 import { importCompetition, parseCompetitionFile } from '../../io/competitionFile';
-import { convertLegacyCompetition } from '../../legacy/convert';
+import { convertLegacyCompetition, type LegacyChoices, type LegacyIssues } from '../../legacy/convert';
 import { readLegacyFiles, type LegacyFilesRead } from '../../legacy/readFiles';
 import { summariseConversion } from '../../legacy/summary';
 
@@ -175,6 +178,58 @@ function FileProblems({ read, intro }: { read: LegacyFilesRead; intro?: string }
   );
 }
 
+/** The entry types a Solo Dance event can have. */
+const DANCE_ENTRY_TYPES = (['solo', 'duo', 'couples', 'team'] as const).map((t) => ({
+  value: t,
+  label: entryTypeLabel[t],
+}));
+
+/** What the files do not say (apart from entry types, which the table asks): answer here instead of fixing it after the import. */
+function FillIn({
+  issues,
+  date,
+  choices,
+  onChange,
+}: {
+  issues: LegacyIssues;
+  date: string;
+  choices: LegacyChoices;
+  onChange: (choices: LegacyChoices) => void;
+}) {
+  if (!issues.date && issues.unknownDances.length === 0) return null;
+  return (
+    <Alert
+      color="yellow"
+      icon={<IconAlertTriangle size={18} />}
+      title="Missing information you could help clarify"
+    >
+      <Stack gap="xs">
+        {issues.date && (
+          <TextInput
+            type="date"
+            label="Date"
+            description={`The date in the files, “${issues.date.text}”, could not be read.`}
+            value={date}
+            onChange={(e) => onChange({ ...choices, date: e.currentTarget.value })}
+          />
+        )}
+        {issues.unknownDances.map((d) => (
+          <TextInput
+            key={d.code}
+            label={`Dance number ${d.code}`}
+            description={`Podium does not know this dance. Used in ${d.events.join(', ')}.`}
+            placeholder={d.defaultName}
+            value={choices.danceNames?.[d.code] ?? ''}
+            onChange={(e) =>
+              onChange({ ...choices, danceNames: { ...choices.danceNames, [d.code]: e.currentTarget.value } })
+            }
+          />
+        ))}
+      </Stack>
+    </Alert>
+  );
+}
+
 function Review({
   read,
   chosen,
@@ -190,7 +245,11 @@ function Review({
 }) {
   const navigate = useNavigate();
   const [importing, setImporting] = useState(false);
-  const conversion = useMemo(() => convertLegacyCompetition(read.competitions[chosen]!), [read, chosen]);
+  const [choices, setChoices] = useState<LegacyChoices>({});
+  const conversion = useMemo(
+    () => convertLegacyCompetition(read.competitions[chosen]!, choices),
+    [read, chosen, choices],
+  );
   const summary = useMemo(() => summariseConversion(conversion), [conversion]);
   const existing = useLiveQuery(async () => {
     const name = summary.competition.name.toLowerCase();
@@ -223,7 +282,10 @@ function Review({
           label="These files hold more than one competition. Import which?"
           allowDeselect={false}
           value={String(chosen)}
-          onChange={(v) => onChoose(Number(v))}
+          onChange={(v) => {
+            setChoices({});
+            onChoose(Number(v));
+          }}
           data={read.competitions.map((c, i) => ({
             value: String(i),
             label: `${c.name || 'Unnamed'} — ${plural(c.events.length, 'event')}`,
@@ -267,10 +329,38 @@ function Review({
             {summary.events.map((e, i) => (
               <Table.Tr key={i}>
                 <Table.Td>{e.name}</Table.Td>
-                <Table.Td>
-                  {entryTypeLabel[e.entryType]}
-                  {e.figures ? ' · figures' : ''}
-                </Table.Td>
+                {(() => {
+                  const guessed = conversion.issues.guessedTypes.find((g) => g.eventId === e.id);
+                  if (!guessed)
+                    return (
+                      <Table.Td>
+                        {entryTypeLabel[e.entryType]}
+                        {e.figures ? ' · figures' : ''}
+                      </Table.Td>
+                    );
+                  return (
+                    <Table.Td style={{ borderLeft: '3px solid var(--mantine-color-yellow-6)' }}>
+                      <Tooltip label="The files do not say whether these are solos, duos, couples or teams. This is a guess from the names: please check it.">
+                        <Select
+                          size="xs"
+                          w={150}
+                          aria-label={`Entries in ${e.name}`}
+                          leftSection={<IconAlertTriangle size={14} color="var(--mantine-color-yellow-6)" />}
+                          allowDeselect={false}
+                          data={DANCE_ENTRY_TYPES}
+                          value={e.entryType}
+                          onChange={(v) =>
+                            v &&
+                            setChoices({
+                              ...choices,
+                              entryTypes: { ...choices.entryTypes, [guessed.index]: v as EntryType },
+                            })
+                          }
+                        />
+                      </Tooltip>
+                    </Table.Td>
+                  );
+                })()}
                 <Table.Td ta="right">{e.entries}</Table.Td>
                 <Table.Td ta="right">{e.marks || '—'}</Table.Td>
               </Table.Tr>
@@ -288,6 +378,8 @@ function Review({
           </Table.Tbody>
         </Table>
       </ScrollArea.Autosize>
+
+      <FillIn issues={conversion.issues} date={competition.date} choices={choices} onChange={setChoices} />
 
       {summary.warnings.length > 0 && (
         <Alert

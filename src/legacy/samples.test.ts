@@ -18,7 +18,7 @@ function load(folder: string) {
     .filter((f) => /\.ROL$/i.test(f))
     .sort()
     .map((f) => readLegacyEvent(f, new Uint8Array(readFileSync(`${dir}/${f}`))));
-  return groupLegacyEvents(events).map(convertLegacyCompetition);
+  return groupLegacyEvents(events).map((c) => convertLegacyCompetition(c));
 }
 
 function place(file: CompetitionFile, eventName: string) {
