@@ -8,6 +8,13 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.6.2',
+    date: '2026-10-31',
+    changes: [
+      'Import Couples Dance events from the old Calculating For Windows program: they come across as couples events, with both skaters’ names, their compulsory dances and any free dance.',
+    ],
+  },
+  {
     version: '1.6.1',
     date: '2026-10-26',
     changes: [

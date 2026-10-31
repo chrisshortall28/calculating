@@ -59,7 +59,7 @@ are already in start order.
 | 1024 | 1 | **Number of judges** (3 and 5 seen; comp2 `More than 3 judges` has 5) |
 | 1026 + 40*i | 40 | Judge names, i = 0..8 (blank slots unused) |
 | 1386 | 40 | A tenth name, identical to judge 1 in the sample: probably the referee **(unverified)** |
-| 1546 | 1 | **Event type** (the app's "Type" list): 8 = Solo Dance (solos, duos, couples and teams, not distinguished), 0 = Single, 1 = Pairs, 3 = Quartets. The app also offers Dance, Precision and Show, whose codes are unknown. Podium imports only Solo Dance, Single and Pairs and skips the rest |
+| 1546 | 1 | **Event type** (the app's "Type" list): 8 = Solo Dance (solos, duos, couples and teams, not distinguished), 7 = Couples Dance (the second skater at record offset 52, as in Pairs), 0 = Single, 1 = Pairs, 3 = Quartets. The app also offers Dance, Precision and Show, whose codes are unknown. Podium imports only Solo Dance, Couples Dance, Single and Pairs and skips the rest |
 | 1551 | 1 | **Number of compulsory dances or figures** (0 to 4; 0 for an event with no compulsory part) |
 | 1597 | 1 | 1 when the event has a **short programme** (Figures & Free events) |
 | 1645 | 1 | 1 when the event has a **free dance / long programme** |

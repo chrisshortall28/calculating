@@ -180,7 +180,7 @@ export function convertLegacyCompetition(legacy: LegacyCompetition): LegacyConve
     if (ev.kind === 'unsupported') {
       skippedEvents.push(ev.name);
       note(
-        `Skipped: this is a type of event Podium does not support (only Solo Dance, Single and Pairs events are imported).`,
+        `Skipped: this is a type of event Podium does not support (only Solo Dance, Couples Dance, Single and Pairs events are imported).`,
       );
       continue;
     }
@@ -210,9 +210,9 @@ export function convertLegacyCompetition(legacy: LegacyCompetition): LegacyConve
       status: 'setup',
     };
 
-    if (ev.kind === 'dance') {
-      entryType = guessDanceEntryType(ev.name, ev.entries);
-      if (ev.entries.length > 0)
+    if (ev.kind === 'dance' || ev.kind === 'couples') {
+      entryType = ev.kind === 'couples' ? 'couples' : guessDanceEntryType(ev.name, ev.entries);
+      if (ev.kind === 'dance' && ev.entries.length > 0)
         note(`Entry type guessed as “${entryType}” from the names; change it in the event if wrong.`, 'info');
       const keysInOrder: SegmentKey[] = [];
       ev.compulsory.forEach((c, position) => {
@@ -321,6 +321,8 @@ function entryNames(type: EntryType, entry: LegacyEntry): string[] {
       return [entry.name, entry.partner].filter(Boolean);
     case 'duo':
     case 'couples':
+      // A Couples Dance event stores the second skater apart; a Solo Dance event is "A / B".
+      if (type === 'couples' && entry.partner) return [entry.name, entry.partner];
       return entry.name
         .split(SLASH)
         .map((n) => n.trim())

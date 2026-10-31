@@ -24,7 +24,7 @@ const CLUB_AT = 40;
 const CLUB_LENGTH = 12;
 const PARTNER_AT = 52;
 
-const KIND = { 8: 'dance', 0: 'single', 1: 'pairs' } as const;
+const KIND = { 8: 'dance', 7: 'couples', 0: 'single', 1: 'pairs' } as const;
 
 const ascii = (b: Uint8Array, at: number, length: number) => {
   let end = at;
@@ -83,7 +83,7 @@ export function readLegacyEvent(fileName: string, b: Uint8Array): LegacyEvent {
     }
     entries.push({
       name: ascii(b, at, TEXT),
-      partner: kind === 'pairs' ? ascii(b, at + PARTNER_AT, TEXT) : '',
+      partner: kind === 'pairs' || kind === 'couples' ? ascii(b, at + PARTNER_AT, TEXT) : '',
       club: ascii(b, at + CLUB_AT, CLUB_LENGTH),
       blocks,
     });
