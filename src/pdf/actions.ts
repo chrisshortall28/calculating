@@ -12,11 +12,14 @@ const load = async (target: Target): Promise<EventData[]> =>
   'eventId' in target ? [await loadEventData(target.eventId)] : loadCompetitionEvents(target.competitionId);
 
 /** Call directly from a click handler (the PDF tab must open before any await). */
-/** `perDance` prints a separate sheet for each dance or figure instead of one sheet for the whole event. */
-export function printJudgeSheets(target: Target, name: string, perDance = false) {
+/** `perDance` prints a separate sheet for each dance or figure instead of one sheet for the whole event; `freeOnly` prints just the free dance (or programmes). */
+export function printJudgeSheets(target: Target, name: string, perDance = false, freeOnly = false) {
   return openPdf(
-    load(target).then((events) => judgeSheetsDocument(events, perDance)),
-    fileNameFor(`${name} judge sheets${perDance ? ' (sheet per dance)' : ''}`, 'pdf'),
+    load(target).then((events) => judgeSheetsDocument(events, perDance, freeOnly)),
+    fileNameFor(
+      `${name} judge sheets${freeOnly ? ' (free only)' : perDance ? ' (sheet per dance)' : ''}`,
+      'pdf',
+    ),
   );
 }
 

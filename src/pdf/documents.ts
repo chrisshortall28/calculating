@@ -208,7 +208,13 @@ function judgeSheetPage(
  * One sheet per judge on the panel (or `blankCount` unnamed sheets if no judges are assigned
  * yet), followed by a sheet for the referee (unnamed if no referee is assigned yet).
  */
-export function judgeSheets(events: EventData[], blankCount = 3, perDance = false): Content[] {
+export function judgeSheets(
+  events: EventData[],
+  blankCount = 3,
+  perDance = false,
+  /** Only the free parts (free dance, or the programmes), one sheet each, with no totals. */
+  freeOnly = false,
+): Content[] {
   const pages: Content[][] = [];
   for (const d of events) {
     if (d.segments.length === 0) continue;
@@ -217,10 +223,11 @@ export function judgeSheets(events: EventData[], blankCount = 3, perDance = fals
       : Array.from({ length: blankCount }, (_, i) => ({ role: 'Judge', label: `J${i + 1}`, name: '' }));
     officials.push({ role: 'Referee', label: '', name: '' });
     const compulsory = d.segments.filter((s) => s.kind === 'compulsory').length;
-    if (perDance) {
+    if (perDance || freeOnly) {
       // One sheet per dance, figure or programme, with no totals (CIPA places only the whole event).
       for (const o of officials)
         d.segments.forEach((seg, i) => {
+          if (freeOnly && seg.kind !== 'free') return;
           // Compulsory parts say which one they are of the event, so the judge can't mix the sheets up.
           const noun = d.event.discipline === 'figures' ? 'Figure' : 'Dance';
           const number = seg.kind === 'compulsory' ? ` (${noun} ${i + 1} of ${compulsory})` : '';
@@ -552,8 +559,12 @@ export function resultsDocument(
 }
 
 /** Judges' sheets are handed out loose, one or more per official, so they carry no page numbers. */
-export function judgeSheetsDocument(events: EventData[], perDance = false): TDocumentDefinitions {
-  return document(judgeSheets(events, 3, perDance), true, undefined, false);
+export function judgeSheetsDocument(
+  events: EventData[],
+  perDance = false,
+  freeOnly = false,
+): TDocumentDefinitions {
+  return document(judgeSheets(events, 3, perDance, freeOnly), true, undefined, false);
 }
 
 /** `pageHeader` is repeated at the top of every page. */

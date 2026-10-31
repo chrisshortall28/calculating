@@ -191,6 +191,23 @@ describe('judgeSheets', () => {
     expect(texts(judgeSheets([d]))).toContain('Total points');
   });
 
+  it('prints just the free dance, without totals, when asked', () => {
+    const d = {
+      ...withDances(2),
+      segments: [
+        ...withDances(2).segments,
+        { id: 'fd', name: 'Free Dance', kind: 'free' as const, markKeys: ['fd:A', 'fd:B'] as SegmentKey[] },
+      ],
+    };
+    const pages = judgeSheets([d], 3, false, true);
+    expect(pages).toHaveLength(4); // one sheet each for 3 judges + the referee
+    const t = texts(pages[0]);
+    expect(t).toEqual(expect.arrayContaining(['Event — Free Dance', 'A', 'B']));
+    expect(t).not.toContain('Dance 1');
+    expect(t).not.toContain('Total points');
+    expect(judgeSheets([withDances(2)], 3, false, true)).toHaveLength(0);
+  });
+
   describe('a long entry list on per-dance sheets', () => {
     const withEntries = (count: number): EventData => ({
       ...withDances(1),

@@ -28,6 +28,8 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
   const [busy, setBusy] = useState<string | null>(null);
   if (loading) return null;
 
+  const hasFree = segments.some((s) => s.kind === 'free');
+  const hasCompulsory = segments.some((s) => s.kind === 'compulsory');
   const entryMap = byId(entries);
   const label = (id: string) => (entryMap.get(id) ? entryName(entryMap.get(id)!, skaters) : '?');
   const judgeLabel = (id: string) => `J${event.judgeIds.indexOf(id) + 1}`;
@@ -69,6 +71,15 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
             >
               Judge sheets, a sheet per {segmentNoun(event)}
             </Menu.Item>
+            {hasFree && hasCompulsory && (
+              <Menu.Item
+                onClick={() =>
+                  run('sheetsFree', () => printJudgeSheets({ eventId: event.id }, event.name, false, true))
+                }
+              >
+                Judge sheets, {event.discipline === 'figures' ? 'programmes' : 'free dance'} only
+              </Menu.Item>
+            )}
             <Menu.Divider />
             <Menu.Item
               disabled={!result.complete}

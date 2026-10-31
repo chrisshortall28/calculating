@@ -7,15 +7,18 @@ import {
   IconClipboardList,
   IconDice5,
   IconPencil,
+  IconSortDescending,
   IconTrash,
 } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
-import { useCompetition, useDances, useEntries, useSkaters } from '../../app/data';
+import { useCompetition, useDances, useEntries, useMarks, useSkaters } from '../../app/data';
 import { SortableList } from '../../app/SortableList';
 import { db } from '../../db/db';
 import { addEntry, deleteEntry, entryTypeLabel, reorderEntries, updateEntry } from '../../db/repo';
-import { eventSegments } from '../../domain/segments';
+import { indexMarks, markKey } from '../../domain/markIndex';
+import { reverseOrderBySoFar } from '../../domain/reverseOrder';
+import { eventSegments, eventTieBreakMarks, segmentNoun } from '../../domain/segments';
 import { shuffled } from '../../domain/shuffle';
 import { effectiveRotate, firstSkaters } from '../../domain/startOrder';
 import { byId, entryClub, entryMembers, entryName } from '../../domain/entryName';
@@ -41,8 +44,33 @@ export function EntriesTab({ event }: { event: CompEvent }) {
       .each((m) => counts.set(m.entryId, (counts.get(m.entryId) ?? 0) + 1));
     return counts;
   }, [event.id]);
+  const marks = useMarks(event.id);
   const [editing, setEditing] = useState<Entry | null>(null);
   const [pasting, setPasting] = useState(false);
+
+  // For a part that follows the others (the free dance after the compulsory dances): the lowest placed so far skates first.
+  const reverseByResults = () => {
+    const markMap = indexMarks(marks);
+    const reversed = reverseOrderBySoFar({
+      entryIds: entries.map((e) => e.id),
+      judgeIds: event.judgeIds,
+      segments,
+      mark: (k, j, e) => markMap.get(markKey(k, j, e)),
+      tieBreakMarks: eventTieBreakMarks(event),
+    });
+    if (!reversed) {
+      notifications.show({
+        color: 'orange',
+        message: `No ${segmentNoun(event)} has all its marks entered yet, so there are no placings to reverse.`,
+      });
+      return;
+    }
+    void reorderEntries(reversed.order);
+    notifications.show({
+      color: 'green',
+      message: `Lowest placed now skates first, from the placings after ${reversed.basedOn.join(', ')}`,
+    });
+  };
 
   // Entries are matched by team name, or by their set of skater names in any order.
   const nameKey = (teamName: string | undefined, names: string[]) =>
@@ -130,6 +158,17 @@ export function EntriesTab({ event }: { event: CompEvent }) {
           >
             Randomise order
           </Button>
+          <Tooltip label="Lowest placed on the marks entered so far skates first, highest placed last">
+            <Button
+              variant="light"
+              size="xs"
+              leftSection={<IconSortDescending size={16} />}
+              disabled={entries.length < 2}
+              onClick={reverseByResults}
+            >
+              Reverse order by results
+            </Button>
+          </Tooltip>
           <Button
             variant="light"
             size="xs"

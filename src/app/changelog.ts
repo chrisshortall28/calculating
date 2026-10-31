@@ -13,6 +13,8 @@ export const CHANGELOG: Release[] = [
     changes: [
       'Import Couples Dance events from the old Calculating For Windows program: they come across as couples events, with both skaters’ names, their compulsory dances and any free dance.',
       'Judge sheets printed with a separate sheet for each dance or figure now keep events of up to 24 skaters on one page: with more than 12 skaters the extra skaters go in a second column on the right.',
+      'New Reverse order by results button on the Skater tab: once some dances, figures or programmes are fully marked, it puts the lowest placed so far first and the highest placed last, for skating the free dance in reverse order of the compulsory dances. Ties keep their order.',
+      'New PDF option Judge sheets, free dance only (programmes only for figures events), for events that also have compulsory dances or figures.',
     ],
   },
   {
