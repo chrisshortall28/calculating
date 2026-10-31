@@ -26,6 +26,7 @@ globalThis.ResizeObserver ??= class {
   unobserve() {}
   disconnect() {}
 };
+Element.prototype.scrollIntoView ??= () => {};
 File.prototype.arrayBuffer ??= function (this: Blob) {
   return new Promise<ArrayBuffer>((resolve, reject) => {
     const reader = new FileReader();
@@ -104,6 +105,29 @@ describe('Import legacy', () => {
     const { choose } = open();
     choose(eventFile('DATA001B.ROL', { name: 'E', entries: [{ name: 'Ann' }] }));
     await screen.findByText(/already on this device/);
+  });
+
+  it('lets the user name an unknown dance and set the date, and imports with them', async () => {
+    const { choose } = open();
+    choose(
+      eventFile('DATA001B.ROL', {
+        name: '1A Rising Stars',
+        date: 'Date',
+        compulsory: [{ code: 99 }],
+        entries: [{ name: 'Ann Smith', blocks: { 0: [20, 20, 20] } }],
+      }),
+    );
+
+    fireEvent.change(await screen.findByLabelText('Dance number 99'), { target: { value: 'Bachata' } });
+    fireEvent.change(screen.getByLabelText('Date'), { target: { value: '2026-09-05' } });
+    fireEvent.click(screen.getAllByLabelText('Entries in 1A Rising Stars')[0]!);
+    fireEvent.click(await screen.findByRole('option', { name: 'Duo' }));
+    expect(screen.queryByText(/is not known yet/)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import competition' }));
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toMatch(/^\/c\//));
+    expect((await db.dances.toArray()).map((d) => d.name)).toEqual(['Bachata']);
+    expect((await db.competitions.toArray())[0]).toMatchObject({ date: '2026-09-05' });
   });
 
   it('says so when no file is a legacy event file', async () => {

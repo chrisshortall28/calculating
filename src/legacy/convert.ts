@@ -12,6 +12,26 @@ export interface LegacyConversion {
   warnings: LegacyWarning[];
   /** Events in the legacy files that could not be imported (an unsupported type). */
   skippedEvents: string[];
+  /** What the files do not say, that the user can fill in (and pass back as `LegacyChoices`). */
+  issues: LegacyIssues;
+}
+
+/** The user's answers to `LegacyIssues`. */
+export interface LegacyChoices {
+  /** yyyy-mm-dd, for a date that could not be read. */
+  date?: string;
+  /** A name for each dance number Podium does not know, by number. */
+  danceNames?: Record<number, string>;
+  /** The entry type of a Solo Dance event, by its index in `LegacyCompetition.events`. */
+  entryTypes?: Partial<Record<number, EntryType>>;
+}
+
+export interface LegacyIssues {
+  /** The date typed in the files, when it could not be read. */
+  date?: { text: string };
+  unknownDances: { code: number; defaultName: string; events: string[] }[];
+  /** Solo Dance events whose entry type was guessed from the names; `entryType` is the one used. */
+  guessedTypes: { index: number; eventId: Id; event: string; entryType: EntryType }[];
 }
 
 /** Groups events into competitions by their competition name, venue and date. */
@@ -108,17 +128,24 @@ function figureEventKeys(
 }
 
 /** Converts the events of one legacy competition into a Podium competition file. */
-export function convertLegacyCompetition(legacy: LegacyCompetition): LegacyConversion {
+export function convertLegacyCompetition(
+  legacy: LegacyCompetition,
+  choices: LegacyChoices = {},
+): LegacyConversion {
   const warnings: LegacyWarning[] = [];
   const skippedEvents: string[] = [];
   const newId = () => crypto.randomUUID();
   const now = Date.now();
   const competitionId = newId();
 
-  const date = parseLegacyDate(legacy.date);
+  const issues: LegacyIssues = { unknownDances: [], guessedTypes: [] };
+  const readDate = parseLegacyDate(legacy.date);
+  if (!readDate) issues.date = { text: legacy.date };
+  const date = choices.date || readDate;
   if (!date) {
     warnings.push({
       level: 'warning',
+      kind: 'date',
       message: `The date “${legacy.date}” could not be read; today’s date was used. Change it in the competition’s settings.`,
     });
   }
@@ -172,10 +199,10 @@ export function convertLegacyCompetition(legacy: LegacyCompetition): LegacyConve
     return id;
   };
 
-  for (const ev of legacy.events) {
+  for (const [index, ev] of legacy.events.entries()) {
     warnings.push(...ev.warnings);
-    const note = (message: string, level: LegacyWarning['level'] = 'warning') =>
-      warnings.push({ level, event: ev.name, message });
+    const note = (message: string, level: LegacyWarning['level'] = 'warning', kind?: LegacyWarning['kind']) =>
+      warnings.push({ level, event: ev.name, message, ...(kind ? { kind } : {}) });
 
     if (ev.kind === 'unsupported') {
       skippedEvents.push(ev.name);
@@ -212,15 +239,33 @@ export function convertLegacyCompetition(legacy: LegacyCompetition): LegacyConve
 
     if (ev.kind === 'dance' || ev.kind === 'couples') {
       entryType = ev.kind === 'couples' ? 'couples' : guessDanceEntryType(ev.name, ev.entries);
-      if (ev.kind === 'dance' && ev.entries.length > 0)
-        note(`Entry type guessed as “${entryType}” from the names; change it in the event if wrong.`, 'info');
+      if (ev.kind === 'dance' && ev.entries.length > 0) {
+        const chosen = choices.entryTypes?.[index];
+        if (chosen) entryType = chosen;
+        else
+          note(
+            `Entry type guessed as “${entryType}” from the names; change it in the event if wrong.`,
+            'info',
+            'entry-type',
+          );
+        issues.guessedTypes.push({ index, eventId, event: ev.name, entryType });
+      }
       const keysInOrder: SegmentKey[] = [];
       ev.compulsory.forEach((c, position) => {
-        const { name, known } = legacyDanceName(c.code, position);
-        if (!known)
-          note(
-            `Dance number ${c.code} is not known yet, so it was named “${name}”. Rename it in the roster.`,
-          );
+        const { name: defaultName, known } = legacyDanceName(c.code, position);
+        const chosen = known ? undefined : choices.danceNames?.[c.code]?.trim();
+        const name = chosen || defaultName;
+        if (!known) {
+          let issue = issues.unknownDances.find((d) => d.code === c.code);
+          if (!issue) issues.unknownDances.push((issue = { code: c.code, defaultName, events: [] }));
+          if (!issue.events.includes(ev.name)) issue.events.push(ev.name);
+          if (!chosen)
+            note(
+              `Dance number ${c.code} is not known yet, so it was named “${name}”. Rename it in the roster.`,
+              'warning',
+              'unknown-dance',
+            );
+        }
         const id = danceId(name);
         if (event.compulsoryDanceIds.includes(id))
           return note(`${name} appears twice; the second was skipped.`);
@@ -309,7 +354,7 @@ export function convertLegacyCompetition(legacy: LegacyCompetition): LegacyConve
     file.events.push(event);
   }
 
-  return { file, warnings, skippedEvents };
+  return { file, warnings, skippedEvents, issues };
 }
 
 /** An entry's skater names for its type (teams have none: the team name is the entry's name). */
