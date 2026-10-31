@@ -12,6 +12,7 @@ export const CHANGELOG: Release[] = [
     date: '2026-10-31',
     changes: [
       'Import Couples Dance events from the old Calculating For Windows program: they come across as couples events, with both skaters’ names, their compulsory dances and any free dance.',
+      'Judge sheets printed with a separate sheet for each dance or figure now keep events of up to 24 skaters on one page: with more than 12 skaters the extra skaters go in a second column on the right.',
     ],
   },
   {

@@ -191,6 +191,56 @@ describe('judgeSheets', () => {
     expect(texts(judgeSheets([d]))).toContain('Total points');
   });
 
+  describe('a long entry list on per-dance sheets', () => {
+    const withEntries = (count: number): EventData => ({
+      ...withDances(1),
+      rows: Array.from({ length: count }, (_, i) => ({
+        id: `e${i}`,
+        name: `Skater ${i + 1}`,
+        club: 'Club',
+        members: '',
+        skaterIds: [],
+      })),
+    });
+    const tables = (node: unknown): { body: unknown[] }[] => {
+      if (Array.isArray(node)) return node.flatMap(tables);
+      if (node && typeof node === 'object') {
+        const o = node as { table?: { body: unknown[] } };
+        return [...(o.table ? [o.table] : []), ...Object.values(node).flatMap(tables)];
+      }
+      return [];
+    };
+
+    it('keeps up to 12 entries in a single table', () => {
+      const pages = judgeSheets([withEntries(12)], 3, true);
+      expect(pages).toHaveLength(4);
+      expect(tables(pages[0])).toHaveLength(1);
+    });
+
+    it('puts the overflow in a second column on the same sheet', () => {
+      const pages = judgeSheets([withEntries(15)], 3, true);
+      expect(pages).toHaveLength(4); // one sheet each for 3 judges + the referee
+      const [left, right] = tables(pages[0]);
+      expect(left!.body).toHaveLength(2 + 12); // two header rows
+      expect(right!.body).toHaveLength(2 + 3);
+      expect(texts(right).filter((t) => /^\d+$/.test(t))).toEqual(['13', '14', '15']);
+    });
+
+    it('carries on to another sheet after 24 entries', () => {
+      const pages = judgeSheets([withEntries(25)], 3, true);
+      expect(pages).toHaveLength(8);
+      expect(texts(pages[0])).toContain('Event — Dance 1 (Dance 1 of 1) · Sheet 1 of 2');
+      expect(texts(tables(pages[1])).filter((t) => /^\d+$/.test(t))).toEqual(['25']);
+    });
+
+    it('leaves a sheet with several dances as it is', () => {
+      const d = { ...withEntries(15), ...{ segments: withDances(2).segments } };
+      const pages = judgeSheets([d]);
+      expect(pages).toHaveLength(4);
+      expect(tables(pages[0])).toHaveLength(1);
+    });
+  });
+
   it('fits up to four dances on one sheet per official', () => {
     const pages = judgeSheets([withDances(4)]);
     expect(pages).toHaveLength(4); // 3 judges + referee
