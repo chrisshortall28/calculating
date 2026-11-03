@@ -11,11 +11,13 @@ import {
   slotsFor,
   victoriesSectionSize,
 } from './format';
-import { DANCE_PROFILES, type DanceKind, type PhaseCode } from './profiles';
+import type { EventProfile, Part, PhaseCode } from './profiles';
 import type { Tail } from './tail';
 
 export interface WriteEntry {
   name: string;
+  /** The second skater of a pair. */
+  partner?: string;
   club: string;
   /** Marks in tenths per judge, by block: 0-3 compulsory dances, 6-7 free dance A and B; null = none. */
   blocks: (number[] | null)[];
@@ -29,9 +31,11 @@ export interface WriteEvent {
   name: string;
   judges: string[];
   referee: string;
-  kind: DanceKind;
-  /** The application's dance numbers, one per compulsory dance (up to 4). */
+  profile: EventProfile;
+  /** The application's dance numbers, one per compulsory dance (up to 4); the figure numbers of a figures event. */
   dances: number[];
+  /** The side of each figure; none = unspecified. */
+  sides?: ('L' | 'R' | undefined)[];
   entries: WriteEntry[];
   /**
    * The free dance's weight in a combined event as a fraction: half the number of compulsory dances
@@ -39,6 +43,8 @@ export interface WriteEvent {
    * Default 1/1.
    */
   freeFactor?: [numerator: number, denominator: number];
+  /** The factors of the compulsory part and the short programme (figures events); default 1/1. */
+  factors?: { compulsory?: [number, number]; short?: [number, number] };
   /** The tables of each phase the kind has (see profiles.ts). */
   tails: Partial<Record<PhaseCode, Tail>>;
 }
@@ -48,11 +54,11 @@ export const MAX_DANCES = 4;
 export const MAX_NAME = 40;
 export const MAX_CLUB = 8;
 
-/** Writes a Solo Dance event file the application opens (every checksum correct). */
+/** Writes an event file the application opens (every checksum correct). */
 export function writeDanceEvent(event: WriteEvent): Uint8Array {
   const N = event.entries.length;
   const slots = slotsFor(N);
-  const profile = DANCE_PROFILES[event.kind];
+  const profile = event.profile;
   const size = eventFileSize(slots, profile.phases.length);
   const file = new Uint8Array(size);
   const view = new DataView(file.buffer);
@@ -71,10 +77,20 @@ export function writeDanceEvent(event: WriteEvent): Uint8Array {
   file[1024] = event.judges.length;
   event.judges.forEach((judge, i) => text(1026 + 40 * i, judge, 40));
   text(1386, event.referee, 40);
-  const [factorNumerator, factorDenominator] = event.freeFactor ?? [1, 1];
-  if (event.kind !== 'compulsory') [file[1649], file[1650]] = [factorNumerator, factorDenominator];
+  const factor: Record<Part, [number, number]> = {
+    C: event.factors?.compulsory ?? [1, 1],
+    S: event.factors?.short ?? [1, 1],
+    L: event.freeFactor ?? [1, 1],
+  };
+  for (const [part, at] of Object.entries(profile.factorAt) as [Part, [number, number]][]) {
+    [file[at[0]], file[at[1]]] = factor[part];
+  }
   file[1551] = event.dances.length;
-  event.dances.forEach((code, k) => (file[1806 + 4 * k] = code));
+  event.dances.forEach((code, k) => {
+    file[1806 + 4 * k] = code;
+    const side = event.sides?.[k];
+    if (side) file[1806 + 4 * k + 1] = side === 'L' ? 0x6c : 0x72;
+  });
   for (const at of profile.startOrderAt) for (let i = 0; i < N; i++) file[at + i] = i + 1;
 
   const tailAt = HEADER_SIZE + BLOCK_SIZE * slots;
@@ -107,7 +123,8 @@ export function writeDanceEvent(event: WriteEvent): Uint8Array {
     view.setUint16(block, r, true);
     text(record, entry.name, 40);
     text(record + 40, entry.club, 12);
-    file.fill(1, record + 268, record + 271);
+    if (entry.partner) text(record + 52, entry.partner, 40);
+    for (const part of profile.entryParts) file[record + 268 + ['C', 'S', 'L'].indexOf(part)] = 1;
     entry.blocks.forEach((marks, k) => {
       if (!marks) return;
       const at = record + 301 + 186 * k;
@@ -116,27 +133,28 @@ export function writeDanceEvent(event: WriteEvent): Uint8Array {
       file[at + 10] = marks.reduce((a, m) => a + m, 0);
     });
     // The judges' sums (thousandths) for each phase: 45 bytes a phase from the record's offset 2161.
-    const sums = (phase: PhaseCode, parts: (number[] | null)[], free: (number[] | null)[] = []) => {
+    const blocksOf = (part: Part) =>
+      part === 'C'
+        ? entry.blocks.slice(0, event.dances.length)
+        : entry.blocks.slice(part === 'S' ? 4 : 6, part === 'S' ? 6 : 8);
+    for (const phase of profile.phases) {
+      const parts = profile.parts[phase]!;
       const at = record + 2161 + 45 * (phase - 1);
       file[at] = 1;
       let total = 0;
       for (let j = 0; j < judges; j++) {
-        const marks = (list: (number[] | null)[]) => list.reduce((a, m) => a + (m?.[j] ?? 0), 0);
-        // In thousandths of a mark; the free dance counts at its factor in the combined sum.
+        // In thousandths of a mark. A part alone is not factored; in a combined sum each counts at its factor.
         const sum = Math.round(
-          100 * marks(parts) + (100 * marks(free) * factorNumerator) / factorDenominator,
+          parts.reduce((a, part) => {
+            const marks = blocksOf(part).reduce((m, block) => m + (block?.[j] ?? 0), 0);
+            const [numerator, denominator] = parts.length > 1 ? factor[part] : [1, 1];
+            return a + (100 * marks * numerator) / denominator;
+          }, 0),
         );
         view.setUint32(at + 1 + 4 * j, sum, true);
         total += sum;
       }
       view.setUint32(at + 41, total, true);
-    };
-    const compulsory = entry.blocks.slice(0, event.dances.length);
-    const free = [entry.blocks[6] ?? null, entry.blocks[7] ?? null];
-    for (const phase of profile.phases) {
-      if (phase === 1) sums(phase, compulsory);
-      else if (phase === 3) sums(phase, free);
-      else sums(phase, compulsory, free);
     }
   });
   for (let r = 0; r < slots; r++) {
@@ -175,7 +193,7 @@ export function writeDanceEvent(event: WriteEvent): Uint8Array {
         row.majorityTenths,
         row.separateTenths,
         row.bMarkTenths,
-        0,
+        row.shortBMarkTenths,
         row.totalVictoriesTenths,
         Math.floor(row.sum / 1000),
         row.sum % 1000,

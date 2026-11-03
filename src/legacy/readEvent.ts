@@ -102,7 +102,7 @@ export function readLegacyEvent(fileName: string, b: Uint8Array): LegacyEvent {
     hasLong: b[1645] === 1,
     factors: {
       compulsory: fraction(b[1553]!, b[1554]!),
-      short: fraction(b[1597]!, b[1602]!),
+      short: fraction(b[1601]!, b[1602]!),
       long: fraction(b[1649]!, b[1650]!),
     },
     entries,

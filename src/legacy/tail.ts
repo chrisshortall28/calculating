@@ -1,7 +1,7 @@
 import type { Id } from '../domain/types';
 import { calculateEvent } from '../scoring';
-import type { EventResult, PlacementRule, ScoringInput } from '../scoring/types';
-import type { PhaseCode } from './profiles';
+import type { EventResult, PlacementRule, ScoringInput, TieBreakMark } from '../scoring/types';
+import type { EventProfile, Part, PhaseCode } from './profiles';
 
 /**
  * What the application stores after an event's entries: the table of victories and the results in
@@ -18,8 +18,10 @@ export interface TailRow {
   majorityTenths: number;
   /** Separate majority victories among the tied entries (rules 6A/6B), in tenths; 0 when not tied. */
   separateTenths: number;
-  /** All the judges' B marks of the free dance, in tenths; 0 for events without one. */
+  /** All the judges' B marks of the free dance or long programme, in tenths; 0 for events without one. */
   bMarkTenths: number;
+  /** All the judges' B marks of the short programme, in tenths (figures events); 0 for events without one. */
+  shortBMarkTenths: number;
   /** Total victories, in tenths. */
   totalVictoriesTenths: number;
   /** Total sum, in thousandths of a mark. */
@@ -49,7 +51,12 @@ const RULE_CODES: Record<PlacementRule, number> = {
 const STEP_BITS = { '6A': 2, '6B': 2, '7C': 16, '7A': 32 } as const;
 
 /** `bMarkTenths[i]` is entry i's total of the free dance B marks (or 0). */
-export function tailFromResult(result: EventResult, entryIds: Id[], bMarkTenths: number[]): Tail {
+export function tailFromResult(
+  result: EventResult,
+  entryIds: Id[],
+  bMarkTenths: number[],
+  shortBMarkTenths: number[] = [],
+): Tail {
   const index = new Map(entryIds.map((id, i) => [id, i]));
   const victories = entryIds.map((a) =>
     entryIds.map((b) => (a === b ? 0 : Math.round((result.victories.get(a)?.get(b) ?? 0) * 10))),
@@ -75,6 +82,7 @@ export function tailFromResult(result: EventResult, entryIds: Id[], bMarkTenths:
       majorityTenths: Math.round(o.majorityVictories * 10),
       separateTenths: separate,
       bMarkTenths: bMarkTenths[index.get(o.entryId)!] ?? 0,
+      shortBMarkTenths: shortBMarkTenths[index.get(o.entryId)!] ?? 0,
       totalVictoriesTenths: Math.round(o.totalVictories * 10),
       sum: o.totalSum,
       steps,
@@ -83,25 +91,42 @@ export function tailFromResult(result: EventResult, entryIds: Id[], bMarkTenths:
   return { victories, rows };
 }
 
+/** Which part of the event a scored segment is. */
+function partOf(segment: ScoringInput['segments'][number]): Part {
+  if (segment.kind === 'compulsory') return 'C';
+  return segment.id === 'sp' ? 'S' : 'L';
+}
+
+/** The judges' B mark totals per entry, in tenths: the free dance or long programme, and the short programme. */
+export interface BMarkTotals {
+  long: number[];
+  short?: number[];
+}
+
 /**
- * The tables for each phase of a dance event: the compulsory dances alone (1), the free dance alone
- * (3), and both together (6), each scored on its own. `bMarkTenths[i]` is entry i's total of the free
- * dance B marks.
+ * The tables for each phase of an event: each part alone or together with others (see profiles.ts),
+ * each scored on its own. `bMarks` has each entry's totals of the B marks. `tieBreaksOf` gives the B marks that
+ * break ties in a phase (default: the input's).
  */
 export function phaseTails(
-  phases: PhaseCode[],
+  profile: EventProfile,
   input: ScoringInput,
-  bMarkTenths: number[],
+  bMarks: BMarkTotals,
+  tieBreaksOf: (phase: PhaseCode) => TieBreakMark[] = () => input.tieBreakMarks ?? [],
 ): Record<PhaseCode, Tail> {
   const tails = {} as Record<PhaseCode, Tail>;
-  for (const phase of phases) {
-    // A part scored alone is not factored; the combined phase uses the segments' factors.
+  for (const phase of profile.phases) {
+    const parts = profile.parts[phase]!;
+    // A part scored alone is not factored; a combined phase uses the segments' factors.
     const segments = input.segments
-      .filter((segment) => phase === 6 || segment.kind === (phase === 1 ? 'compulsory' : 'free'))
-      .map((segment) => (phase === 6 ? segment : { ...segment, factor: 100 }));
-    const result = calculateEvent({ ...input, segments });
-    const b = phase === 1 ? bMarkTenths.map(() => 0) : bMarkTenths;
-    tails[phase] = tailFromResult(result, input.entryIds, b);
+      .filter((segment) => parts.includes(partOf(segment)))
+      .map((segment) => (parts.length > 1 ? segment : { ...segment, factor: 100 }));
+    const result = calculateEvent({ ...input, segments, tieBreakMarks: tieBreaksOf(phase) });
+    const zeros = input.entryIds.map(() => 0);
+    // The long programme's B marks show in the phases that include it, the short programme's in every phase but the first.
+    const long = parts.includes('L') ? bMarks.long : zeros;
+    const short = phase === 1 ? zeros : (bMarks.short ?? zeros);
+    tails[phase] = tailFromResult(result, input.entryIds, long, short);
   }
   return tails;
 }
