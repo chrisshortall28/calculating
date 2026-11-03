@@ -61,15 +61,14 @@ are already in start order.
 | 1386 | 40 | A tenth name, identical to judge 1 in the sample: probably the referee **(unverified)** |
 | 1546 | 1 | **Event type** (the app's "Type" list): 8 = Solo Dance (solos, duos, couples and teams, not distinguished), 7 = Couples Dance (the second skater at record offset 52, as in Pairs), 0 = Single, 1 = Pairs, 3 = Quartets. The app also offers Dance, Precision and Show, whose codes are unknown. Podium imports only Solo Dance, Couples Dance, Single and Pairs and skips the rest |
 | 1551 | 1 | **Number of compulsory dances or figures** (0 to 4; 0 for an event with no compulsory part) |
-| 1597 | 1 | 1 when the event has a **short programme** (Figures & Free events) |
+| 1597 | 1 | 1 when the event has a **short programme** (Figures & Free events); 1549 is the same flag for the figures and 1645 for the long programme |
 | 1645 | 1 | 1 when the event has a **free dance / long programme** |
 | 1553, 1554 | 1+1 | **Factor for the compulsory part** as a fraction (numerator, denominator); applies to each figure's mark |
-| 1597, 1602 | 1+1 | **Factor for the short programme**: 1597 is both the on/off flag and the numerator, 1602 the denominator |
+| 1601, 1602 | 1+1 | **Factor for the short programme** (numerator, denominator), at flag + 4 and + 5 like the other two |
 | 1649, 1650 | 1+1 | **Factor for the long programme** (numerator, denominator) |
 | 1806 + 4*k | 2 | Compulsory item k (k = 0..3): byte 0 is the **dance code** (dance events, see below) or the **figure number** (Figures events; matches Podium's catalogue order 1:1); byte 1 is the **side** for figures, an ASCII `l` (108) or `r` (114), or 0 when unspecified |
 
-Factors verified on an event set to "Compulsory 2, Short 1/2, Long 3/2" (2/1, 1/2, 3/2): in Podium's hundredths 200, 50 and 150. A pairs event with the app's defaults reads short 1 and long 3, the same as Podium's own defaults. Other flag bytes (1549, 1599, 1601, 1647) vary with the event type but
-are undecoded; they look like "configured" markers and phase numbering. Not in the files that we
+Factors verified on an event set to "Compulsory 2, Short 1/2, Long 3/2" (2/1, 1/2, 3/2): in Podium's hundredths 200, 50 and 150. A pairs event with the app's defaults reads short 1 and long 3, the same as Podium's own defaults. Other flag bytes (1599, 1647) are the same in every file. Not in the files that we
 have found: the factors (weights) of an event, and the entry type within dance events. The log
 `roller.tlg` numbers phases 1-4 compulsory, 5 short programme, 7 long programme/free dance.
 
@@ -193,6 +192,26 @@ Verified with an event made in the application (1 compulsory dance, a free dance
 
 Rebuilding the application's own combined event with the writer reproduces it byte for byte apart from
 those unused cells.
+
+### Single and Pairs events
+
+Verified with five events made in the application (figures only; figures and short; figures, short and long;
+short and long as Pairs) and rebuilt byte for byte by the writer:
+
+- The file is laid out as a dance file. The event type is 0 (Single) or 1 (Pairs). Start-order lists are at
+  2054 (figures), 2158 (short) and 2262 (long); each is filled only when the event has that part. Each
+  entry's flags at record offsets 268, 269 and 270 are set for the figures, the short programme and the
+  long programme; the third is also set when there is a short programme without a long one.
+- Phases: 1 figures, 2 short, 3 long, 4 figures and short, 5 short and long, 6 all three, each with its own
+  tables (an event has those whose parts it has), stored in the order 1, 4, 6, 2, 5, 3. Sums are as in dance
+  events: a phase with several parts adds each at its factor, a single part is unfactored. Figures and long
+  without a short (probably phase 7) and an event with a single programme were not seen, so they are not
+  exported.
+- A result row's word 5 is the long programme's B marks (in the phases that include it) and word 6 the short
+  programme's, in every phase but the first.
+- An entry nobody marked has no result row in the application; Podium exports it as 0.0.
+- Which B marks break ties in the phases without figures is assumed (the programmes' B marks); the sample
+  files have no ties.
 
 ## Checked against the legacy application's printed results
 

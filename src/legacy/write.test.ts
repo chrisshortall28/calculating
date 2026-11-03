@@ -2,20 +2,12 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { eventSegments, eventTieBreakMarks } from '../domain/segments';
 import { convertLegacyCompetition, groupLegacyEvents } from './convert';
-import {
-  BLOCK_SIZE,
-  checksumProblems,
-  crc16,
-  eventFileSize,
-  HEADER_SIZE,
-  phaseTailSize,
-  slotsFor,
-  victoriesSectionSize,
-} from './format';
+import { checksumProblems, crc16, eventFileSize, slotsFor } from './format';
 import { readLegacyEvent } from './readEvent';
 import { DANCE_PROFILES, type DanceKind } from './profiles';
 import { phaseTails } from './tail';
 import type { LegacyEvent } from './types';
+import { unusedCell } from './testUtils';
 import { writeDanceEvent, type WriteEvent } from './write';
 
 /** Scores a legacy event with Podium's engine and builds the tables the application stores for it. */
@@ -39,12 +31,12 @@ function writeInputFor(e: LegacyEvent, freeFactor: [number, number] = [1, 1]): W
     name: e.name,
     judges: e.judges,
     referee: e.referee,
-    kind,
+    profile: DANCE_PROFILES[kind],
     dances: e.compulsory.map((c) => c.code),
     entries: e.entries.map((en) => ({ name: en.name, club: en.club, blocks: en.blocks })),
     freeFactor,
     tails: phaseTails(
-      DANCE_PROFILES[kind].phases,
+      DANCE_PROFILES[kind],
       {
         entryIds,
         judgeIds: event.judgeIds,
@@ -52,28 +44,9 @@ function writeInputFor(e: LegacyEvent, freeFactor: [number, number] = [1, 1]): W
         mark: (k, j, x) => marks.get(`${k}|${j}|${x}`),
         tieBreakMarks: eventTieBreakMarks(event),
       },
-      bTotals,
+      { long: bTotals },
     ),
   };
-}
-
-/**
- * Bytes of a real file the writer does not reproduce: in a table of victories, the cells of unused
- * entries (the application leaves whatever was there, or 255 in a new event, and the table's checksum
- * follows).
- */
-function unusedCell(i: number, entries: number, phases: number): boolean {
-  const slots = slotsFor(entries);
-  const victories = victoriesSectionSize(slots);
-  for (let p = 0; p < phases; p++) {
-    const start = HEADER_SIZE + BLOCK_SIZE * slots + p * (phaseTailSize(slots) + 2);
-    if (i >= start + victories - 2 && i < start + victories) return true;
-    if (i >= start + 16 && i < start + victories - 2) {
-      const at = i - (start + 16);
-      return Math.floor(at / (slots + 2)) >= entries || (at % (slots + 2)) - 2 >= entries;
-    }
-  }
-  return false;
 }
 
 describe('crc16', () => {

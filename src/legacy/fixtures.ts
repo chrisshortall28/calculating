@@ -55,7 +55,7 @@ export function buildEventFile(e: FixtureEvent): Uint8Array {
   const f = e.factors ?? {};
   [b[1553], b[1554]] = f.compulsory ?? [1, 1];
   b[1597] = e.hasShort ? 1 : 0;
-  b[1602] = f.short?.[1] ?? 1;
+  [b[1601], b[1602]] = f.short ?? [1, 1];
   b[1645] = e.hasLong ? 1 : 0;
   [b[1649], b[1650]] = f.long ?? [1, 1];
   b[1741] = entries.length;

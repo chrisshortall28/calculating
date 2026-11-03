@@ -1,8 +1,15 @@
-import { danceFreeFactor, eventSegments, eventTieBreakMarks } from '../domain/segments';
-import type { Dance } from '../domain/types';
+import { FIGURES } from '../domain/figures';
+import { cfKey, danceFreeFactor, eventSegments, eventTieBreakMarks } from '../domain/segments';
+import type { Dance, SegmentKey } from '../domain/types';
 import type { CompetitionFile } from '../io/competitionFile';
 import { matchLegacyDance } from './dances';
-import { DANCE_PROFILES, type DanceKind } from './profiles';
+import {
+  DANCE_PROFILES,
+  figuresProfile,
+  figuresSupported,
+  type DanceKind,
+  type EventProfile,
+} from './profiles';
 import { phaseTails } from './tail';
 import type { LegacyWarning } from './types';
 import { MAX_CLUB, MAX_DANCES, MAX_JUDGES, MAX_NAME, writeDanceEvent, type WriteEntry } from './write';
@@ -42,7 +49,8 @@ export function legacyDate(iso: string): string {
 
 /**
  * Converts a Podium competition's events to Calculating For Windows event files. Supported: dance
- * events with compulsory dances only or a free dance only. The rest are reported in `skipped`.
+ * events with compulsory dances or a free dance, and Single and Pairs events of figures, short and long
+ * programmes in the combinations listed in `figuresSupported`. The rest are reported in `skipped`.
  */
 export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
   const result: LegacyExport = { files: [], skipped: [], warnings: [] };
@@ -83,11 +91,18 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
       continue;
     }
 
+    const figures = event.discipline === 'figures';
     const kind: DanceKind = !event.hasFreeDance
       ? 'compulsory'
       : event.compulsoryDanceIds.length > 0
         ? 'combined'
         : 'free';
+    const profile: EventProfile = figures
+      ? figuresProfile(
+          { figures: event.figures.length > 0, short: event.hasShort, long: event.hasLong },
+          event.entryType === 'pairs',
+        )
+      : DANCE_PROFILES[kind];
     const truncate = (value: string, kind: ShortenedKind) => {
       const cut = value.slice(0, SHORTENED[kind].length);
       if (cut !== value) {
@@ -99,7 +114,7 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
 
     // Podium takes any dance name; the application only has its own list. A name that is a slip away
     // from one of them gets that dance, anything else the application's unnamed "Dance No n".
-    const dances = event.compulsoryDanceIds.map((id) => {
+    const danceCodes = (figures ? [] : event.compulsoryDanceIds).map((id) => {
       const name = danceOf.get(id)?.name ?? '';
       const match = matchLegacyDance(name);
       if (!match) {
@@ -111,16 +126,30 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
       return match.code;
     });
 
-    // Block k of an entry: compulsory dance k, or (free dance) A in block 6 and B in block 7.
-    const blockKeys = [
-      ...event.compulsoryDanceIds.map((id, k) => [`cd:${id}` as const, k] as const),
-      ...(event.hasFreeDance ? (['fd:A', 'fd:B'] as const).map((key, i) => [key, 6 + i] as const) : []),
-    ];
+    const dances = figures ? event.figures.map((f) => Number(f.figureId)) : danceCodes;
+
+    // Block k of an entry: compulsory dance or figure k, the short programme A and B in blocks 4 and 5, and
+    // the free dance or long programme A and B in blocks 6 and 7.
+    const blockKeys: (readonly [SegmentKey, number])[] = figures
+      ? [
+          ...event.figures.map((f, k) => [cfKey(f), k] as const),
+          ...(event.hasShort ? (['sp:A', 'sp:B'] as const).map((key, i) => [key, 4 + i] as const) : []),
+          ...(event.hasLong ? (['lp:A', 'lp:B'] as const).map((key, i) => [key, 6 + i] as const) : []),
+        ]
+      : [
+          ...event.compulsoryDanceIds.map((id, k) => [`cd:${id}` as const, k] as const),
+          ...(event.hasFreeDance ? (['fd:A', 'fd:B'] as const).map((key, i) => [key, 6 + i] as const) : []),
+        ];
+    const longB: SegmentKey = figures ? 'lp:B' : 'fd:B';
     let missing = 0;
     const exported: WriteEntry[] = entries.map((entry) => {
       const skaters = entry.skaterIds.map((id) => skaterOf.get(id)).filter((s) => s !== undefined);
+      const pair = event.entryType === 'pairs';
       const name =
-        entry.teamName ?? (skaters.length > 0 ? skaters.map((s) => s.name).join(' / ') : '(no skaters)');
+        entry.teamName ??
+        (skaters.length > 0
+          ? (pair ? [skaters[0]!] : skaters).map((s) => s.name).join(' / ')
+          : '(no skaters)');
       const club = entry.club ?? skaters[0]?.club ?? '';
       const blocks: WriteEntry['blocks'] = Array<number[] | null>(8).fill(null);
       for (const [key, k] of blockKeys) {
@@ -132,6 +161,7 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
       }
       return {
         name: truncate(name, 'name'),
+        ...(pair && skaters[1] ? { partner: truncate(skaters[1].name, 'name') } : {}),
         club: truncate(club, 'club'),
         blocks,
       };
@@ -139,11 +169,16 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
     if (missing > 0) unmarked.set(event.name, missing);
 
     const entryIds = entries.map((e) => e.id);
-    const bTotals = entryIds.map((id) =>
-      event.hasFreeDance
-        ? event.judgeIds.reduce((a, j) => a + (marks.get(`${event.id}|fd:B|${j}|${id}`) ?? 0), 0)
-        : 0,
-    );
+    const bTotal = (key: SegmentKey) =>
+      entryIds.map((id) =>
+        event.judgeIds.reduce((a, j) => a + (marks.get(`${event.id}|${key}|${j}|${id}`) ?? 0), 0),
+      );
+    const bTotals = {
+      long: event.hasFreeDance || event.hasLong ? bTotal(longB) : entryIds.map(() => 0),
+      short: event.hasShort ? bTotal('sp:B') : entryIds.map(() => 0),
+    };
+    // Phases without figures break ties by the programmes' B marks.
+    const programmeBMarks = eventTieBreakMarks({ ...event, figures: [] });
 
     result.files.push({
       name: `DATA${String(result.files.length + 1).padStart(3, '0')}B.ROL`,
@@ -155,12 +190,23 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
         name: truncate(event.name, 'event'),
         judges: event.judgeIds.map((id) => truncate(judgeName.get(id) ?? 'Judge', 'judge')),
         referee: event.refereeId ? truncate(judgeName.get(event.refereeId) ?? '', 'judge') : '',
-        kind,
+        profile,
         dances,
+        ...(figures ? { sides: event.figures.map((f) => f.side) } : {}),
         entries: exported,
-        freeFactor: legacyFactor(danceFreeFactor(event.compulsoryDanceIds.length)),
+        freeFactor: figures
+          ? legacyFactor(event.factors.long)
+          : legacyFactor(danceFreeFactor(event.compulsoryDanceIds.length)),
+        ...(figures
+          ? {
+              factors: {
+                compulsory: legacyFactor(event.factors.figures),
+                short: legacyFactor(event.factors.short),
+              },
+            }
+          : {}),
         tails: phaseTails(
-          DANCE_PROFILES[kind].phases,
+          profile,
           {
             entryIds,
             judgeIds: event.judgeIds,
@@ -169,6 +215,14 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
             tieBreakMarks: eventTieBreakMarks(event),
           },
           bTotals,
+          figures
+            ? (phase) =>
+                profile.parts[phase]!.includes('C')
+                  ? []
+                  : programmeBMarks.filter((m) =>
+                      profile.parts[phase]!.includes(m.key === 'lp:B' ? 'L' : 'S'),
+                    )
+            : undefined,
         ),
       }),
     });
@@ -245,10 +299,22 @@ function summarise(
 }
 
 function unsupportedReason(event: FileEvent): string | undefined {
-  if (event.discipline === 'figures') return 'figures events can not be exported yet.';
+  if (event.discipline === 'figures') return unsupportedFigures(event);
   if (event.compulsoryDanceIds.length > MAX_DANCES) {
     return `it has more than ${MAX_DANCES} compulsory dances.`;
   }
   if (!event.hasFreeDance && event.compulsoryDanceIds.length === 0) return 'it has no dances.';
+  return undefined;
+}
+
+function unsupportedFigures(event: FileEvent): string | undefined {
+  if (event.entryType !== 'single' && event.entryType !== 'pairs')
+    return 'it is not a Single or Pairs event.';
+  if (event.figures.some((f) => !FIGURES.some((known) => known.id === f.figureId))) {
+    return 'it has a figure that is not in the application’s list.';
+  }
+  if (!figuresSupported({ figures: event.figures.length > 0, short: event.hasShort, long: event.hasLong })) {
+    return 'events with only a short or long programme, or figures and a long programme without a short, can not be exported yet.';
+  }
   return undefined;
 }

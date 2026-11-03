@@ -165,6 +165,7 @@ export function EventDetailsForm({
       v.figures.map((x, xi) => (xi === i ? { ...x, ...f } : x)),
     );
 
+  const pairs = v.entryType === 'pairs';
   const partTypes = (v.figures.length > 0 ? 1 : 0) + (v.hasShort ? 1 : 0) + (v.hasLong ? 1 : 0);
 
   const submit = form.onSubmit(async (values) => {
@@ -239,7 +240,16 @@ export function EventDetailsForm({
               my={4}
               data={ENTRY_TYPES[v.discipline]}
               value={v.entryType}
-              onChange={(t) => form.setFieldValue('entryType', t as EntryType)}
+              onChange={(t) =>
+                // Pairs do not skate compulsory figures.
+                t === 'pairs'
+                  ? form.setValues({
+                      entryType: 'pairs',
+                      figures: [],
+                      factors: toDecimal(defaultFactors(0, v.hasShort, v.hasLong)),
+                    })
+                  : form.setFieldValue('entryType', t as EntryType)
+              }
             />
           </Input.Wrapper>
         )}
@@ -274,7 +284,11 @@ export function EventDetailsForm({
           <>
             <Input.Wrapper
               label="Compulsory figures"
-              description={`Up to ${MAX_FIGURES}, in the order they are skated; each on the left or right, or unspecified`}
+              description={
+                pairs
+                  ? 'Pairs events have no compulsory figures'
+                  : `Up to ${MAX_FIGURES}, in the order they are skated; each on the left or right, or unspecified`
+              }
               error={form.errors.figures}
             >
               <Stack gap="xs" mt={6}>
@@ -284,6 +298,7 @@ export function EventDetailsForm({
                       aria-label={`Figure ${i + 1}`}
                       placeholder="Choose a figure"
                       data={FIGURE_OPTIONS}
+                      disabled={pairs}
                       value={f.figureId || null}
                       onChange={(id) => setFigure(i, { figureId: id ?? '' })}
                       searchable
@@ -291,6 +306,7 @@ export function EventDetailsForm({
                       style={{ flex: 1 }}
                     />
                     <SegmentedControl
+                      disabled={pairs}
                       aria-label={`Figure ${i + 1} side`}
                       data={[
                         { value: 'L', label: 'Left' },
@@ -310,7 +326,7 @@ export function EventDetailsForm({
                     </ActionIcon>
                   </Group>
                 ))}
-                {v.figures.length < MAX_FIGURES && (
+                {!pairs && v.figures.length < MAX_FIGURES && (
                   <Button
                     variant="light"
                     size="xs"

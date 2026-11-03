@@ -208,11 +208,12 @@ export function GuidePage() {
               files into a folder and open it in Calculating For Windows.
             </Text>
             <Text c="dimmed" size="sm">
-              Only dance events can be exported so far; figures events are listed as not exported. A dance the
-              old program does not have (it keeps its own list of 51) is exported as its unnamed “Dance No 1”,
-              “Dance No 2” and so on, unless the name is a slip away from one of its dances. Marks that have
-              not been entered yet are exported as 0.0. Check an exported competition in Calculating For
-              Windows before relying on it.
+              Dance events and Figures & Free events (figures alone, figures with a short programme, short and
+              long programmes, or all three) can be exported; other figures events are listed as not exported.
+              A dance the old program does not have (it keeps its own list of 51) is exported as its unnamed
+              “Dance No 1”, “Dance No 2” and so on, unless the name is a slip away from one of its dances.
+              Marks that have not been entered yet are exported as 0.0. Check an exported competition in
+              Calculating For Windows before relying on it.
             </Text>
             <Text c="dimmed" size="sm">
               Because copies don’t sync, decide which device is the “working” one at any time. If two people
