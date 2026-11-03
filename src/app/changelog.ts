@@ -8,6 +8,15 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.6.3',
+    date: '2026-11-03',
+    changes: [
+      'Importing from the old Calculating For Windows program now asks for what the files do not say: a competition date it could not read, the names of dances it does not know, and the entry type (solo, duo, couples or team) of Solo Dance events, before anything is imported.',
+      'Exporting Figures & Free events for Calculating For Windows is now enabled, following validation testing against events made in that program. Single and Pairs events with figures only, figures and a short programme, short and free programmes, or all three can be exported; other combinations are listed as not exported.',
+      'Pairs events no longer offer compulsory figures when you create or edit them.',
+    ],
+  },
+  {
     version: '1.6.2',
     date: '2026-10-31',
     changes: [
