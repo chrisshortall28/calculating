@@ -205,11 +205,11 @@ short and long as Pairs) and rebuilt byte for byte by the writer:
 - Phases: 1 figures, 2 short, 3 long, 4 figures and short, 5 short and long, 6 all three, each with its own
   tables (an event has those whose parts it has), stored in the order 1, 4, 6, 2, 5, 3. Sums are as in dance
   events: a phase with several parts adds each at its factor, a single part is unfactored. Figures and long
-  without a short (probably phase 7) and an event with a single programme were not seen, so they are not
-  exported.
+  without a short (probably phase 7) and an event with a single programme were not seen; they are exported
+  anyway (phases 1 + 3; phase 2 or 3 alone) but not yet checked against files the application made.
 - A result row's word 5 is the long programme's B marks (in the phases that include it) and word 6 the short
   programme's, in every phase but the first.
-- An entry nobody marked has no result row in the application; Podium exports it as 0.0.
+- An entry nobody marked has no result row in the application; Podium writes a block nobody marked blank (flag 0), and 0.0 for a judge's missing mark in a part-marked block.
 - Which B marks break ties in the phases without figures is assumed (the programmes' B marks); the sample
   files have no ties.
 

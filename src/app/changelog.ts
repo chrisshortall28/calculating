@@ -8,6 +8,13 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.6.4',
+    date: '2026-11-05',
+    changes: [
+      'Fixes to the Calculating For Windows export: all event types can now be exported, including Figures & Free events with only a short or long programme, or figures and a long programme. Scores that have not been entered yet are now left blank rather than defaulting to 0.0.',
+    ],
+  },
+  {
     version: '1.6.3',
     date: '2026-11-03',
     changes: [

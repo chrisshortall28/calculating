@@ -66,7 +66,8 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
   const shortened = new Map<ShortenedKind, Map<string, string>>();
   const unnamedDances = new Map<string, Set<string>>(); // dance name -> events it is in
   const nearDances = new Map<string, string>(); // name typed -> the application's dance
-  const unmarked = new Map<string, number>(); // event -> marks not entered yet
+  const left = new Map<string, number>(); // event -> marks in blocks nobody has marked, left blank
+  const unmarked = new Map<string, number>(); // event -> marks missing from blocks that have others, as 0.0
 
   for (const event of events) {
     const skip = (reason: string) => result.skipped.push({ event: event.name, reason });
@@ -142,6 +143,7 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
         ];
     const longB: SegmentKey = figures ? 'lp:B' : 'fd:B';
     let missing = 0;
+    let blank = 0;
     const exported: WriteEntry[] = entries.map((entry) => {
       const skaters = entry.skaterIds.map((id) => skaterOf.get(id)).filter((s) => s !== undefined);
       const pair = event.entryType === 'pairs';
@@ -153,8 +155,13 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
       const club = entry.club ?? skaters[0]?.club ?? '';
       const blocks: WriteEntry['blocks'] = Array<number[] | null>(8).fill(null);
       for (const [key, k] of blockKeys) {
-        blocks[k] = event.judgeIds.map((judgeId) => {
-          const tenths = marks.get(`${event.id}|${key}|${judgeId}|${entry.id}`);
+        const given = event.judgeIds.map((judgeId) => marks.get(`${event.id}|${key}|${judgeId}|${entry.id}`));
+        // A block nobody has marked is left blank, as the application does; a part-marked one has 0.0 for the rest.
+        if (given.every((tenths) => tenths === undefined)) {
+          blank += given.length;
+          continue;
+        }
+        blocks[k] = given.map((tenths) => {
           if (tenths === undefined) missing++;
           return tenths ?? 0;
         });
@@ -167,6 +174,7 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
       };
     });
     if (missing > 0) unmarked.set(event.name, missing);
+    if (blank > 0) left.set(event.name, blank);
 
     const entryIds = entries.map((e) => e.id);
     const bTotal = (key: SegmentKey) =>
@@ -227,7 +235,7 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
       }),
     });
   }
-  result.warnings.push(...summarise(shortened, unnamedDances, nearDances, unmarked));
+  result.warnings.push(...summarise(shortened, unnamedDances, nearDances, unmarked, left));
   return result;
 }
 
@@ -260,6 +268,7 @@ function summarise(
   unnamedDances: Map<string, Set<string>>,
   nearDances: Map<string, string>,
   unmarked: Map<string, number>,
+  left: Map<string, number>,
 ): LegacyWarning[] {
   const warnings: LegacyWarning[] = [];
   const add = (message: string, level: LegacyWarning['level'] = 'warning') =>
@@ -295,6 +304,13 @@ function summarise(
       `${total} mark${total === 1 ? '' : 's'} not entered yet ${total === 1 ? 'was' : 'were'} exported as 0.0, in ${unmarked.size === 1 ? 'event' : 'events'} ${quoted([...unmarked.keys()].map((name) => `“${name}”`))}; enter ${total === 1 ? 'it' : 'them'} in the application.`,
     );
   }
+  if (left.size > 0) {
+    const total = [...left.values()].reduce((a, n) => a + n, 0);
+    add(
+      `${total} mark${total === 1 ? '' : 's'} not entered yet ${total === 1 ? 'was' : 'were'} left blank, in ${left.size === 1 ? 'event' : 'events'} ${quoted([...left.keys()].map((name) => `“${name}”`))}.`,
+      'info',
+    );
+  }
   return warnings;
 }
 
@@ -314,7 +330,7 @@ function unsupportedFigures(event: FileEvent): string | undefined {
     return 'it has a figure that is not in the application’s list.';
   }
   if (!figuresSupported({ figures: event.figures.length > 0, short: event.hasShort, long: event.hasLong })) {
-    return 'events with only a short or long programme, or figures and a long programme without a short, can not be exported yet.';
+    return 'it has no figures or programmes.';
   }
   return undefined;
 }

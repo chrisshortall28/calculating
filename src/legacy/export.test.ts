@@ -192,11 +192,10 @@ describe('exportLegacyEvents', () => {
     const file = podiumCompetition(
       compulsory('Fine'),
       {
-        name: 'Figures and long',
+        name: 'Nothing',
         typeCode: 0,
-        compulsory: [{ code: 1 }],
-        hasLong: true,
-        entries: [{ name: 'Ann', blocks: { 0: [10, 10, 10], 6: [10, 10, 10], 7: [10, 10, 10] } }],
+        compulsory: [],
+        entries: [{ name: 'Ann', blocks: { 0: [10, 10, 10] } }],
       },
       compulsory('Empty', { entries: [] }),
       compulsory('Five dances'),
@@ -206,7 +205,7 @@ describe('exportLegacyEvents', () => {
     const out = exportLegacyEvents(file);
     expect(out.files.map((f) => f.event)).toEqual(['Fine']);
     expect(Object.fromEntries(out.skipped.map((s) => [s.event, s.reason]))).toEqual({
-      'Figures and long': expect.stringContaining('figures and a long programme'),
+      Nothing: expect.stringContaining('no figures or programmes'),
       Empty: expect.stringContaining('no entries'),
       'Five dances': expect.stringContaining('more than 4 compulsory dances'),
     });
@@ -391,6 +390,9 @@ describe('exporting Figures & Free events', () => {
     ['figures and short', { hasLong: false }, [1, 4, 2]],
     ['short and long', { compulsory: [] }, [2, 5, 3]],
     ['figures, short and long', {}, [1, 4, 6, 2, 5, 3]],
+    ['short only', { compulsory: [], hasLong: false }, [2]],
+    ['long only', { compulsory: [], hasShort: false }, [3]],
+    ['figures and long', { hasShort: false }, [1, 3]],
   ] as [string, Partial<FixtureEvent>, number[]][])(
     'writes %s with the tables of its phases',
     (_, extra, phases) => {

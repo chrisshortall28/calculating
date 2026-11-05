@@ -212,7 +212,7 @@ export function GuidePage() {
               long programmes, or all three) can be exported; other figures events are listed as not exported.
               A dance the old program does not have (it keeps its own list of 51) is exported as its unnamed
               “Dance No 1”, “Dance No 2” and so on, unless the name is a slip away from one of its dances.
-              Marks that have not been entered yet are exported as 0.0. Check an exported competition in
+              Marks that have not been entered yet are left blank (or 0.0 where others of the same mark are entered). Check an exported competition in
               Calculating For Windows before relying on it.
             </Text>
             <Text c="dimmed" size="sm">

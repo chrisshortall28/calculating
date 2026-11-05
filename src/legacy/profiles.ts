@@ -139,12 +139,12 @@ const FIGURE_PHASE_PARTS: Record<PhaseCode, Part[]> = {
 const FIGURE_PHASE_ORDER: PhaseCode[] = [1, 4, 6, 2, 5, 3];
 
 /**
- * The part combinations of a figures event the writer is checked against real files for: figures
- * alone, figures and short, short and long, and all three. Others (a single programme, figures and long)
- * are not known well enough.
+ * Whether a figures event has any part to export. The writer is checked against real files for figures
+ * alone, figures and short, short and long, and all three; a single programme, and figures and long
+ * without a short, are written the same way but not yet checked against files the application made.
  */
 export function figuresSupported({ figures, short, long }: FigureParts): boolean {
-  return (figures && !long) || (short && long) || (figures && short && long);
+  return figures || short || long;
 }
 
 /** The header and tables of a Single (or, with `pairs`, Pairs) event with these parts. */
