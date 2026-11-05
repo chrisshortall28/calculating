@@ -73,11 +73,10 @@ describe('Export for Calculating For Windows', () => {
         ],
       },
       {
-        name: 'Figures and long',
+        name: 'Nothing',
         typeCode: 0,
-        compulsory: [{ code: 1 }],
-        hasLong: true,
-        entries: [{ name: 'Cy', blocks: { 0: [10, 10, 10], 6: [10, 10, 10], 7: [10, 10, 10] } }],
+        compulsory: [],
+        entries: [{ name: 'Cy', blocks: { 0: [10, 10, 10] } }],
       },
     );
     const onClose = open(id);
@@ -85,7 +84,7 @@ describe('Export for Calculating For Windows', () => {
     await screen.findByText('DATA001B.ROL');
     expect(screen.getByText('2A Solo')).toBeTruthy();
     expect(screen.getByText('Not exported')).toBeTruthy();
-    expect(screen.getByText(/Figures and long: events with only a short or long programme/)).toBeTruthy();
+    expect(screen.getByText(/Nothing: it has no figures or programmes/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: /Download \.zip/ }));
     await waitFor(() => expect(downloadBytes).toHaveBeenCalledTimes(1));
@@ -99,11 +98,10 @@ describe('Export for Calculating For Windows', () => {
 
   it('says so, and offers no download, when no event can be exported', async () => {
     const id = await competitionWith({
-      name: 'Figures and long',
+      name: 'Nothing',
       typeCode: 0,
-      compulsory: [{ code: 1 }],
-      hasLong: true,
-      entries: [{ name: 'Cy', blocks: { 0: [10, 10, 10], 6: [10, 10, 10], 7: [10, 10, 10] } }],
+      compulsory: [],
+      entries: [{ name: 'Cy', blocks: { 0: [10, 10, 10] } }],
     });
     open(id);
     await screen.findByText('Nothing to export');
