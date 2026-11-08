@@ -220,22 +220,13 @@ function eventSection(c: Competition, d: EventData, number: number): Content {
       }
     : { text: '', margin: [0, 4, 0, 0] };
   // A rotating start order: each compulsory dance or figure begins with a different skater, so the table says
-  // which dances each skater starts, and a note explains why.
+  // which dances each skater starts.
   const startsBy = new Map<number, string[]>();
   for (const seg of d.segments) {
     const at = d.firstSkaters.get(seg.id);
     if (at !== undefined) startsBy.set(at, [...(startsBy.get(at) ?? []), seg.name]);
   }
   const rotating = d.rows.length > 0 && startsBy.size > 0;
-  const rotationNote: Content = rotating
-    ? {
-        text: `The skating order rotates: each ${d.event.discipline === 'figures' ? 'figure' : 'dance'} starts with a different skater (marked in the table), then follows on in order, returning to the top of the list.`,
-        fontSize: 8.5,
-        italics: true,
-        color: '#555',
-        margin: [0, 0, 0, 6],
-      }
-    : { text: '' };
   const order: Content =
     d.rows.length === 0
       ? { text: 'Entries to be confirmed.', italics: true, color: '#555' }
@@ -275,7 +266,7 @@ function eventSection(c: Competition, d: EventData, number: number): Content {
             paddingBottom: () => 4,
           },
         };
-  return { stack: [band, dances, rotationNote, order] };
+  return { stack: [band, dances, order] };
 }
 
 /** Events follow on down the page, each kept whole where it fits (moved to the next page rather than split). */

@@ -101,18 +101,16 @@ describe('programmeDocument', () => {
     expect([...at].sort((a, b) => a - b)).toEqual(at);
   });
 
-  it('marks who skates each dance first when the order rotates, and says nothing otherwise', () => {
+  it('marks who skates each dance first when the order rotates, and has no such column otherwise', () => {
     const t = texts(programmeDocument(competition, [rotating]).content);
     expect(t).toContain('Skates first');
     expect(t).toContain('Quickstep');
     expect(t).toContain('Roller Samba');
-    expect(t.some((s) => s.startsWith('The skating order rotates'))).toBe(true);
     // The first skaters sit on the right rows: Zoe starts the Quickstep, Mia the Roller Samba.
     const col = t.filter((s) => s === 'Quickstep' || s === 'Roller Samba');
     expect(col).toEqual(['Quickstep', 'Roller Samba']);
     const plain = texts(programmeDocument(competition, events).content);
     expect(plain).not.toContain('Skates first');
-    expect(plain.some((s) => s.startsWith('The skating order rotates'))).toBe(false);
   });
 
   it('never names the judges or referee, or shows marks or places', () => {
