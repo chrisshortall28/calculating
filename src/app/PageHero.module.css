@@ -144,3 +144,20 @@
 .tab[data-active]:hover {
   border-bottom-color: var(--club-secondary);
 }
+
+/* Tabs with something (e.g. a button) at the right-hand end of the same row */
+.tabsRow {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--mantine-spacing-md);
+}
+
+.tabsRow > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.tabsEnd {
+  flex: none;
+  padding-bottom: 8px;
+}
