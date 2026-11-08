@@ -121,6 +121,19 @@ export function CompetitionDetailsForm({
         <TextInput label="Date" type="date" {...form.getInputProps('date')} />
         <TextInput label="Venue" {...form.getInputProps('venue')} />
 
+        {creating && (
+          <div>
+            <Text size="sm" fw={500} mb={4}>
+              Skating order
+            </Text>
+            <Switch
+              label="Rotate the start order between compulsory dances and figures"
+              description="Each dance or figure starts with the first skater of its own group of the field. Each event can override this."
+              {...form.getInputProps('rotateStartOrder', { type: 'checkbox' })}
+            />
+          </div>
+        )}
+
         <div>
           <Group justify="space-between" mb={4}>
             <Text size="sm" fw={500}>
@@ -163,13 +176,7 @@ export function CompetitionDetailsForm({
           </div>
         </div>
 
-        {creating ? (
-          <Switch
-            label="Rotate the start order between compulsory dances and figures"
-            description="Each dance or figure starts with the first skater of its own group of the field. Each event can override this."
-            {...form.getInputProps('rotateStartOrder', { type: 'checkbox' })}
-          />
-        ) : (
+        {!creating && (
           <Textarea
             label="Programme welcome"
             description="Opens the programme; leave blank lines between paragraphs. Leave empty for a standard welcome."
