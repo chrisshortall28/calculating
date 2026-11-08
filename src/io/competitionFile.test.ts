@@ -5,9 +5,11 @@ import { danceEventDefaults } from '../domain/segments';
 import * as repo from '../db/repo';
 import {
   exportCompetition,
+  FORMAT_VERSION,
   importCompetition,
   importEventsInto,
   parseCompetitionFile,
+  SWAPS_FORMAT_VERSION,
 } from './competitionFile';
 
 async function seed() {
@@ -264,5 +266,61 @@ describe('figures & free events in files', () => {
     for (const m of merged.marks) expect(ids.has(m.judgeId)).toBe(true);
     // The original competition is untouched.
     expect((await exportCompetition(compId)).marks).toHaveLength(2);
+  });
+
+  describe('judges by section', () => {
+    it('is written as before for events whose panel never changes, and old files read unchanged', async () => {
+      const { compId } = await seed();
+      const file = await exportCompetition(compId);
+      expect(file.formatVersion).toBe(FORMAT_VERSION);
+      expect(JSON.stringify(file)).not.toContain('judgeSwaps');
+      // Files from before figures events (format 1) and before swaps (format 2) both still import.
+      for (const version of [1, 2]) {
+        await db.delete();
+        await db.open();
+        const old = JSON.parse(JSON.stringify({ ...file, formatVersion: version }));
+        const id = await importCompetition(parseCompetitionFile(old), 'replace');
+        const again = await exportCompetition(id);
+        expect(again.marks).toHaveLength(file.marks.length);
+        expect(again.events[0]!.judgeSwaps).toBeUndefined();
+      }
+    });
+
+    it('is written as format 3 only when a part has a different judge, and survives copying with new ids', async () => {
+      const { compId, eventId, j1 } = await seed();
+      const sub = await repo.addJudge(compId, 'Sub Judge');
+      await repo.setSectionJudge(eventId, ['fd'], j1, sub, 'move');
+      const file = await exportCompetition(compId);
+      expect(file.formatVersion).toBe(SWAPS_FORMAT_VERSION);
+      expect(file.events[0]!.judgeSwaps).toEqual({ fd: { [j1]: sub } });
+
+      const copyId = await importCompetition(parseCompetitionFile(JSON.parse(JSON.stringify(file))), 'copy');
+      const copy = await exportCompetition(copyId);
+      const newSub = copy.judges.find((j) => j.name === 'Sub Judge')!;
+      const newSeat = copy.judges.find((j) => j.name === 'Judge One')!;
+      expect(newSub.id).not.toBe(sub);
+      expect(copy.events[0]!.judgeSwaps).toEqual({ fd: { [newSeat.id]: newSub.id } });
+      // The substitute's marks came across too, under the new id.
+      expect(copy.marks.filter((m) => m.judgeId === newSub.id && m.segmentKey.startsWith('fd'))).toHaveLength(
+        1,
+      );
+    });
+
+    it('remaps a compulsory dance’s part id when copying events into another competition', async () => {
+      const { compId, eventId, j1, waltz } = await seed();
+      const sub = await repo.addJudge(compId, 'Sub Judge');
+      await repo.setSectionJudge(eventId, [`cd:${waltz.id}`], j1, sub, 'move');
+      const file = await exportCompetition(compId);
+      const targetId = await repo.createCompetition({ name: 'Target', date: '', venue: '' });
+      await importEventsInto(file, targetId);
+      const merged = await exportCompetition(targetId);
+      const [event] = merged.events;
+      const [danceId] = event!.compulsoryDanceIds;
+      const [segmentId] = Object.keys(event!.judgeSwaps!);
+      expect(segmentId).toBe(`cd:${danceId}`);
+      const [seat, substitute] = Object.entries(event!.judgeSwaps![segmentId!]!)[0]!;
+      expect(event!.judgeIds).toContain(seat);
+      expect(merged.judges.some((j) => j.id === substitute && j.name === 'Sub Judge')).toBe(true);
+    });
   });
 });

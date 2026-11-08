@@ -1,5 +1,6 @@
 import { db } from '../db/db';
 import { byId, entryClub, entryMembers, entryName } from '../domain/entryName';
+import { seatMark } from '../domain/panels';
 import { effectiveRotate, firstSkaters } from '../domain/startOrder';
 import { eventSegments, eventTieBreakMarks, type Segment } from '../domain/segments';
 import type { CompEvent, Competition, Id, Judge, SegmentKey } from '../domain/types';
@@ -42,7 +43,7 @@ export async function loadEventData(eventId: Id): Promise<EventData> {
   const judgeMap = byId(judgeList);
   const segments = eventSegments(event, dances);
   const markMap = indexMarks(marks);
-  const mark = (k: SegmentKey, j: Id, e: Id) => markMap.get(markKey(k, j, e));
+  const mark = seatMark(event, (k: SegmentKey, j: Id, e: Id) => markMap.get(markKey(k, j, e)));
   const result = calculateEvent({
     entryIds: entries.map((e) => e.id),
     judgeIds: event.judgeIds,

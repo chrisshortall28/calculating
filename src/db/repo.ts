@@ -9,6 +9,16 @@ import type {
   SegmentKey,
   Skater,
 } from '../domain/types';
+import {
+  cleanSwaps,
+  duplicateJudges,
+  isMarkValid,
+  keysOfSegment,
+  occupant,
+  renameJudgeInSwaps,
+  segmentIdOfKey,
+  segmentPanel,
+} from '../domain/panels';
 import { cdKey, eventMarkKeys } from '../domain/segments';
 import { db, newId, type MarkPK } from './db';
 
@@ -141,25 +151,135 @@ export async function createEvent(
 export async function marksAffectedByEventChange(eventId: Id, next: Partial<CompEvent>) {
   const ev = await db.events.get(eventId);
   if (!ev) return 0;
-  const keys = eventMarkKeys({ ...ev, ...next });
-  const judges = new Set(next.judgeIds ?? ev.judgeIds);
+  const merged = { ...ev, ...next };
+  const kept = { ...merged, judgeSwaps: cleanSwaps(merged) };
+  const keys = eventMarkKeys(kept);
   return db.marks
     .where({ eventId })
-    .filter((m) => !keys.has(m.segmentKey) || !judges.has(m.judgeId))
+    .filter((m) => !isMarkValid(kept, m, keys))
     .count();
+}
+
+/** Drops swaps that no longer apply, and the marks that no longer belong to the event. Call inside a transaction. */
+async function tidyEvent(eventId: Id) {
+  const ev = (await db.events.get(eventId))!;
+  const judgeSwaps = cleanSwaps(ev);
+  if (JSON.stringify(judgeSwaps) !== JSON.stringify(ev.judgeSwaps))
+    await db.events.update(eventId, { judgeSwaps });
+  const tidy = { ...ev, judgeSwaps };
+  const keys = eventMarkKeys(tidy);
+  await db.marks
+    .where({ eventId })
+    .filter((m) => !isMarkValid(tidy, m, keys))
+    .delete();
+  return ev.competitionId;
+}
+
+/**
+ * A different judge takes over a seat on the panel, for the whole event: the new judge sits where the old one
+ * did, in every section, and all of the old judge's marks in the event become the new judge's. For fixing a
+ * wrong choice; the referee is left as it is.
+ */
+export async function replaceEventJudge(eventId: Id, oldId: Id, newId: Id) {
+  await db.transaction('rw', db.events, db.marks, db.judges, db.competitions, async () => {
+    const ev = await db.events.get(eventId);
+    if (!ev) throw new Error('Event not found');
+    const incoming = await db.judges.get(newId);
+    if (!incoming || incoming.competitionId !== ev.competitionId) throw new Error('Judge not found');
+    if (!ev.judgeIds.includes(oldId)) throw new Error('That judge is not on the panel');
+    const sitting = new Set([
+      ...ev.judgeIds,
+      ...Object.values(ev.judgeSwaps ?? {}).flatMap((seats) => Object.values(seats)),
+    ]);
+    if (sitting.has(newId)) throw new Error(`${incoming.name} is already judging this event`);
+    await db.events.update(eventId, {
+      judgeIds: ev.judgeIds.map((j) => (j === oldId ? newId : j)),
+      judgeSwaps: renameJudgeInSwaps(ev.judgeSwaps, oldId, newId),
+    });
+    const marks = await db.marks
+      .where({ eventId })
+      .filter((m) => m.judgeId === oldId)
+      .toArray();
+    await db.marks.bulkDelete(marks.map(markPk));
+    await db.marks.bulkPut(marks.map((m) => ({ ...m, judgeId: newId })));
+    await touch(ev.competitionId);
+  });
+}
+
+const markPk = (m: Mark): MarkPK => [m.eventId, m.segmentKey, m.judgeId, m.entryId];
+
+/** What happens to the marks the outgoing judge already gave when someone else takes their seat for a part. */
+export type SectionMarks = 'move' | 'delete';
+
+/** How many marks the judges now in the seat have entered in the parts (to ask before changing it). */
+export async function countSectionMarks(eventId: Id, segmentIds: string[], seatId: Id) {
+  const ev = await db.events.get(eventId);
+  if (!ev) return 0;
+  let count = 0;
+  for (const segmentId of segmentIds) {
+    const judgeId = occupant(ev, segmentId, seatId);
+    const keys = new Set(keysOfSegment(ev, segmentId));
+    count += await db.marks
+      .where({ eventId })
+      .filter((m) => m.judgeId === judgeId && keys.has(m.segmentKey))
+      .count();
+  }
+  return count;
+}
+
+/**
+ * Puts `substituteId` in the seat for the given parts (`null`: back to the seat's own judge). The outgoing
+ * judge's marks for those parts move to the incoming judge or are deleted, as `marks` says.
+ */
+export async function setSectionJudge(
+  eventId: Id,
+  segmentIds: string[],
+  seatId: Id,
+  substituteId: Id | null,
+  marks: SectionMarks,
+) {
+  await db.transaction('rw', db.events, db.marks, db.judges, db.competitions, async () => {
+    const ev = await db.events.get(eventId);
+    if (!ev) throw new Error('Event not found');
+    if (!ev.judgeIds.includes(seatId)) throw new Error('That judge is not on the panel');
+    const known = new Set([...eventMarkKeys(ev)].map(segmentIdOfKey));
+    const incoming = substituteId ?? seatId;
+    if (substituteId && !(await db.judges.get(substituteId))) throw new Error('Judge not found');
+    const swaps = structuredClone(ev.judgeSwaps ?? {});
+    const moves: { segmentId: string; from: Id }[] = [];
+    for (const segmentId of segmentIds) {
+      if (!known.has(segmentId)) throw new Error('That part is not in this event');
+      const from = occupant({ judgeSwaps: swaps }, segmentId, seatId);
+      if (from === incoming) continue;
+      const seats = { ...swaps[segmentId] };
+      if (substituteId) seats[seatId] = substituteId;
+      else delete seats[seatId];
+      swaps[segmentId] = seats;
+      const dup = duplicateJudges(segmentPanel({ judgeIds: ev.judgeIds, judgeSwaps: swaps }, segmentId));
+      if (dup.length > 0) {
+        const name = (await db.judges.get(dup[0]!))?.name ?? 'That judge';
+        throw new Error(`${name} is already judging another seat in that part`);
+      }
+      moves.push({ segmentId, from });
+    }
+    await db.events.update(eventId, { judgeSwaps: cleanSwaps({ ...ev, judgeSwaps: swaps }) });
+    for (const { segmentId, from } of moves) {
+      const keys = new Set(keysOfSegment(ev, segmentId));
+      const old = await db.marks
+        .where({ eventId })
+        .filter((m) => m.judgeId === from && keys.has(m.segmentKey))
+        .toArray();
+      await db.marks.bulkDelete(old.map(markPk));
+      if (marks === 'move') await db.marks.bulkPut(old.map((m) => ({ ...m, judgeId: incoming })));
+    }
+    await touch(ev.competitionId);
+  });
 }
 
 export async function updateEvent(eventId: Id, data: Partial<Omit<CompEvent, 'id'>>) {
   await db.transaction('rw', db.events, db.marks, db.competitions, async () => {
     await db.events.update(eventId, data);
-    const ev = (await db.events.get(eventId))!;
-    const keys = eventMarkKeys(ev);
-    const judges = new Set(ev.judgeIds);
-    await db.marks
-      .where({ eventId })
-      .filter((m) => !keys.has(m.segmentKey) || !judges.has(m.judgeId))
-      .delete();
-    await touch(ev.competitionId);
+    await touch(await tidyEvent(eventId));
   });
 }
 
@@ -274,16 +394,32 @@ export const updateJudge = (id: Id, data: Partial<Pick<Judge, 'name'>>) => db.ju
 export async function deleteJudge(id: Id) {
   const judge = await db.judges.get(id);
   if (!judge) return;
-  await db.transaction('rw', db.judges, db.events, db.marks, async () => {
+  await db.transaction('rw', db.judges, db.events, db.marks, db.competitions, async () => {
     const events = await db.events.where({ competitionId: judge.competitionId }).toArray();
-    for (const ev of events.filter((e) => e.judgeIds.includes(id) || e.refereeId === id)) {
+    const usesJudge = (e: CompEvent) =>
+      e.judgeIds.includes(id) ||
+      e.refereeId === id ||
+      Object.values(e.judgeSwaps ?? {}).some((seats) => id in seats || Object.values(seats).includes(id));
+    const affected = events.filter(usesJudge);
+    for (const ev of affected) {
+      // A judge who sat in a seat only for some parts leaves that seat to its own judge again.
+      const judgeSwaps = ev.judgeSwaps
+        ? Object.fromEntries(
+            Object.entries(ev.judgeSwaps).map(([segmentId, seats]) => [
+              segmentId,
+              Object.fromEntries(Object.entries(seats).filter(([seat, sub]) => seat !== id && sub !== id)),
+            ]),
+          )
+        : undefined;
       await db.events.update(ev.id, {
         judgeIds: ev.judgeIds.filter((j) => j !== id),
+        ...(ev.judgeSwaps ? { judgeSwaps } : {}),
         ...(ev.refereeId === id ? { refereeId: undefined } : {}),
       });
     }
     await db.marks.where({ judgeId: id }).delete();
     await db.judges.delete(id);
+    for (const ev of affected) await tidyEvent(ev.id);
   });
 }
 
