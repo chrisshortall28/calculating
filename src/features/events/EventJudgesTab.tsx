@@ -30,6 +30,7 @@ import { byId } from '../../domain/entryName';
 import type { CompEvent } from '../../domain/types';
 import { confirmMarkLoss } from './confirmMarkLoss';
 import { ChangeJudgeModal, RenameJudgeModal, resolveJudge } from './PanelJudgeModals';
+import { SectionJudges } from './SectionJudges';
 
 export function EventJudgesTab({ event }: { event: CompEvent }) {
   const judgeList = useJudges(event.competitionId) ?? [];
@@ -178,6 +179,8 @@ export function EventJudgesTab({ event }: { event: CompEvent }) {
           }}
         />
       </div>
+
+      <SectionJudges event={event} />
 
       <Card withBorder>
         <Title order={5} mb="xs">

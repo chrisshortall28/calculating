@@ -15,6 +15,7 @@ import {
   formatVictories,
   type EventResult,
 } from '../../scoring';
+import { occupant, seatSwaps, swapsText } from '../../domain/panels';
 import { markKey, useEventResult } from '../scoring/useEventResult';
 import { RuleBadge, TieExplanations } from './PlacementRule';
 
@@ -27,6 +28,7 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
   const entryMap = byId(entries);
   const label = (id: string) => (entryMap.get(id) ? entryName(entryMap.get(id)!, skaters) : '?');
   const judgeLabel = (id: string) => `J${event.judgeIds.indexOf(id) + 1}`;
+  const swaps = seatSwaps(event, segments, (id) => judgeMap.get(id));
 
   return (
     <Stack>
@@ -46,6 +48,7 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
             {officialsLine({
               judges: event.judgeIds.map((j) => judgeMap.get(j)).filter((j) => !!j),
               referee: event.refereeId ? judgeMap.get(event.refereeId) : undefined,
+              swaps,
             })}
           </Text>
           <Table striped>
@@ -60,7 +63,11 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
                 <Table.Th ta="center">Majority victories</Table.Th>
                 <Table.Th ta="right">Total sums</Table.Th>
                 {event.judgeIds.map((j, ji) => (
-                  <Table.Th key={j} ta="center" title={`${judgeMap.get(j)?.name ?? ''} — ranking by sum`}>
+                  <Table.Th
+                    key={j}
+                    ta="center"
+                    title={`${judgeMap.get(j)?.name ?? ''}${swapsText(swaps, ji + 1) ? ` (${swapsText(swaps, ji + 1)})` : ''} — ranking by sum`}
+                  >
                     J{ji + 1}
                   </Table.Th>
                 ))}
@@ -151,7 +158,7 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
                         <Table.Th rowSpan={2}>{entryHeading[event.entryType]}</Table.Th>
                         {event.judgeIds.map((j, ji) => (
                           <Table.Th key={j} ta="center" colSpan={seg.markKeys.length + (sr.complete ? 1 : 0)}>
-                            J{ji + 1} {judgeMap.get(j)?.name}
+                            J{ji + 1} {judgeMap.get(occupant(event, seg.id, j))?.name}
                           </Table.Th>
                         ))}
                       </Table.Tr>
@@ -188,7 +195,9 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
                               <Fragment key={j}>
                                 {seg.markKeys.map((k) => (
                                   <Table.Td key={k} ta="center">
-                                    {formatTenths(markMap.get(markKey(k, j, e.id))) || '—'}
+                                    {formatTenths(
+                                      markMap.get(markKey(k, occupant(event, seg.id, j), e.id)),
+                                    ) || '—'}
                                   </Table.Td>
                                 ))}
                                 {sr.complete && (

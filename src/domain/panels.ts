@@ -93,3 +93,35 @@ export function renameJudgeInSwaps(swaps: JudgeSwaps | undefined, from: Id, to: 
     ]),
   );
 }
+
+/** A judge who sits in a seat for one part instead of the seat's own judge. */
+export interface SeatSwap {
+  /** 1-based seat number (J1…) */
+  seat: number;
+  segmentName: string;
+  judge: { id: Id; name: string };
+}
+
+/** The substitutions of an event, by seat then part, for display ("D in Free Dance"). */
+export function seatSwaps(
+  event: Panelled,
+  segments: { id: string; name: string }[],
+  judgeOf: (id: Id) => { id: Id; name: string } | undefined,
+): SeatSwap[] {
+  const out: SeatSwap[] = [];
+  event.judgeIds.forEach((seatId, i) => {
+    for (const s of segments) {
+      const who = occupant(event, s.id, seatId);
+      const judge = who === seatId ? undefined : judgeOf(who);
+      if (judge) out.push({ seat: i + 1, segmentName: s.name, judge });
+    }
+  });
+  return out;
+}
+
+/** "D in Free Dance, E in Dance 1" for the seat's substitutes (blank when there are none). */
+export const swapsText = (swaps: SeatSwap[] | undefined, seat: number): string =>
+  (swaps ?? [])
+    .filter((s) => s.seat === seat)
+    .map((s) => `${s.judge.name} in ${s.segmentName}`)
+    .join(', ');

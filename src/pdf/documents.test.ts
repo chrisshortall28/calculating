@@ -3,7 +3,7 @@ import type { TDocumentDefinitions } from 'pdfmake/interfaces';
 import { defaultFactors, eventSegments, eventTieBreakMarks } from '../domain/segments';
 import type { CompEvent, SegmentKey } from '../domain/types';
 import { calculateEvent } from '../scoring';
-import { judgeSheets, judgeSheetsDocument, resultsDocument, resultsPages } from './documents';
+import { judgeSheets, judgeSheetsDocument, officialsLine, resultsDocument, resultsPages } from './documents';
 import type { EventData } from './loadEvent';
 import { sampleEvent } from './testEvent';
 
@@ -364,6 +364,21 @@ describe('figures & free events', () => {
     expect(d.result.overall.map((o) => o.rule)).toEqual(['8', '8']);
     expect(texts(judgeSheets([d]))).toEqual(
       expect.arrayContaining(['8. Threes FO - BI (Left)', 'Short Programme', 'A', 'B']),
+    );
+  });
+});
+
+describe('officialsLine with different judges for some parts', () => {
+  it('names the seat’s own judge and who sits in it for which part', () => {
+    const d = sampleEvent();
+    const line = officialsLine({
+      judges: d.judges,
+      referee: d.referee,
+      swaps: [{ seat: 2, segmentName: 'Free Dance', judge: { id: 'x', name: 'Dora' } }],
+    });
+    expect(line).toBe('Judges: J1 Helen, J2 Ian (Dora in Free Dance), J3 Jo · Referee: Kate');
+    expect(officialsLine({ judges: d.judges, referee: d.referee })).toBe(
+      'Judges: J1 Helen, J2 Ian, J3 Jo · Referee: Kate',
     );
   });
 });

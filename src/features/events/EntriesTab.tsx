@@ -17,6 +17,7 @@ import { SortableList } from '../../app/SortableList';
 import { db } from '../../db/db';
 import { addEntry, deleteEntry, entryTypeLabel, reorderEntries, updateEntry } from '../../db/repo';
 import { indexMarks, markKey } from '../../domain/markIndex';
+import { seatMark } from '../../domain/panels';
 import { reverseOrderBySoFar } from '../../domain/reverseOrder';
 import { eventSegments, eventTieBreakMarks, segmentNoun } from '../../domain/segments';
 import { shuffled } from '../../domain/shuffle';
@@ -55,7 +56,7 @@ export function EntriesTab({ event }: { event: CompEvent }) {
       entryIds: entries.map((e) => e.id),
       judgeIds: event.judgeIds,
       segments,
-      mark: (k, j, e) => markMap.get(markKey(k, j, e)),
+      mark: seatMark(event, (k, j, e) => markMap.get(markKey(k, j, e))),
       tieBreakMarks: eventTieBreakMarks(event),
     });
     if (!reversed) {

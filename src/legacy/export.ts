@@ -1,4 +1,5 @@
 import { FIGURES } from '../domain/figures';
+import { occupant, segmentIdOfKey, seatSwaps } from '../domain/panels';
 import { cfKey, danceFreeFactor, eventSegments, eventTieBreakMarks } from '../domain/segments';
 import type { Dance, SegmentKey } from '../domain/types';
 import type { CompetitionFile } from '../io/competitionFile';
@@ -60,6 +61,13 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
   const marks = new Map(
     file.marks.map((m) => [`${m.eventId}|${m.segmentKey}|${m.judgeId}|${m.entryId}`, m.tenths]),
   );
+  /** A seat's mark: whoever sat in the seat for the part gave it (Calculating For Windows has one panel per event). */
+  const markOf = (
+    event: CompetitionFile['events'][number],
+    key: SegmentKey,
+    seatId: string,
+    entryId: string,
+  ) => marks.get(`${event.id}|${key}|${occupant(event, segmentIdOfKey(key), seatId)}|${entryId}`);
   const events = [...file.events].sort((a, b) => a.order - b.order);
 
   // What was changed to fit the application is summarised at the end, not listed one by one.
@@ -91,6 +99,19 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
       skip(event.judgeIds.length === 0 ? 'it has no judges yet.' : `it has more than ${MAX_JUDGES} judges.`);
       continue;
     }
+
+    const swapped = seatSwaps(event, eventSegments(event, file.dances), (id) =>
+      file.judges.find((j) => j.id === id),
+    );
+    if (swapped.length > 0)
+      result.warnings.push({
+        level: 'warning',
+        message: `${event.name} has different judges for some parts (${swapped
+          .map((s) => `${s.judge.name} as J${s.seat} in ${s.segmentName}`)
+          .join(
+            ', ',
+          )}). The application has one panel per event, so each seat is listed under its own judge, with the marks of whoever sat in it.`,
+      });
 
     const figures = event.discipline === 'figures';
     const kind: DanceKind = !event.hasFreeDance
@@ -155,7 +176,7 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
       const club = entry.club ?? skaters[0]?.club ?? '';
       const blocks: WriteEntry['blocks'] = Array<number[] | null>(8).fill(null);
       for (const [key, k] of blockKeys) {
-        const given = event.judgeIds.map((judgeId) => marks.get(`${event.id}|${key}|${judgeId}|${entry.id}`));
+        const given = event.judgeIds.map((judgeId) => markOf(event, key, judgeId, entry.id));
         // A block nobody has marked is left blank, as the application does; a part-marked one has 0.0 for the rest.
         if (given.every((tenths) => tenths === undefined)) {
           blank += given.length;
@@ -178,9 +199,7 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
 
     const entryIds = entries.map((e) => e.id);
     const bTotal = (key: SegmentKey) =>
-      entryIds.map((id) =>
-        event.judgeIds.reduce((a, j) => a + (marks.get(`${event.id}|${key}|${j}|${id}`) ?? 0), 0),
-      );
+      entryIds.map((id) => event.judgeIds.reduce((a, j) => a + (markOf(event, key, j, id) ?? 0), 0));
     const bTotals = {
       long: event.hasFreeDance || event.hasLong ? bTotal(longB) : entryIds.map(() => 0),
       short: event.hasShort ? bTotal('sp:B') : entryIds.map(() => 0),

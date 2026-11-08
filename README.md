@@ -152,6 +152,13 @@ resolved", opening at page 4, and is precached so it opens offline. If it is ren
 No such events in Podium, so not implemented: original dance (rules 3 and 7B's O.D. steps).
 Worked examples live in `src/scoring/scoring.test.ts`.
 
+### Changing judges during an event
+
+The panel's places are **seats** (J1, J2, …). A wrong name can be renamed, a wrong judge changed for the whole
+event (their marks go to the new judge), or a different judge can take a seat for some dances or figures
+(*Judges by section* on the event's Judges tab). Scoring treats a seat as one judge across the whole event: its
+sums, victories and rankings add up the marks of whoever sat in it, so the panel size stays the same.
+
 ### Rotating start order
 
 The CIPA manual says nothing about skating order, so this is Podium's own optional feature and never

@@ -506,3 +506,37 @@ describe.skipIf(figureFolders.length === 0)('rebuilding real Single and Pairs fi
     expect(differences).toEqual([]);
   });
 });
+
+describe('events with different judges for some parts', () => {
+  it('exports each seat under its own judge with the marks of whoever sat in it, and says so', () => {
+    const file = podiumCompetition(compulsory('Novice'));
+    const [event] = file.events;
+    const [first, second] = event!.compulsoryDanceIds;
+    const seat = event!.judgeIds[1]!;
+    const sub = { id: 'sub-judge', competitionId: file.competition.id, name: 'Sub Judge' };
+    // Another judge sat in J2 for the second dance and gave different marks.
+    const swapped: CompetitionFile = {
+      ...file,
+      judges: [...file.judges, sub],
+      events: [{ ...event!, judgeSwaps: { [`cd:${second}`]: { [seat]: sub.id } } }],
+      marks: file.marks.map((m) =>
+        m.judgeId === seat && m.segmentKey === `cd:${second}` ? { ...m, judgeId: sub.id, tenths: 33 } : m,
+      ),
+    };
+    const plain = exportLegacyEvents(file);
+    const out = exportLegacyEvents(swapped);
+    expect(out.skipped).toEqual([]);
+    expect(
+      out.warnings.some(
+        (w) => /different judges for some parts/.test(w.message) && /Sub Judge as J2/.test(w.message),
+      ),
+    ).toBe(true);
+    expect(plain.warnings.some((w) => /different judges/.test(w.message))).toBe(false);
+    // The second dance's J2 marks are the substitute's 3.3; the judge names are the seats' own.
+    const back = readLegacyEvent('DATA001B.ROL', out.files[0]!.data);
+    const marks = back.entries.map((e) => e.blocks?.[1]?.[1]);
+    expect(marks).toEqual([33, 33]);
+    expect(back.judges).toEqual(file.judges.filter((j) => event!.judgeIds.includes(j.id)).map((j) => j.name));
+    void first;
+  });
+});

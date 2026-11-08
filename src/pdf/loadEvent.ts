@@ -1,6 +1,6 @@
 import { db } from '../db/db';
 import { byId, entryClub, entryMembers, entryName } from '../domain/entryName';
-import { seatMark } from '../domain/panels';
+import { seatMark, seatSwaps, type SeatSwap } from '../domain/panels';
 import { effectiveRotate, firstSkaters } from '../domain/startOrder';
 import { eventSegments, eventTieBreakMarks, type Segment } from '../domain/segments';
 import type { CompEvent, Competition, Id, Judge, SegmentKey } from '../domain/types';
@@ -23,6 +23,8 @@ export interface EventData {
   firstSkaters: Map<string, number>;
   rows: EventRow[];
   judges: Judge[];
+  /** Judges who sit in a seat for only some parts (see `domain/panels.ts`). */
+  swaps?: SeatSwap[];
   referee?: Judge;
   mark: (key: SegmentKey, judgeId: Id, entryId: Id) => number | undefined;
   result: EventResult;
@@ -64,6 +66,7 @@ export async function loadEventData(eventId: Id): Promise<EventData> {
       skaterIds: e.skaterIds,
     })),
     judges: event.judgeIds.map((id) => judgeMap.get(id)!).filter(Boolean),
+    swaps: seatSwaps(event, segments, (id) => judgeMap.get(id)),
     referee: event.refereeId ? judgeMap.get(event.refereeId) : undefined,
     mark,
     result,

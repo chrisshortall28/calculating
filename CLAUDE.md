@@ -43,6 +43,14 @@ which cascades deletes and touches the competition's `updatedAt`. Components rea
 `useLiveQuery` hooks in `src/app/data.ts`, so writes re-render automatically — there is no other
 state store.
 
+**Judges by section.** `CompEvent.judgeIds` are *seats* (J1…Jn); `judgeSwaps` (segment id → seat → substitute,
+optional) puts another judge in a seat for one dance/figure/programme (`src/domain/panels.ts`). Marks stay keyed
+by the judge who gave them. The scoring engine works in seats and is unchanged: **always read marks through
+`seatMark`** (as `useEventResult` and `loadEventData` do) and write them under `occupant(...)`; with no swaps
+that is the plain lookup, so historic events and files are unaffected. `replaceEventJudge` /
+`setSectionJudge` in `repo.ts` move or delete marks; `updateEvent` and `deleteJudge` tidy swaps and orphaned
+marks. `.pod` files use format 3 only when an event has swaps (see `SWAPS_FORMAT_VERSION`).
+
 **Scoring engine (`src/scoring/`).** Pure functions with no React or DB imports.
 `calculateEvent({ entryIds, judgeIds, segments, mark, tieBreakMarks })` is the single entry point, used both by
 the UI (`src/features/scoring/useEventResult.ts`) and, outside React, by the PDFs

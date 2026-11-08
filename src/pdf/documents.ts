@@ -2,6 +2,7 @@ import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interface
 import { clubColors, onColor } from '../app/clubColors';
 import { entryHeading } from '../domain/entryName';
 import { factorSummary, markKeyLabel } from '../domain/segments';
+import { swapsText, type SeatSwap } from '../domain/panels';
 import { rotateFrom } from '../domain/startOrder';
 import { formatTenths } from '../marks/parseMark';
 import {
@@ -275,9 +276,18 @@ export function judgeSheets(events: EventData[], options: JudgeSheetOptions = {}
   return withPageBreaks(pages);
 }
 
-type Officials = Pick<EventData, 'judges' | 'referee'>;
+type Officials = Pick<EventData, 'judges' | 'referee'> & {
+  /** Judges who sit in a seat for only some parts. */
+  swaps?: SeatSwap[];
+};
 
-const judgesText = (d: Officials) => d.judges.map((j, i) => `J${i + 1} ${j.name}`).join(', ') || '—';
+const judgesText = (d: Officials) =>
+  d.judges
+    .map((j, i) => {
+      const others = swapsText(d.swaps, i + 1);
+      return `J${i + 1} ${j.name}${others ? ` (${others})` : ''}`;
+    })
+    .join(', ') || '—';
 const refereeText = (d: Officials) => d.referee?.name ?? '—';
 
 /** "Judges: J1 A, J2 B, J3 C · Referee: D" (referee shown as "—" if not assigned) */
