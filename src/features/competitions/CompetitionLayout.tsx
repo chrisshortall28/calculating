@@ -16,6 +16,7 @@ import {
 } from '@tabler/icons-react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router';
 import { IconJudge } from '../../app/IconJudge';
+import { PersistentStoragePrompt } from '../../app/PersistentStoragePrompt';
 import { useCompetition } from '../../app/data';
 import { formatLongDate } from '../../app/format';
 import { clubColors } from '../../app/clubColors';
@@ -153,6 +154,7 @@ export function CompetitionLayout() {
         />
       </PageHero>
       <Container size="lg">
+        <PersistentStoragePrompt />
         <Outlet />
       </Container>
       <LegacyExportModal

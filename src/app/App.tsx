@@ -15,7 +15,6 @@ import { HomePage } from '../features/home/HomePage';
 import { GuidePage } from '../features/guide/GuidePage';
 import { Layout } from './Layout';
 import { theme } from './theme';
-import { usePersistentStorage } from './usePersistentStorage';
 
 const router = createBrowserRouter(
   [
@@ -46,7 +45,6 @@ const router = createBrowserRouter(
 );
 
 export function App() {
-  usePersistentStorage();
   return (
     <MantineProvider theme={theme} defaultColorScheme="auto">
       <ModalsProvider>
