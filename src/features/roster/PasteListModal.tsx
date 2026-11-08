@@ -1,8 +1,32 @@
-import { Button, Group, Modal, ScrollArea, Stack, Table, Text, Textarea } from '@mantine/core';
+import { Button, Group, Modal, ScrollArea, Select, Stack, Table, Text, Textarea } from '@mantine/core';
 import { useState } from 'react';
-import { parsePastedList, type PastedRow } from '../../domain/pasteList';
+import { analysePaste, parsePastedList, type PasteColumn, type PastedRow } from '../../domain/pasteList';
 import { entryNoun, skatersPerEntry } from '../../domain/entryName';
 import type { EntryType } from '../../domain/types';
+
+/** What a spreadsheet column can hold, for the entry type. */
+function columnOptions(type: EntryType): { value: PasteColumn; label: string }[] {
+  if (type === 'team')
+    return [
+      { value: 'name', label: 'Team name' },
+      { value: 'club', label: 'Club' },
+      { value: 'ignore', label: 'Ignore' },
+    ];
+  const person = [
+    { value: 'first' as const, label: 'First name' },
+    { value: 'surname' as const, label: 'Surname' },
+    { value: 'name' as const, label: 'Full name' },
+  ];
+  const partner =
+    skatersPerEntry(type) === 2
+      ? [
+          { value: 'partnerFirst' as const, label: 'Partner first name' },
+          { value: 'partnerSurname' as const, label: 'Partner surname' },
+          { value: 'partner' as const, label: 'Partner full name' },
+        ]
+      : [];
+  return [...person, ...partner, { value: 'club', label: 'Club' }, { value: 'ignore', label: 'Ignore' }];
+}
 
 const rowKey = (r: PastedRow) => [r.teamName, ...[...r.names].sort()].join('|').toLowerCase();
 
@@ -40,9 +64,15 @@ export function PasteListModal({
 }) {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  /** What the user says each spreadsheet column holds, once they change one. */
+  const [chosen, setChosen] = useState<PasteColumn[] | null>(null);
+
+  const table = analysePaste(text, type);
+  const columns = table && chosen?.length === table.columns.length ? chosen : undefined;
+  const shown = columns ?? table?.columns;
 
   const seen = new Set<string>();
-  const preview = parsePastedList(text, type).map((row) => {
+  const preview = parsePastedList(text, type, columns).map((row) => {
     const key = rowKey(row);
     const reason = row.error ?? (seen.has(key) ? 'Repeated above' : skipReason?.(row));
     seen.add(key);
@@ -52,6 +82,7 @@ export function PasteListModal({
 
   const close = () => {
     setText('');
+    setChosen(null);
     onClose();
   };
 
@@ -69,13 +100,18 @@ export function PasteListModal({
     <Modal opened={opened} onClose={close} title={title} size="lg">
       <Stack>
         <Text size="sm" c="dimmed">
-          One {entryNoun[type][0]} per line. Add the club after a comma if you like — or paste name and club
-          columns straight from a spreadsheet.
+          One {entryNoun[type][0]} per line. Add the club after a comma if you like — or paste columns
+          straight from a spreadsheet: first name and surname can be separate, and columns such as Age are
+          ignored.
           {skatersPerEntry(type) === 2 && ' Separate partners with “&”.'}
         </Text>
         <Textarea
           value={text}
-          onChange={(e) => setText(e.currentTarget.value)}
+          onChange={(e) => {
+            setText(e.currentTarget.value);
+            // A new paste starts from what its own header says.
+            if (!e.currentTarget.value.trim()) setChosen(null);
+          }}
           placeholder={examples[type]}
           autosize
           minRows={6}
@@ -83,6 +119,34 @@ export function PasteListModal({
           data-autofocus
           styles={{ input: { fontFamily: 'var(--mantine-font-family-monospace)' } }}
         />
+        {table && shown && (
+          <Stack gap={4}>
+            <Text size="sm" fw={500}>
+              {table.header ? 'Columns found — check what each holds' : 'Columns — say what each holds'}
+            </Text>
+            <Group gap="xs" align="flex-start">
+              {shown.map((role, i) => (
+                <Select
+                  key={i}
+                  size="xs"
+                  w={150}
+                  allowDeselect={false}
+                  label={table.header?.[i] || `Column ${i + 1}`}
+                  description={table.sample[i] || '(empty)'}
+                  aria-label={`Column ${i + 1}: ${table.header?.[i] ?? table.sample[i] ?? ''}`}
+                  data={columnOptions(type)}
+                  value={role}
+                  onChange={(v) => {
+                    if (!v) return;
+                    const next = [...shown];
+                    next[i] = v as PasteColumn;
+                    setChosen(next);
+                  }}
+                />
+              ))}
+            </Group>
+          </Stack>
+        )}
         {preview.length > 0 && (
           <ScrollArea.Autosize mah={240}>
             <Table striped>
