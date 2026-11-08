@@ -12,27 +12,32 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core';
-import { IconFlag, IconFlagFilled, IconInfoCircle, IconTrash, IconX } from '@tabler/icons-react';
+import {
+  IconArrowsExchange,
+  IconFlag,
+  IconFlagFilled,
+  IconInfoCircle,
+  IconPencil,
+  IconTrash,
+  IconX,
+} from '@tabler/icons-react';
 import { useState } from 'react';
 import { useJudges } from '../../app/data';
 import { SortableList } from '../../app/SortableList';
 import { startsWithFilter } from '../../app/nameFilter';
-import { addJudge, marksAffectedByEventChange, updateEvent } from '../../db/repo';
+import { marksAffectedByEventChange, updateEvent } from '../../db/repo';
 import { byId } from '../../domain/entryName';
-import type { CompEvent, Judge } from '../../domain/types';
+import type { CompEvent } from '../../domain/types';
 import { confirmMarkLoss } from './confirmMarkLoss';
-
-/** Finds a roster judge by name (case-insensitive), creating one if needed. */
-async function resolveJudge(competitionId: string, name: string, roster: Judge[]) {
-  const existing = roster.find((j) => j.name.toLowerCase() === name.toLowerCase());
-  return existing?.id ?? addJudge(competitionId, name);
-}
+import { ChangeJudgeModal, RenameJudgeModal, resolveJudge } from './PanelJudgeModals';
 
 export function EventJudgesTab({ event }: { event: CompEvent }) {
   const judgeList = useJudges(event.competitionId) ?? [];
   const judges = byId(judgeList);
   const [name, setName] = useState('');
   const [refName, setRefName] = useState('');
+  const [renaming, setRenaming] = useState<string>();
+  const [changing, setChanging] = useState<string>();
   const panel = event.judgeIds.map((id) => judges.get(id)).filter((j) => !!j);
   const available = judgeList.filter((j) => !event.judgeIds.includes(j.id)).map((j) => j.name);
   const referee = event.refereeId ? judges.get(event.refereeId) : undefined;
@@ -141,6 +146,24 @@ export function EventJudgesTab({ event }: { event: CompEvent }) {
                       {isReferee ? <IconFlagFilled size={16} /> : <IconFlag size={16} />}
                     </ActionIcon>
                   </Tooltip>
+                  <Tooltip label="Rename">
+                    <ActionIcon
+                      variant="subtle"
+                      onClick={() => setRenaming(judge.id)}
+                      aria-label={`Rename ${judge.name}`}
+                    >
+                      <IconPencil size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                  <Tooltip label="Change judge">
+                    <ActionIcon
+                      variant="subtle"
+                      onClick={() => setChanging(judge.id)}
+                      aria-label={`Change ${judge.name} to another judge`}
+                    >
+                      <IconArrowsExchange size={16} />
+                    </ActionIcon>
+                  </Tooltip>
                   <ActionIcon
                     variant="subtle"
                     color="red"
@@ -206,6 +229,18 @@ export function EventJudgesTab({ event }: { event: CompEvent }) {
           </Group>
         </form>
       </Card>
+      <RenameJudgeModal
+        judge={judges.get(renaming ?? '')}
+        roster={judgeList}
+        onClose={() => setRenaming(undefined)}
+      />
+      <ChangeJudgeModal
+        event={event}
+        judge={judges.get(changing ?? '')}
+        seat={event.judgeIds.indexOf(changing ?? '') + 1}
+        roster={judgeList}
+        onClose={() => setChanging(undefined)}
+      />
     </Stack>
   );
 }
