@@ -31,7 +31,7 @@ export function ScoringTab({ event }: { event: CompEvent }) {
   const competition = useCompetition(event.competitionId);
   const [direction, setDirection] = useLocalStorage<Direction>({
     key: 'podium.direction',
-    defaultValue: 'down',
+    defaultValue: 'across',
   });
   const [autoAdvance, setAutoAdvance] = useLocalStorage({ key: 'podium.autoAdvance', defaultValue: true });
   const [numberPad, setNumberPad] = useLocalStorage({ key: 'podium.numberPad', defaultValue: false });
