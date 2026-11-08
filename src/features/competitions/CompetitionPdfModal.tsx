@@ -293,7 +293,9 @@ export function CompetitionPdfModal({
               </Radio.Group>
               {eventsPicker}
               <Alert color="blue" variant="light">
-                Only events with every mark entered are included.
+                Only events with every mark entered are included. To create results from just the compulsory
+                dances, the free dance, or the figures and programmes that are marked so far, open the event
+                and use its PDFs button.
               </Alert>
             </Stack>
             <ResultsPreview style={style} entries={SAMPLE_ENTRIES} judges={3} />
