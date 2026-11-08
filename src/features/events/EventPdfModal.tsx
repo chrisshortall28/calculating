@@ -287,7 +287,7 @@ export function EventPdfModal({
                 run(() => printSkatingOrder(event.id, event.name, new Set(orderParts.map((s) => s.id))))
               }
             >
-              Open skating order
+              Create skating order
             </Button>
           )}
           {section === 'sheets' && (
@@ -306,7 +306,7 @@ export function EventPdfModal({
                 )
               }
             >
-              Open judge sheets
+              Create judge sheets
             </Button>
           )}
           {section === 'results' && (
@@ -316,7 +316,7 @@ export function EventPdfModal({
               disabled={!result.complete}
               onClick={() => run(() => printResults({ eventId: event.id }, event.name, style))}
             >
-              Open results
+              Create results
             </Button>
           )}
         </Group>

@@ -75,7 +75,7 @@ describe('EventPdfModal', () => {
   it('prints the skating order of the ticked parts and stays open', async () => {
     const { event, dances } = await seed();
     const onClose = renderModal(event);
-    const open = await screen.findByText('Open skating order');
+    const open = await screen.findByText('Create skating order');
     await waitFor(() => expect(screen.getByLabelText(dances[1]!.name)).toBeTruthy());
 
     fireEvent.click(screen.getByLabelText(dances[1]!.name)); // untick the second dance
@@ -91,13 +91,13 @@ describe('EventPdfModal', () => {
     expect(name).toBe('Novice');
     expect(parts.size).toBe(2); // the first dance and the free dance
     expect(onClose).not.toHaveBeenCalled();
-    expect(screen.getByText('Open skating order')).toBeTruthy();
+    expect(screen.getByText('Create skating order')).toBeTruthy();
   });
 
   it('cannot print the skating order with no parts ticked', async () => {
     const { event } = await seed();
     renderModal(event);
-    const open = await screen.findByText('Open skating order');
+    const open = await screen.findByText('Create skating order');
     await waitFor(() => expect(screen.getAllByText('None').length).toBeGreaterThan(0));
     fireEvent.click(screen.getByText('None'));
     expect((open.closest('button') as HTMLButtonElement).disabled).toBe(true);
@@ -107,7 +107,7 @@ describe('EventPdfModal', () => {
     const { event, dances } = await seed();
     renderModal(event);
     fireEvent.click(await screen.findByText('Judge sheets'));
-    fireEvent.click(await screen.findByText('Open judge sheets'));
+    fireEvent.click(await screen.findByText('Create judge sheets'));
     await waitFor(() => expect(actions.printJudgeSheets).toHaveBeenCalledTimes(1));
     expect(actions.printJudgeSheets.mock.calls[0]).toEqual([
       { eventId: event.id },
@@ -117,7 +117,7 @@ describe('EventPdfModal', () => {
 
     fireEvent.click(screen.getByLabelText(/A sheet per dance/));
     fireEvent.click(screen.getByLabelText(dances[0]!.name));
-    fireEvent.click(screen.getByText('Open judge sheets'));
+    fireEvent.click(screen.getByText('Create judge sheets'));
     await waitFor(() => expect(actions.printJudgeSheets).toHaveBeenCalledTimes(2));
     const options = (
       actions.printJudgeSheets.mock.calls[1] as unknown as [
@@ -128,7 +128,7 @@ describe('EventPdfModal', () => {
     )[2];
     expect(options.layout).toBe('perPart');
     expect(options.segmentIds.size).toBe(2);
-    expect(screen.getByText('Open judge sheets')).toBeTruthy(); // still open
+    expect(screen.getByText('Create judge sheets')).toBeTruthy(); // still open
   });
 
   it('keeps results disabled until every mark is in', async () => {
@@ -136,7 +136,7 @@ describe('EventPdfModal', () => {
     renderModal(event);
     fireEvent.click(await screen.findByText('Results'));
     expect(await screen.findByText(/marks still to enter/)).toBeTruthy();
-    expect((screen.getByText('Open results').closest('button') as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByText('Create results').closest('button') as HTMLButtonElement).disabled).toBe(true);
     expect(actions.printResults).not.toHaveBeenCalled();
   });
 });

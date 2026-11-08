@@ -1,7 +1,7 @@
 import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { entryHeading } from '../domain/entryName';
 import { rotateFrom } from '../domain/startOrder';
-import { compLine, document, ROWS_PER_COLUMN } from './documents';
+import { clubTable, compLine, document, ROWS_PER_COLUMN } from './documents';
 import type { EventData } from './loadEvent';
 
 /** The skaters of one dance, figure or programme in the order they skate it, starting from its first skater. */
@@ -15,6 +15,7 @@ export function skatingOrderOf(d: EventData, segmentId: string) {
 
 function orderTable(d: EventData, order: ReturnType<typeof skatingOrderOf>, firstNumber?: number): Content {
   const entry = d.event.entryType;
+  const { th, layout } = clubTable(d);
   const rows: TableCell[][] = order.map(({ row, number }) => {
     const first = number === firstNumber;
     return [
@@ -33,16 +34,9 @@ function orderTable(d: EventData, order: ReturnType<typeof skatingOrderOf>, firs
       headerRows: 1,
       dontBreakRows: true,
       widths: [24, '*', 56],
-      body: [
-        [
-          { text: '#', style: 'th' },
-          { text: entryHeading[entry], style: 'th', alignment: 'left' },
-          { text: '', style: 'th' },
-        ],
-        ...rows,
-      ],
+      body: [[th('#'), th(entryHeading[entry], { alignment: 'left' }), th('')], ...rows],
     },
-    layout: 'lightHorizontalLines',
+    layout,
   };
 }
 

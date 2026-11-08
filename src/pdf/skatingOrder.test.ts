@@ -84,6 +84,15 @@ describe('skatingOrderPages', () => {
   });
 });
 
+describe('skatingOrderPages', () => {
+  it('uses the competition colours for the table header, like the results sheets', () => {
+    const d = event(1);
+    d.competition = { ...d.competition, primaryColor: '#c8102e' };
+    const json = JSON.stringify(skatingOrderPages([d]));
+    expect(json).toContain('#c8102e');
+  });
+});
+
 describe('skatingOrderDocument', () => {
   it('says so when there is nothing to print', () => {
     expect(texts(skatingOrderDocument([event(2)], new Set()).content)).toContain('Nothing to print.');

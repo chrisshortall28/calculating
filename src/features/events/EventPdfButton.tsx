@@ -13,13 +13,13 @@ export function EventPdfButton({ event }: { event: CompEvent }) {
       <Button
         variant="white"
         color="navy.9"
-        aria-label="PDF"
+        aria-label="PDFs"
         className={classes.button}
         classNames={{ label: classes.label, section: classes.section }}
         leftSection={<IconFileTypePdf size={16} />}
         onClick={open}
       >
-        PDF
+        PDFs
       </Button>
       <EventPdfModal event={event} opened={opened} onClose={close} />
     </>
