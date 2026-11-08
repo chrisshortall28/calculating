@@ -327,25 +327,6 @@ function Review({
         </Alert>
       )}
 
-      <Select
-        label="Import into"
-        description={
-          target
-            ? 'The events are added to this competition; its name, date and venue stay as they are. Judges, skaters and dances with the same names are reused.'
-            : 'This creates a new competition, which is what you want unless you are adding to one you already have.'
-        }
-        allowDeselect={false}
-        value={targetId}
-        onChange={(v) => setTargetId(v ?? '')}
-        data={[
-          { value: '', label: 'A new competition' },
-          ...(competitions ?? []).map((c) => ({
-            value: c.id,
-            label: [c.name, formatLongDate(c.date)].filter(Boolean).join(' · '),
-          })),
-        ]}
-      />
-
       <ScrollArea.Autosize mah={260} type="auto">
         <Table stickyHeader verticalSpacing={4} fz="sm">
           <Table.Thead>
@@ -452,6 +433,25 @@ function Review({
         </Accordion>
       )}
       <FileProblems read={read} />
+
+      <Select
+        label="Import into"
+        description={
+          target
+            ? 'The events are added to this competition; its name, date and venue stay as they are. Judges, skaters and dances with the same names are reused.'
+            : 'This creates a new competition, which is what you want unless you are adding to one you already have.'
+        }
+        allowDeselect={false}
+        value={targetId}
+        onChange={(v) => setTargetId(v ?? '')}
+        data={[
+          { value: '', label: 'A new competition' },
+          ...(competitions ?? []).map((c) => ({
+            value: c.id,
+            label: [c.name, formatLongDate(c.date)].filter(Boolean).join(' · '),
+          })),
+        ]}
+      />
 
       <Group justify="flex-end">
         <Button variant="default" onClick={onBack} disabled={importing}>
