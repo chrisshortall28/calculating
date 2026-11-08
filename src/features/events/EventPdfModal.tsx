@@ -18,6 +18,7 @@ import { useCompetition } from '../../app/data';
 import { segmentNoun, type Segment } from '../../domain/segments';
 import { effectiveRotate, firstSkaters } from '../../domain/startOrder';
 import type { CompEvent } from '../../domain/types';
+import { scopeLabel, scopeOfSegment, scopesOf, type ResultsScope } from '../../domain/resultScopes';
 import { printJudgeSheets, printResults, printSkatingOrder } from '../../pdf/actions';
 import type { ResultsStyle } from '../../pdf/documents';
 import { useEventResult } from '../scoring/useEventResult';
@@ -110,12 +111,13 @@ export function EventPdfModal({
   onClose: () => void;
 }) {
   const competition = useCompetition(event.competitionId);
-  const { segments, entries, result } = useEventResult(event);
+  const { segments, entries, result, segmentResults } = useEventResult(event);
   const [section, setSection] = useState<Section>('order');
   const [orderOff, setOrderOff] = useState<ReadonlySet<string>>(new Set());
   const [sheetsOff, setSheetsOff] = useState<ReadonlySet<string>>(new Set());
   const [layout, setLayout] = useState<Layout>('combined');
   const [style, setStyle] = useState<ResultsStyle>('standard');
+  const [scope, setScope] = useState<ResultsScope>('final');
   const [busy, setBusy] = useState(false);
 
   const noun = segmentNoun(event);
@@ -124,6 +126,27 @@ export function EventPdfModal({
   const starts = competition
     ? firstSkaters(segments, entryCount, effectiveRotate(event, competition))
     : new Map<string, number>();
+
+  // Results from one kind of part alone are available as soon as some of those parts are fully marked.
+  const scopes = scopesOf(segments).map((s) => {
+    if (s === 'final')
+      return {
+        scope: s,
+        ready: result.complete,
+        marked: segments.map((x) => x.name),
+        waiting: [] as string[],
+      };
+    const ofKind = segments.flatMap((x, i) =>
+      scopeOfSegment(x.id) === s ? [{ name: x.name, done: segmentResults[i]?.complete }] : [],
+    );
+    return {
+      scope: s,
+      ready: ofKind.some((p) => p.done),
+      marked: ofKind.filter((p) => p.done).map((p) => p.name),
+      waiting: ofKind.filter((p) => !p.done).map((p) => p.name),
+    };
+  });
+  const chosen = scopes.find((s) => s.scope === scope) ?? scopes[0]!;
 
   const orderParts = segments.filter((s) => !orderOff.has(s.id));
   const sheetParts = segments.filter((s) => !sheetsOff.has(s.id));
@@ -254,6 +277,31 @@ export function EventPdfModal({
         {section === 'results' && (
           <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
             <Stack>
+              {scopes.length > 1 && (
+                <Radio.Group
+                  value={chosen.scope}
+                  onChange={(v) => setScope(v as ResultsScope)}
+                  label="Results for"
+                >
+                  <Stack gap={6} mt={6}>
+                    {scopes.map((s) => (
+                      <Radio
+                        key={s.scope}
+                        value={s.scope}
+                        label={scopeLabel[s.scope]}
+                        disabled={s.scope !== 'final' && !s.ready}
+                        description={
+                          s.scope === 'final'
+                            ? 'Every part, once all the marks are in.'
+                            : s.ready
+                              ? `Based on ${s.marked.join(', ')}${s.waiting.length ? `; ${s.waiting.join(', ')} not fully marked yet` : ''}.`
+                              : 'Not fully marked yet.'
+                        }
+                      />
+                    ))}
+                  </Stack>
+                </Radio.Group>
+              )}
               <Radio.Group value={style} onChange={(v) => setStyle(v as ResultsStyle)} label="Style">
                 <Stack gap={6} mt={6}>
                   {RESULTS.map((r) => (
@@ -261,12 +309,13 @@ export function EventPdfModal({
                   ))}
                 </Stack>
               </Radio.Group>
-              {!result.complete && (
+              {chosen.scope === 'final' && !result.complete && (
                 <Alert color="yellow" variant="light">
                   {judgeCount === 0
                     ? 'No judges assigned yet.'
                     : `${result.missingMarks} of ${result.totalMarks} marks still to enter.`}{' '}
-                  Results can be printed when every mark is in.
+                  The final results can be printed when every mark is in
+                  {scopes.length > 1 ? ', or choose results for just the parts that are marked' : ''}.
                 </Alert>
               )}
             </Stack>
@@ -315,8 +364,8 @@ export function EventPdfModal({
             <Button
               leftSection={<IconFileTypePdf size={16} />}
               loading={busy}
-              disabled={!result.complete}
-              onClick={() => run(() => printResults({ eventId: event.id }, event.name, style))}
+              disabled={!chosen.ready}
+              onClick={() => run(() => printResults({ eventId: event.id }, event.name, style, chosen.scope))}
             >
               Create results
             </Button>

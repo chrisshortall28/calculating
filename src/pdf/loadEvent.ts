@@ -29,6 +29,8 @@ export interface EventData {
   assistantReferee?: Judge;
   mark: (key: SegmentKey, judgeId: Id, entryId: Id) => number | undefined;
   result: EventResult;
+  /** Set when the results are from one kind of part alone rather than the whole event (see `scopedResults.ts`). */
+  scope?: { label: string; basedOn: string[]; notMarked: string[] };
 }
 
 /** Loads one event and scores it, outside React (for PDF generation). */

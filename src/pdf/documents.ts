@@ -555,7 +555,16 @@ export function resultsPages(
   const pages = events
     .filter((d) => d.result.complete)
     .map((d): Content[] => [
-      ...header(d, undefined, !sharesPages(style)),
+      ...header(d, d.scope?.label, !sharesPages(style)),
+      ...(d.scope
+        ? [
+            {
+              text: `Based on ${d.scope.basedOn.join(', ')}`,
+              style: 'comp',
+              margin: [0, -4, 0, 8],
+            } as Content,
+          ]
+        : []),
       resultsTable(d, style === 'guest'),
       ...(style === 'guest' ? [] : ruleKey(d)),
       officialsBlock(d),

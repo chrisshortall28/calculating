@@ -5,6 +5,8 @@ import { judgeSheetsDocument, resultsDocument, type JudgeSheetOptions, type Resu
 import { loadCompetitionEvents, loadEventData, type EventData } from './loadEvent';
 import { openPdf } from './pdfmake';
 import { programmeDocument } from './programme';
+import { scopeLabel, type ResultsScope } from '../domain/resultScopes';
+import { scopedEventData } from './scopedResults';
 import { skatingOrderDocument } from './skatingOrder';
 
 /** One event, or a competition's events (`eventIds`: only those, default all). */
@@ -36,14 +38,23 @@ const resultsFileSuffix: Record<ResultsStyle, string> = {
 };
 
 /** Call directly from a click handler. Resolves with how many events were complete (and printed). */
-export async function printResults(target: Target, name: string, style: ResultsStyle) {
-  const events = load(target);
+export async function printResults(
+  target: Target,
+  name: string,
+  style: ResultsStyle,
+  /** Results from one kind of part alone, for an event whose other parts are not marked yet. */
+  scope: ResultsScope = 'final',
+) {
+  const loaded = load(target);
+  const events = loaded.then((all) => all.flatMap((e) => scopedEventData(e, scope) ?? []));
   await openPdf(
     events.then((e) => resultsDocument(e, style, 'eventId' in target)),
-    fileNameFor(`${name} ${resultsFileSuffix[style]}`, 'pdf'),
+    fileNameFor(
+      `${name} ${resultsFileSuffix[style]}${scope === 'final' ? '' : ` - ${scopeLabel[scope].toLowerCase()}`}`,
+      'pdf',
+    ),
   );
-  const loaded = await events;
-  return { complete: loaded.filter((e) => e.result.complete).length, total: loaded.length };
+  return { complete: (await events).filter((e) => e.result.complete).length, total: (await loaded).length };
 }
 
 /** The spectators' programme for a whole competition. Call directly from a click handler. */

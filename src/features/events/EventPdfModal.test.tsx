@@ -139,4 +139,53 @@ describe('EventPdfModal', () => {
     expect((screen.getByText('Create results').closest('button') as HTMLButtonElement).disabled).toBe(true);
     expect(actions.printResults).not.toHaveBeenCalled();
   });
+
+  describe('results from some of the parts', () => {
+    const markCompulsory = async (eventId: string, dances: { id: string }[]) => {
+      const entries = await db.entries.where({ eventId }).toArray();
+      const ev = (await db.events.get(eventId))!;
+      for (const d of dances.slice(0, 2))
+        for (const e of entries)
+          await repo.setMark(
+            { eventId, segmentKey: `cd:${d.id}`, judgeId: ev.judgeIds[0]!, entryId: e.id },
+            50,
+          );
+    };
+    const radio = (label: string | RegExp) => screen.getByLabelText(label) as HTMLInputElement;
+
+    it('offers the final results by default, with the compulsory dances and the free dance not yet available', async () => {
+      const { event } = await seed();
+      renderModal(event);
+      fireEvent.click(await screen.findByText('Results'));
+      await screen.findByText('Results for');
+      expect(radio(/Final results/).checked).toBe(true);
+      expect(radio(/Compulsory dances/).disabled).toBe(true);
+      expect(radio(/Free dance/).disabled).toBe(true);
+      expect(screen.getAllByText('Not fully marked yet.').length).toBe(2);
+    });
+
+    it('creates results from the compulsory dances once those are marked, though the free dance is not', async () => {
+      const { event, dances } = await seed();
+      await markCompulsory(event.id, dances);
+      renderModal(event);
+      fireEvent.click(await screen.findByText('Results'));
+      await waitFor(() => expect(radio(/Compulsory dances/).disabled).toBe(false));
+      expect(radio(/Free dance/).disabled).toBe(true);
+      // The final results still wait for every mark.
+      expect((screen.getByText('Create results').closest('button') as HTMLButtonElement).disabled).toBe(true);
+
+      fireEvent.click(radio(/Compulsory dances/));
+      expect((await screen.findAllByText(/Based on/)).length).toBeGreaterThan(0);
+      const create = screen.getByText('Create results').closest('button') as HTMLButtonElement;
+      expect(create.disabled).toBe(false);
+      fireEvent.click(create);
+      await waitFor(() => expect(actions.printResults).toHaveBeenCalledTimes(1));
+      expect(actions.printResults.mock.calls[0]).toEqual([
+        { eventId: event.id },
+        'Novice',
+        'standard',
+        'compulsory',
+      ]);
+    });
+  });
 });
