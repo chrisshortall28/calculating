@@ -52,22 +52,31 @@ export function ScoringTab({ event }: { event: CompEvent }) {
   const segResult = result.segments.find((s) => s.segmentId === segment?.id);
   const locked = event.status === 'final';
 
-  // With a rotating start order, the grid keeps the paper sheet's order and tags who skates first.
+  // With a rotating start order, each dance or figure is skated from its own first skater: the by-dance grid
+  // lists the skaters in that order (keeping their start numbers), and the by-judge grid, which shows every
+  // dance at once, keeps the start order and tags who skates each one first.
+  const firstIndexes = competition
+    ? firstSkaters(segments, entries.length, effectiveRotate(event, competition))
+    : new Map<string, number>();
   const firstEntryIds = new Map<string, string>();
-  if (competition)
-    for (const [segId, index] of firstSkaters(segments, entries.length, effectiveRotate(event, competition)))
-      if (entries[index]) firstEntryIds.set(segId, entries[index].id);
+  for (const [segId, index] of firstIndexes) if (entries[index]) firstEntryIds.set(segId, entries[index].id);
   const firstRowId = segment ? firstEntryIds.get(segment.id) : undefined;
+  const firstIndex = segment ? (firstIndexes.get(segment.id) ?? 0) : 0;
 
   const judges = event.judgeIds.map((id) => ({ id, name: judgeMap.get(id)?.name ?? '?' }));
   const rows = useMemo(
     () =>
-      entries.map((e) => ({
+      entries.map((e, i) => ({
+        no: i + 1,
         id: e.id,
         label: entryName(e, skaters),
         sub: entryClub(e, skaters),
       })),
     [entries, skaters],
+  );
+  const segmentRows = useMemo(
+    () => [...rows.slice(firstIndex), ...rows.slice(0, firstIndex)],
+    [rows, firstIndex],
   );
 
   // Only show a judge's ordinals once all their marks for this segment are in.
@@ -251,7 +260,7 @@ export function ScoringTab({ event }: { event: CompEvent }) {
             ) : (
               <MarkGrid
                 focusKey={`${event.id}:${segment.id}`}
-                rows={rows}
+                rows={segmentRows}
                 entryLabel={entryHeading[event.entryType]}
                 judges={judges}
                 markKeys={segment.markKeys}
