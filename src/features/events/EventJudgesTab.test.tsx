@@ -137,3 +137,41 @@ describe('EventJudgesTab assistant referee', () => {
     await waitFor(async () => expect((await db.events.get(eventId))!.assistantRefereeId).toBeUndefined());
   });
 });
+
+describe('EventJudgesTab when the event is final', () => {
+  it('says so and disables every way of changing the judges', async () => {
+    const { eventId } = await seed();
+    // Two parts, so the judges-by-section table is there too.
+    const [dance] = await db.dances.toArray();
+    await repo.updateEvent(eventId, { compulsoryDanceIds: [dance!.id] });
+    await repo.setEventStatus(eventId, 'final');
+    renderTab(eventId);
+    expect(await screen.findByText(/marked final, so its judges can’t be changed/)).toBeTruthy();
+    for (const label of [
+      'Rename Bob Judge',
+      'Change Bob Judge to another judge',
+      'Remove judge from panel',
+      'Make Bob Judge referee',
+      'Drag to reorder',
+      `Change who judges ${dance!.name} in J2`,
+    ]) {
+      const controls = await screen.findAllByLabelText(label);
+      expect(controls.length, label).toBeGreaterThan(0);
+      for (const c of controls) expect(c.matches(':disabled'), label).toBe(true);
+    }
+    const adding = screen.getAllByLabelText('Add judge to panel').filter((i) => i.tagName === 'INPUT');
+    expect(adding.length).toBeGreaterThan(0);
+    expect(adding.every((i) => i.matches(':disabled'))).toBe(true);
+    expect((screen.getByText('Add').closest('button') as HTMLButtonElement).matches(':disabled')).toBe(true);
+  });
+
+  it('unlocks again when the event goes back to scoring', async () => {
+    const { eventId } = await seed();
+    await repo.setEventStatus(eventId, 'final');
+    renderTab(eventId);
+    await screen.findByText(/marked final/);
+    await repo.setEventStatus(eventId, 'scoring');
+    await waitFor(() => expect(screen.queryByText(/marked final/)).toBeNull());
+    expect((await screen.findByLabelText('Rename Bob Judge')).matches(':disabled')).toBe(false);
+  });
+});
