@@ -219,7 +219,12 @@ export function ScoringTab({ event }: { event: CompEvent }) {
                       for (const e of entries) if (seatRaw(k, seatId, e.id) === undefined) missing++;
                   return {
                     id: seatId,
-                    name: `J${i + 1} ${judgeMap.get(seatId)?.name ?? '?'}`,
+                    // A seat that more than one judge sits in over the event has no single name to show.
+                    name: `J${i + 1} ${
+                      segments.some((s) => occupant(event, s.id, seatId) !== seatId)
+                        ? 'Multiple Judges'
+                        : (judgeMap.get(seatId)?.name ?? '?')
+                    }`,
                     done: total - missing,
                     total,
                     complete: total > 0 && missing === 0,
