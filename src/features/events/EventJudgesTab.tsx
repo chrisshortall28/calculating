@@ -16,6 +16,7 @@ import { IconFlag, IconFlagFilled, IconInfoCircle, IconTrash, IconX } from '@tab
 import { useState } from 'react';
 import { useJudges } from '../../app/data';
 import { SortableList } from '../../app/SortableList';
+import { startsWithFilter } from '../../app/nameFilter';
 import { addJudge, marksAffectedByEventChange, updateEvent } from '../../db/repo';
 import { byId } from '../../domain/entryName';
 import type { CompEvent, Judge } from '../../domain/types';
@@ -98,6 +99,7 @@ export function EventJudgesTab({ event }: { event: CompEvent }) {
               label="Add judge to panel"
               description="Pick an existing judge or type a new name"
               data={available}
+              filter={startsWithFilter}
               value={name}
               onChange={setName}
               // Picking from the list adds straight away (the async add clears the box after Mantine fills it).
@@ -191,6 +193,7 @@ export function EventJudgesTab({ event }: { event: CompEvent }) {
               label={referee ? 'Change referee' : 'Set referee'}
               description="Pick a judge or type a new name"
               data={refereeOptions}
+              filter={startsWithFilter}
               value={refName}
               onChange={setRefName}
               onOptionSubmit={(v) => void chooseReferee(v)}

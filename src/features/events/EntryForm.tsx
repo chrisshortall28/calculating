@@ -1,5 +1,6 @@
 import { Autocomplete, Button, Group, TagsInput, TextInput } from '@mantine/core';
 import { useRef, useState } from 'react';
+import { startsWithFilter } from '../../app/nameFilter';
 import { addSkater } from '../../db/repo';
 import { skatersPerEntry } from '../../domain/entryName';
 import type { Entry, EntryType, Id, Skater } from '../../domain/types';
@@ -111,6 +112,7 @@ export function EntryForm({
       ref={i === 0 ? firstRef : undefined}
       label={label}
       data={names}
+      filter={startsWithFilter}
       maxDropdownHeight={280}
       value={draft.names[i] ?? ''}
       onChange={(v) => setName(i, v)}
@@ -156,6 +158,7 @@ export function EntryForm({
           <TagsInput
             label="Members (optional)"
             data={names}
+            filter={startsWithFilter}
             value={draft.names}
             onChange={(v) => setDraft({ ...draft, names: v })}
             style={{ flex: 3, minWidth: 220 }}
