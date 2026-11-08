@@ -6,6 +6,7 @@ import { segmentNoun } from '../../domain/segments';
 import type { CompEvent } from '../../domain/types';
 import { printJudgeSheets, printResults } from '../../pdf/actions';
 import { useEventResult } from '../scoring/useEventResult';
+import classes from './EventPdfMenu.module.css';
 
 /** The PDF menu for one event (judge sheets and results), shown beside the event's tabs. */
 export function EventPdfMenu({ event }: { event: CompEvent }) {
@@ -32,6 +33,9 @@ export function EventPdfMenu({ event }: { event: CompEvent }) {
       <Menu.Target>
         <Button
           variant="white"
+          aria-label="PDF"
+          className={classes.button}
+          classNames={{ label: classes.label, section: classes.section }}
           color="navy.9"
           leftSection={<IconFileTypePdf size={16} />}
           rightSection={<IconChevronDown size={14} />}

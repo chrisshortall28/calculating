@@ -1,0 +1,18 @@
+/* On a phone the button is just the PDF icon, so the tabs beside it keep their room. */
+@media (max-width: 48em) {
+  .label {
+    display: none;
+  }
+
+  .section[data-position='right'] {
+    display: none;
+  }
+
+  .section[data-position='left'] {
+    margin-inline-end: 0;
+  }
+
+  .button {
+    padding-inline: var(--mantine-spacing-sm);
+  }
+}
