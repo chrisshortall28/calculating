@@ -10,12 +10,14 @@ import {
   SimpleGrid,
   Stack,
   Text,
+  Textarea,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconFileTypePdf } from '@tabler/icons-react';
 import { useState } from 'react';
 import { clubColors } from '../../app/clubColors';
 import { useDances, useEvents } from '../../app/data';
+import { updateCompetition } from '../../db/repo';
 import { eventSegments } from '../../domain/segments';
 import type { Competition } from '../../domain/types';
 import { printJudgeSheets, printProgramme, printResults, printSkatingOrder } from '../../pdf/actions';
@@ -57,6 +59,26 @@ export function CompetitionPdfModal({
   const [layout, setLayout] = useState<Layout>('combined');
   const [style, setStyle] = useState<ResultsStyle>('standard');
   const [busy, setBusy] = useState(false);
+  const saved = competition.welcome ?? '';
+  const [welcome, setWelcome] = useState(saved);
+  const welcomeDirty = welcome.trim() !== saved.trim();
+  const [savingWelcome, setSavingWelcome] = useState(false);
+  const saveWelcome = async () => {
+    setSavingWelcome(true);
+    try {
+      await updateCompetition(competition.id, { welcome: welcome.trim() || undefined });
+      setWelcome(welcome.trim());
+      notifications.show({ color: 'green', message: 'Welcome message saved' });
+    } catch (e) {
+      notifications.show({ color: 'red', title: 'Could not save', message: (e as Error).message });
+    } finally {
+      setSavingWelcome(false);
+    }
+  };
+  const close = () => {
+    setWelcome(saved); // unsaved changes are dropped
+    onClose();
+  };
 
   const chosen = events.filter((e) => !off.has(e.id));
   const target = { competitionId: competition.id, eventIds: new Set(chosen.map((e) => e.id)) };
@@ -142,7 +164,7 @@ export function CompetitionPdfModal({
   return (
     <Modal
       opened={opened}
-      onClose={onClose}
+      onClose={close}
       size="xl"
       centered
       title={
@@ -172,9 +194,31 @@ export function CompetitionPdfModal({
                 A programme for spectators: a cover in the club colours, a welcome page listing the events,
                 then the skaters in each event in skating order with its dances.
               </Text>
-              <Text size="xs" c="dimmed">
-                It always covers every event. Change the welcome message in the competition’s Settings.
-              </Text>
+              <Textarea
+                label="Welcome message"
+                description="Opens the programme; leave blank lines between paragraphs. Leave empty for a standard welcome."
+                autosize
+                minRows={4}
+                maxRows={10}
+                value={welcome}
+                onChange={(e) => setWelcome(e.currentTarget.value)}
+              />
+              <Group justify="space-between">
+                <Text size="xs" c="dimmed">
+                  {welcomeDirty
+                    ? 'Save the message to use it in the programme.'
+                    : 'The programme covers every event.'}
+                </Text>
+                <Button
+                  variant="light"
+                  size="xs"
+                  loading={savingWelcome}
+                  disabled={!welcomeDirty}
+                  onClick={saveWelcome}
+                >
+                  Save message
+                </Button>
+              </Group>
             </Stack>
             <ProgrammePreview
               title={competition.name}
@@ -259,11 +303,11 @@ export function CompetitionPdfModal({
         {section === 'results' && chosen.length === 0 && noEvents}
 
         <Group justify="flex-end">
-          <Button variant="default" onClick={onClose}>
+          <Button variant="default" onClick={close}>
             Close
           </Button>
           {section === 'programme' &&
-            create('Create programme', () => printProgramme(competition.id, competition.name))}
+            create('Create programme', () => printProgramme(competition.id, competition.name), welcomeDirty)}
           {section === 'order' &&
             create(
               'Create skating order',

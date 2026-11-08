@@ -3,6 +3,7 @@ import 'fake-indexeddb/auto';
 import { MantineProvider } from '@mantine/core';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useCompetition } from '../../app/data';
 import { db } from '../../db/db';
 import * as repo from '../../db/repo';
 import { danceEventDefaults } from '../../domain/segments';
@@ -35,6 +36,11 @@ globalThis.ResizeObserver ??= class {
   disconnect() {}
 };
 Element.prototype.scrollIntoView ??= () => {};
+// jsdom has no font loading events, which autosizing textareas listen to.
+if (!document.fonts)
+  Object.defineProperty(document, 'fonts', {
+    value: { addEventListener: () => {}, removeEventListener: () => {} },
+  });
 
 async function seed() {
   const compId = await repo.createCompetition({ name: 'Spring Open', date: '', venue: '' });
@@ -54,11 +60,17 @@ async function seed() {
   return { competition: (await db.competitions.get(compId))!, ids };
 }
 
+/** Like the competition page, follows the stored competition so saved changes show up. */
+function Live({ id, onClose }: { id: string; onClose: () => void }) {
+  const competition = useCompetition(id);
+  return competition ? <CompetitionPdfModal competition={competition} opened onClose={onClose} /> : null;
+}
+
 function renderModal(competition: Competition) {
   const onClose = vi.fn();
   render(
     <MantineProvider env="test">
-      <CompetitionPdfModal competition={competition} opened onClose={onClose} />
+      <Live id={competition.id} onClose={onClose} />
     </MantineProvider>,
   );
   return onClose;
@@ -79,6 +91,32 @@ describe('CompetitionPdfModal', () => {
     await waitFor(() => expect(actions.printProgramme).toHaveBeenCalledWith(competition.id, 'Spring Open'));
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByText('Create programme')).toBeTruthy();
+  });
+
+  it('saves the welcome message, and only lets the programme be created once it is saved', async () => {
+    const { competition } = await seed();
+    renderModal(competition);
+    const box = (await screen.findByLabelText('Welcome message')) as HTMLTextAreaElement;
+    const save = screen.getByText('Save message').closest('button') as HTMLButtonElement;
+    const create = screen.getByText('Create programme').closest('button') as HTMLButtonElement;
+    expect(save.disabled).toBe(true);
+    expect(create.disabled).toBe(false);
+
+    fireEvent.change(box, { target: { value: '  Welcome, skaters!  ' } });
+    expect(save.disabled).toBe(false);
+    expect(create.disabled).toBe(true);
+
+    fireEvent.click(save);
+    await waitFor(async () =>
+      expect((await db.competitions.get(competition.id))?.welcome).toBe('Welcome, skaters!'),
+    );
+    await waitFor(() => expect(create.disabled).toBe(false));
+    expect(save.disabled).toBe(true);
+
+    // Emptying it goes back to the standard welcome.
+    fireEvent.change(box, { target: { value: '' } });
+    fireEvent.click(save);
+    await waitFor(async () => expect((await db.competitions.get(competition.id))?.welcome).toBeUndefined());
   });
 
   it('prints every event unless some are unticked, then only the ticked ones', async () => {

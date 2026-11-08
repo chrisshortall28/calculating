@@ -73,7 +73,7 @@ before any `await`. An event's PDF button (beside its tabs) opens `EventPdfModal
 and offers skating order (`skatingOrder.ts`), judge sheets (`JudgeSheetOptions`: combined or a sheet per part,
 any subset of parts) and the three results styles, each with a conceptual preview (`PdfPreviews.tsx`, drawn
 CSS, not the PDF). The competition's PDFs button opens the matching `CompetitionPdfModal`: the spectators' programme, plus
-skating order, judge sheets and results for all events or the ticked ones (`eventIds` on the actions' target). Document builders in `documents.ts` are pure and tested by flattening the content tree
+skating order, judge sheets and results for all events or the ticked ones (`eventIds` on the actions' target). The programme's welcome message is edited and saved there too (not on the Settings tab). Document builders in `documents.ts` are pure and tested by flattening the content tree
 to text (`src/pdf/documents.test.ts`).
 
 **Mark entry.** `src/marks/MarkGrid.tsx` is a keyboard-driven grid (`gridNav.ts` for movement,
