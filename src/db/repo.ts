@@ -54,7 +54,10 @@ async function competitionOfEvent(eventId: Id) {
 // ---------- Competitions ----------
 
 export async function createCompetition(
-  data: Pick<Competition, 'name' | 'date' | 'venue' | 'primaryColor' | 'secondaryColor' | 'welcome'>,
+  data: Pick<
+    Competition,
+    'name' | 'date' | 'venue' | 'primaryColor' | 'secondaryColor' | 'welcome' | 'rotateStartOrder'
+  >,
 ) {
   const now = Date.now();
   const comp: Competition = { id: newId(), ...data, createdAt: now, updatedAt: now };
