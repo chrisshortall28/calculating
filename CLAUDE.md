@@ -65,7 +65,7 @@ grid are display-only).
 
 **Rotating start order.** Optional (`Competition.rotateStartOrder` default, `CompEvent.rotateStartOrder` override);
 display-only, never read by `src/scoring/`. `src/domain/startOrder.ts` works out the first skater of each compulsory
-dance/figure; judge sheets, the by-judge grid and the Entries tab only mark them — rows stay in `startOrder`. The by-dance mark grid (Scoring tab) lists each rotating dance/figure from its first skater (`rows` rotated in `ScoringTab.tsx`), keeping each skater's start number.
+dance/figure; judge sheets with several dances on one sheet, the by-judge grid and the Entries tab only mark them — rows stay in `startOrder`. The by-dance mark grid (Scoring tab) and per-dance/figure judge sheets (`judgeSheetPage` in `documents.ts`) list each rotating dance/figure from its first skater (`rows` rotated in `ScoringTab.tsx`), keeping each skater's start number.
 
 **PDFs.** pdfmake is lazy-loaded (`src/pdf/pdfmake.ts`). `printJudgeSheets` / `printResults` in
 `src/pdf/actions.ts` must be called directly from a click handler so the PDF tab opens before any

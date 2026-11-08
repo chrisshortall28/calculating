@@ -179,6 +179,23 @@ describe('judgeSheets', () => {
     expect(texts(judgeSheets([withDances(2)]))).not.toContain('Skates First');
   });
 
+  it('lists the skaters of a per-dance sheet from that dance’s first skater, keeping start numbers', () => {
+    const d = {
+      ...withDances(2),
+      firstSkaters: new Map([
+        ['cd:0', 0],
+        ['cd:1', 1],
+      ]),
+    };
+    const [dance1, dance2] = judgeSheets([d], 3, true) as unknown[];
+    const order = (page: unknown) => texts(page).filter((t) => ['Amy', 'Beth'].includes(t.split(' ')[0]!));
+    const names = d.rows.map((r) => r.name);
+    expect(order(dance1)).toEqual(names);
+    expect(order(dance2)).toEqual([...names].reverse());
+    // The start numbers travel with the skaters: 2 then 1.
+    expect(texts(dance2).filter((t) => t === '1' || t === '2')).toEqual(['2', '1']);
+  });
+
   it('prints a sheet per dance, without totals, when asked', () => {
     const d = withDances(3);
     const pages = judgeSheets([d], 3, true);

@@ -146,6 +146,11 @@ function judgeSheetPage(
     ...(isLast ? [{}, {}] : []),
   ];
   const [from, to] = part.rows ?? [0, d.rows.length];
+  // A sheet for one dance or figure of a rotating event lists the skaters from that part's first skater,
+  // keeping their start numbers; a sheet with several parts keeps the start order and marks each first skater.
+  const firstIndex = segments.length === 1 ? (d.firstSkaters.get(segments[0]!.id) ?? 0) : 0;
+  const ordered = d.rows.map((row, index) => ({ row, index }));
+  ordered.push(...ordered.splice(0, firstIndex));
   const entryRow = (r: EventData['rows'][number], i: number): TableCell[] => [
     {
       text: String(i + 1),
@@ -158,7 +163,7 @@ function judgeSheetPage(
         { text: [r.club, r.members].filter(Boolean).join(' · '), style: 'small' },
       ],
     },
-    // With a rotating start order the rows keep their order; the first skater's Comments box says so.
+    // With a rotating start order the first skater's Comments box says so.
     ...subCols.map((c) =>
       c.segmentId !== undefined && d.firstSkaters.get(c.segmentId) === i
         ? { text: 'Skates First', style: 'small', bold: true }
@@ -172,7 +177,7 @@ function judgeSheetPage(
       dontBreakRows: true,
       // The Comments columns share the spare width.
       widths: [18, nameWidth, ...subCols.map((s) => s.width), ...(isLast ? [44, 34] : [])],
-      body: [headRow1(), headRow2(), ...d.rows.slice(start, end).map((r, i) => entryRow(r, start + i))],
+      body: [headRow1(), headRow2(), ...ordered.slice(start, end).map((o) => entryRow(o.row, o.index))],
     },
   });
   const split = part.twoColumns && to - from > ROWS_PER_COLUMN ? from + ROWS_PER_COLUMN : undefined;
