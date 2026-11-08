@@ -1,4 +1,4 @@
-import { ActionIcon, Button, Container, Loader, Menu, Modal, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Button, Container, Group, Loader, Menu, Modal, Text, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import {
@@ -23,6 +23,7 @@ import { clubColors } from '../../app/clubColors';
 import { HeroMeta, HeroTabs, PageHero } from '../../app/PageHero';
 import { updateCompetition } from '../../db/repo';
 import { CompetitionDetailsForm, detailsOf } from './CompetitionDetailsForm';
+import buttonClasses from '../../app/HeroButton.module.css';
 import { CompetitionPdfModal } from './CompetitionPdfModal';
 import { LegacyExportModal } from './LegacyExportModal';
 import { useExportCompetition } from './useExportCompetition';
@@ -78,40 +79,45 @@ export function CompetitionLayout() {
             {competition.venue && <HeroMeta icon={<IconMapPin size={16} />}>{competition.venue}</HeroMeta>}
           </>
         }
-        actions={
-          <>
-            <Button
-              variant="white"
-              color="navy.9"
-              aria-label="PDFs"
-              leftSection={<IconFileTypePdf size={16} />}
-              onClick={openPdfs}
-            >
-              PDFs
-            </Button>
-            <Menu position="bottom-end">
-              <Menu.Target>
-                <Button
-                  color={colors.secondary}
-                  autoContrast
-                  leftSection={<IconDownload size={16} />}
-                  rightSection={<IconChevronDown size={14} />}
-                >
-                  Export
-                </Button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item onClick={() => exportCompetition(competition.id)}>Podium file (.pod)</Menu.Item>
-                <Menu.Item onClick={openLegacyExport}>Calculating For Windows files (.zip)…</Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          </>
-        }
       >
         <HeroTabs
           tabs={TABS}
           value={current}
           onChange={(v) => navigate(`/c/${compId}/${v === 'events' ? '' : v}`)}
+          end={
+            <Group gap="xs" wrap="nowrap">
+              <Button
+                variant="white"
+                color="navy.9"
+                aria-label="PDFs"
+                className={`${buttonClasses.button} ${buttonClasses.pair}`}
+                classNames={{ label: buttonClasses.label, section: buttonClasses.section }}
+                leftSection={<IconFileTypePdf size={16} />}
+                onClick={openPdfs}
+              >
+                PDFs
+              </Button>
+              <Menu position="bottom-end">
+                <Menu.Target>
+                  <Button
+                    color={colors.secondary}
+                    autoContrast
+                    aria-label="Export"
+                    className={`${buttonClasses.button} ${buttonClasses.pair}`}
+                    classNames={{ label: buttonClasses.label, section: buttonClasses.section }}
+                    leftSection={<IconDownload size={16} />}
+                    rightSection={<IconChevronDown size={14} />}
+                  >
+                    Export
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item onClick={() => exportCompetition(competition.id)}>Podium file (.pod)</Menu.Item>
+                  <Menu.Item onClick={openLegacyExport}>Calculating For Windows files (.zip)…</Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            </Group>
+          }
         />
       </PageHero>
       <Container size="lg">
