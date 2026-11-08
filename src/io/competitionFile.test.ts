@@ -3,7 +3,14 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../db/db';
 import { danceEventDefaults } from '../domain/segments';
 import * as repo from '../db/repo';
-import { exportCompetition, importCompetition, parseCompetitionFile } from './competitionFile';
+import {
+  exportCompetition,
+  FORMAT_VERSION,
+  importCompetition,
+  importEventsInto,
+  parseCompetitionFile,
+  SWAPS_FORMAT_VERSION,
+} from './competitionFile';
 
 async function seed() {
   const compId = await repo.createCompetition({ name: 'Spring Open', date: '2026-10-01', venue: 'Rink' });
@@ -223,5 +230,135 @@ describe('figures & free events in files', () => {
       hasLong: false,
       factors: { figures: 100, short: 100, long: 100 },
     });
+  });
+
+  it('adds a file’s events to an existing competition, reusing what it already has', async () => {
+    const { compId } = await seed();
+    const file = await exportCompetition(compId);
+    const targetId = await repo.createCompetition({ name: 'Target', date: '', venue: '' });
+    const existingJudge = await repo.addJudge(targetId, 'judge one');
+    const before = await db.dances.where({ competitionId: targetId }).count();
+
+    expect(await importEventsInto(file, targetId)).toBe(1);
+    expect(await importEventsInto(file, targetId)).toBe(1);
+
+    const merged = await exportCompetition(targetId);
+    expect(merged.competition.name).toBe('Target');
+    expect(merged.events.map((e) => e.order).sort()).toEqual([0, 1]);
+    // Default dances and the same-named judge are reused, not duplicated.
+    expect(merged.dances).toHaveLength(before);
+    expect(merged.judges.filter((j) => j.name.toLowerCase() === 'judge one')).toEqual([
+      expect.objectContaining({ id: existingJudge }),
+    ]);
+    expect(merged.skaters).toHaveLength(2);
+    expect(merged.entries).toHaveLength(4);
+    expect(merged.marks).toHaveLength(4);
+    const ids = new Set([
+      ...merged.dances.map((d) => d.id),
+      ...merged.judges.map((j) => j.id),
+      ...merged.skaters.map((s) => s.id),
+    ]);
+    for (const e of merged.events) {
+      expect(e.judgeIds.every((j) => ids.has(j))).toBe(true);
+      expect(e.compulsoryDanceIds.every((d) => ids.has(d))).toBe(true);
+      expect(ids.has(e.refereeId!)).toBe(true);
+    }
+    for (const m of merged.marks) expect(ids.has(m.judgeId)).toBe(true);
+    // The original competition is untouched.
+    expect((await exportCompetition(compId)).marks).toHaveLength(2);
+  });
+
+  describe('judges by section', () => {
+    it('is written as before for events whose panel never changes, and old files read unchanged', async () => {
+      const { compId } = await seed();
+      const file = await exportCompetition(compId);
+      expect(file.formatVersion).toBe(FORMAT_VERSION);
+      expect(JSON.stringify(file)).not.toContain('judgeSwaps');
+      // Files from before figures events (format 1) and before swaps (format 2) both still import.
+      for (const version of [1, 2]) {
+        await db.delete();
+        await db.open();
+        const old = JSON.parse(JSON.stringify({ ...file, formatVersion: version }));
+        const id = await importCompetition(parseCompetitionFile(old), 'replace');
+        const again = await exportCompetition(id);
+        expect(again.marks).toHaveLength(file.marks.length);
+        expect(again.events[0]!.judgeSwaps).toBeUndefined();
+      }
+    });
+
+    it('is written as format 3 only when a part has a different judge, and survives copying with new ids', async () => {
+      const { compId, eventId, j1 } = await seed();
+      const sub = await repo.addJudge(compId, 'Sub Judge');
+      await repo.setSectionJudge(eventId, ['fd'], j1, sub, 'move');
+      const file = await exportCompetition(compId);
+      expect(file.formatVersion).toBe(SWAPS_FORMAT_VERSION);
+      expect(file.events[0]!.judgeSwaps).toEqual({ fd: { [j1]: sub } });
+
+      const copyId = await importCompetition(parseCompetitionFile(JSON.parse(JSON.stringify(file))), 'copy');
+      const copy = await exportCompetition(copyId);
+      const newSub = copy.judges.find((j) => j.name === 'Sub Judge')!;
+      const newSeat = copy.judges.find((j) => j.name === 'Judge One')!;
+      expect(newSub.id).not.toBe(sub);
+      expect(copy.events[0]!.judgeSwaps).toEqual({ fd: { [newSeat.id]: newSub.id } });
+      // The substitute's marks came across too, under the new id.
+      expect(copy.marks.filter((m) => m.judgeId === newSub.id && m.segmentKey.startsWith('fd'))).toHaveLength(
+        1,
+      );
+    });
+
+    it('remaps a compulsory dance’s part id when copying events into another competition', async () => {
+      const { compId, eventId, j1, waltz } = await seed();
+      const sub = await repo.addJudge(compId, 'Sub Judge');
+      await repo.setSectionJudge(eventId, [`cd:${waltz.id}`], j1, sub, 'move');
+      const file = await exportCompetition(compId);
+      const targetId = await repo.createCompetition({ name: 'Target', date: '', venue: '' });
+      await importEventsInto(file, targetId);
+      const merged = await exportCompetition(targetId);
+      const [event] = merged.events;
+      const [danceId] = event!.compulsoryDanceIds;
+      const [segmentId] = Object.keys(event!.judgeSwaps!);
+      expect(segmentId).toBe(`cd:${danceId}`);
+      const [seat, substitute] = Object.entries(event!.judgeSwaps![segmentId!]!)[0]!;
+      expect(event!.judgeIds).toContain(seat);
+      expect(merged.judges.some((j) => j.id === substitute && j.name === 'Sub Judge')).toBe(true);
+    });
+  });
+});
+
+describe('assistant referee in files', () => {
+  beforeEach(async () => {
+    await db.delete();
+    await db.open();
+  });
+
+  it('is kept, with new ids, when copying or adding events to another competition', async () => {
+    const { compId, eventId } = await seed();
+    const asst = await repo.addJudge(compId, 'Assistant Ann');
+    await repo.updateEvent(eventId, { assistantRefereeId: asst });
+    const file = await exportCompetition(compId);
+    expect(file.events[0]!.assistantRefereeId).toBe(asst);
+
+    const copy = await exportCompetition(
+      await importCompetition(parseCompetitionFile(JSON.parse(JSON.stringify(file))), 'copy'),
+    );
+    const ann = copy.judges.find((j) => j.name === 'Assistant Ann')!;
+    expect(ann.id).not.toBe(asst);
+    expect(copy.events[0]!.assistantRefereeId).toBe(ann.id);
+
+    const targetId = await repo.createCompetition({ name: 'Target', date: '', venue: '' });
+    await importEventsInto(file, targetId);
+    const merged = await exportCompetition(targetId);
+    expect(merged.judges.find((j) => j.id === merged.events[0]!.assistantRefereeId)?.name).toBe(
+      'Assistant Ann',
+    );
+  });
+
+  it('is cleared with the judge, and files without one are unchanged', async () => {
+    const { compId, eventId } = await seed();
+    expect(JSON.stringify(await exportCompetition(compId))).not.toContain('assistantRefereeId');
+    const asst = await repo.addJudge(compId, 'Assistant Ann');
+    await repo.updateEvent(eventId, { assistantRefereeId: asst });
+    await repo.deleteJudge(asst);
+    expect((await db.events.get(eventId))!.assistantRefereeId).toBeUndefined();
   });
 });

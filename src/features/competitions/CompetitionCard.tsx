@@ -117,6 +117,7 @@ export function NewCompetitionButton(props: ButtonProps) {
         <CompetitionDetailsForm
           initial={emptyCompetitionDetails()}
           submitLabel="Create"
+          creating
           onSubmit={async (values) => {
             const id = await createCompetition(values);
             close();

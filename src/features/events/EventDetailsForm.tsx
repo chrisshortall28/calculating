@@ -1,5 +1,6 @@
 import {
   ActionIcon,
+  Box,
   Button,
   Group,
   Input,
@@ -15,7 +16,7 @@ import {
 import { useForm } from '@mantine/form';
 import { useRef, type ComponentProps } from 'react';
 import { IconPlus, IconX } from '@tabler/icons-react';
-import { useDances } from '../../app/data';
+import { useDances, useEvents } from '../../app/data';
 import { FIGURES, figureLabel } from '../../domain/figures';
 import { cfKey, danceEventDefaults, defaultFactors, NO_FACTORS } from '../../domain/segments';
 import {
@@ -102,8 +103,12 @@ export function EventDetailsForm({
   submitLabel,
   onSubmit,
   keepAdding,
+  eventId,
+  lockedExceptName = false,
 }: {
   competitionId: string;
+  /** The event being edited, so it does not count as a duplicate of itself. */
+  eventId?: string;
   initial?: EventDetails;
   submitLabel: string;
   onSubmit: (values: EventDetails) => unknown;
@@ -112,9 +117,12 @@ export function EventDetailsForm({
    * the same settings and a blank name, ready for the next event.
    */
   keepAdding?: { checked: boolean; onChange: (checked: boolean) => void };
+  /** Everything but the name is disabled (an event marked final). */
+  lockedExceptName?: boolean;
 }) {
   const nameRef = useRef<HTMLInputElement>(null);
   const dances = useDances(competitionId);
+  const events = useEvents(competitionId);
   const form = useForm<FormValues>({
     initialValues: initial
       ? {
@@ -150,6 +158,10 @@ export function EventDetailsForm({
     },
   });
   const v = form.values;
+  const typedName = v.name.trim().toLowerCase();
+  const duplicateName =
+    typedName !== '' &&
+    (events ?? []).some((e) => e.id !== eventId && e.name.trim().toLowerCase() === typedName);
 
   /** Changes the figures or programmes, and puts the factors back to the defaults for the new mix. */
   const setParts = (next: Partial<Pick<FormValues, 'figures' | 'hasShort' | 'hasLong'>>) => {
@@ -201,191 +213,206 @@ export function EventDetailsForm({
           required
           {...form.getInputProps('name')}
         />
-        <Input.Wrapper
-          label="Event type"
-          withAsterisk
-          error={form.errors.discipline}
-          inputWrapperOrder={['label', 'input', 'error']}
-        >
-          <SegmentedControl
-            display="flex"
-            w="fit-content"
-            my={4}
-            data={[
-              { value: 'dance', label: 'Dance' },
-              { value: 'figures', label: 'Figures & Free' },
-            ]}
-            value={v.discipline}
-            onChange={(d) =>
-              form.setValues({
-                discipline: d as EventDiscipline,
-                entryType: ENTRY_TYPES[d as EventDiscipline][0]!.value,
-              })
-            }
-          />
-        </Input.Wrapper>
-        {v.discipline && (
-          <Input.Wrapper
-            label="Entry type"
-            description={
-              v.discipline === 'dance'
-                ? 'Use ‘Team’ for team, super-team, quartet and show events'
-                : undefined
-            }
-            inputWrapperOrder={['label', 'input', 'description', 'error']}
-          >
-            <SegmentedControl
-              display="flex"
-              w="fit-content"
-              my={4}
-              data={ENTRY_TYPES[v.discipline]}
-              value={v.entryType}
-              onChange={(t) =>
-                // Pairs do not skate compulsory figures.
-                t === 'pairs'
-                  ? form.setValues({
-                      entryType: 'pairs',
-                      figures: [],
-                      factors: toDecimal(defaultFactors(0, v.hasShort, v.hasLong)),
-                    })
-                  : form.setFieldValue('entryType', t as EntryType)
-              }
-            />
-          </Input.Wrapper>
+        {duplicateName && (
+          <Text size="xs" c="orange.8" mt={-8}>
+            Another event in this competition already has this name.
+          </Text>
         )}
-
-        {v.discipline === 'dance' && (
-          <>
-            <MultiSelect
-              label="Compulsory dances"
-              description={`${TYPICAL_DANCES[v.entryType] ?? ''}Up to ${MAX_COMPULSORY_DANCES}, in the order they are skated`}
-              placeholder={v.compulsoryDanceIds.length < MAX_COMPULSORY_DANCES ? 'Choose dances' : undefined}
-              data={(dances ?? []).map((d) => ({ value: d.id, label: d.name }))}
-              maxValues={MAX_COMPULSORY_DANCES}
-              searchable
-              selectFirstOptionOnChange
-              clearable
-              {...form.getInputProps('compulsoryDanceIds')}
-            />
-            {/* Labelled like the compulsory dances field above, so the two dance choices read as a pair. */}
+        <Box
+          component="fieldset"
+          disabled={lockedExceptName}
+          style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}
+        >
+          <Stack>
             <Input.Wrapper
-              label="Free dance"
-              description="Marked by each judge with an A (technical) and B (artistic impression) mark"
+              label="Event type"
+              withAsterisk
+              error={form.errors.discipline}
+              inputWrapperOrder={['label', 'input', 'error']}
             >
-              <Switch
-                mt={6}
-                label="Includes a free dance"
-                {...form.getInputProps('hasFreeDance', { type: 'checkbox' })}
+              <SegmentedControl
+                display="flex"
+                w="fit-content"
+                my={4}
+                data={[
+                  { value: 'dance', label: 'Dance' },
+                  { value: 'figures', label: 'Figures & Free' },
+                ]}
+                value={v.discipline}
+                onChange={(d) =>
+                  form.setValues({
+                    discipline: d as EventDiscipline,
+                    entryType: ENTRY_TYPES[d as EventDiscipline][0]!.value,
+                  })
+                }
               />
             </Input.Wrapper>
-          </>
-        )}
-        {v.discipline === 'figures' && (
-          <>
-            <Input.Wrapper
-              label="Compulsory figures"
-              description={
-                pairs
-                  ? 'Pairs events have no compulsory figures'
-                  : `Up to ${MAX_FIGURES}, in the order they are skated; each on the left or right, or unspecified`
-              }
-              error={form.errors.figures}
-            >
-              <Stack gap="xs" mt={6}>
-                {v.figures.map((f, i) => (
-                  <Group key={i} gap="xs" wrap="nowrap">
-                    <Select
-                      aria-label={`Figure ${i + 1}`}
-                      placeholder="Choose a figure"
-                      data={FIGURE_OPTIONS}
-                      disabled={pairs}
-                      value={f.figureId || null}
-                      onChange={(id) => setFigure(i, { figureId: id ?? '' })}
-                      searchable
-                      selectFirstOptionOnChange
-                      style={{ flex: 1 }}
-                    />
-                    <SegmentedControl
-                      disabled={pairs}
-                      aria-label={`Figure ${i + 1} side`}
-                      data={[
-                        { value: 'L', label: 'Left' },
-                        { value: '-', label: '–' },
-                        { value: 'R', label: 'Right' },
-                      ]}
-                      value={f.side ?? '-'}
-                      onChange={(s) => setFigure(i, { side: s === '-' ? undefined : (s as FigureSide) })}
-                    />
-                    <ActionIcon
-                      variant="subtle"
-                      color="gray"
-                      aria-label={`Remove figure ${i + 1}`}
-                      onClick={() => setParts({ figures: v.figures.filter((_, xi) => xi !== i) })}
-                    >
-                      <IconX size={16} />
-                    </ActionIcon>
-                  </Group>
-                ))}
-                {!pairs && v.figures.length < MAX_FIGURES && (
-                  <Button
-                    variant="light"
-                    size="xs"
-                    w="fit-content"
-                    leftSection={<IconPlus size={14} />}
-                    onClick={() => setParts({ figures: [...v.figures, { figureId: '' }] })}
-                  >
-                    Add figure
-                  </Button>
-                )}
-              </Stack>
-            </Input.Wrapper>
-            <Input.Wrapper
-              label="Free skating"
-              description="Each programme is marked by each judge with an A (technical) and B (artistic impression) mark"
-            >
-              <Group mt={6}>
-                <Switch
-                  label="Short programme"
-                  checked={v.hasShort}
-                  onChange={(e) => setParts({ hasShort: e.currentTarget.checked })}
-                />
-                <Switch
-                  label="Free programme"
-                  checked={v.hasLong}
-                  onChange={(e) => setParts({ hasLong: e.currentTarget.checked })}
-                />
-              </Group>
-            </Input.Wrapper>
-            {partTypes > 1 && (
+            {v.discipline && (
               <Input.Wrapper
-                label="Factors"
-                description="Each judge’s sum multiplies each part’s marks by its factor. Set to the defaults whenever the parts change."
+                label="Entry type"
+                description={
+                  v.discipline === 'dance'
+                    ? 'Use ‘Team’ for team, super-team, quartet and show events'
+                    : undefined
+                }
                 inputWrapperOrder={['label', 'input', 'description', 'error']}
               >
-                <Group gap="xs" my={4} align="flex-start">
-                  {v.figures.length > 0 && (
-                    <FactorInput label="Figures" {...form.getInputProps('factors.figures')} />
-                  )}
-                  {v.hasShort && <FactorInput label="Short" {...form.getInputProps('factors.short')} />}
-                  {v.hasLong && <FactorInput label="Free" {...form.getInputProps('factors.long')} />}
-                </Group>
+                <SegmentedControl
+                  display="flex"
+                  w="fit-content"
+                  my={4}
+                  data={ENTRY_TYPES[v.discipline]}
+                  value={v.entryType}
+                  onChange={(t) =>
+                    // Pairs do not skate compulsory figures.
+                    t === 'pairs'
+                      ? form.setValues({
+                          entryType: 'pairs',
+                          figures: [],
+                          factors: toDecimal(defaultFactors(0, v.hasShort, v.hasLong)),
+                        })
+                      : form.setFieldValue('entryType', t as EntryType)
+                  }
+                />
               </Input.Wrapper>
             )}
-          </>
-        )}
-        {v.discipline && (
-          <Select
-            label="Rotating start order"
-            description="Later compulsory dances or figures start partway down the field"
-            allowDeselect={false}
-            data={[
-              { value: 'default', label: 'Use the competition’s setting' },
-              { value: 'on', label: 'Rotate' },
-              { value: 'off', label: 'Don’t rotate' },
-            ]}
-            {...form.getInputProps('rotateStartOrder')}
-          />
-        )}
+
+            {v.discipline === 'dance' && (
+              <>
+                <MultiSelect
+                  label="Compulsory dances"
+                  description={`${TYPICAL_DANCES[v.entryType] ?? ''}Up to ${MAX_COMPULSORY_DANCES}, in the order they are skated`}
+                  placeholder={
+                    v.compulsoryDanceIds.length < MAX_COMPULSORY_DANCES ? 'Choose dances' : undefined
+                  }
+                  data={(dances ?? []).map((d) => ({ value: d.id, label: d.name }))}
+                  maxValues={MAX_COMPULSORY_DANCES}
+                  searchable
+                  selectFirstOptionOnChange
+                  clearable
+                  {...form.getInputProps('compulsoryDanceIds')}
+                />
+                {/* Labelled like the compulsory dances field above, so the two dance choices read as a pair. */}
+                <Input.Wrapper
+                  label="Free dance"
+                  description="Marked by each judge with an A (technical) and B (artistic impression) mark"
+                >
+                  <Switch
+                    mt={6}
+                    label="Includes a free dance"
+                    {...form.getInputProps('hasFreeDance', { type: 'checkbox' })}
+                  />
+                </Input.Wrapper>
+              </>
+            )}
+            {v.discipline === 'figures' && (
+              <>
+                <Input.Wrapper
+                  label="Compulsory figures"
+                  description={
+                    pairs
+                      ? 'Pairs events have no compulsory figures'
+                      : `Up to ${MAX_FIGURES}, in the order they are skated; each on the left or right, or unspecified`
+                  }
+                  error={form.errors.figures}
+                >
+                  <Stack gap="xs" mt={6}>
+                    {v.figures.map((f, i) => (
+                      <Group key={i} gap="xs" wrap="nowrap">
+                        <Select
+                          aria-label={`Figure ${i + 1}`}
+                          placeholder="Choose a figure"
+                          data={FIGURE_OPTIONS}
+                          disabled={pairs}
+                          value={f.figureId || null}
+                          onChange={(id) => setFigure(i, { figureId: id ?? '' })}
+                          searchable
+                          selectFirstOptionOnChange
+                          style={{ flex: 1 }}
+                        />
+                        <SegmentedControl
+                          disabled={pairs}
+                          aria-label={`Figure ${i + 1} side`}
+                          data={[
+                            { value: 'L', label: 'Left' },
+                            { value: '-', label: '–' },
+                            { value: 'R', label: 'Right' },
+                          ]}
+                          value={f.side ?? '-'}
+                          onChange={(s) => setFigure(i, { side: s === '-' ? undefined : (s as FigureSide) })}
+                        />
+                        <ActionIcon
+                          variant="subtle"
+                          color="gray"
+                          aria-label={`Remove figure ${i + 1}`}
+                          onClick={() => setParts({ figures: v.figures.filter((_, xi) => xi !== i) })}
+                        >
+                          <IconX size={16} />
+                        </ActionIcon>
+                      </Group>
+                    ))}
+                    {!pairs && v.figures.length < MAX_FIGURES && (
+                      <Button
+                        variant="light"
+                        size="xs"
+                        w="fit-content"
+                        leftSection={<IconPlus size={14} />}
+                        onClick={() => setParts({ figures: [...v.figures, { figureId: '' }] })}
+                      >
+                        Add figure
+                      </Button>
+                    )}
+                  </Stack>
+                </Input.Wrapper>
+                <Input.Wrapper
+                  label="Free skating"
+                  description="Each programme is marked by each judge with an A (technical) and B (artistic impression) mark"
+                >
+                  <Group mt={6}>
+                    <Switch
+                      label="Short programme"
+                      checked={v.hasShort}
+                      onChange={(e) => setParts({ hasShort: e.currentTarget.checked })}
+                    />
+                    <Switch
+                      label="Free programme"
+                      checked={v.hasLong}
+                      onChange={(e) => setParts({ hasLong: e.currentTarget.checked })}
+                    />
+                  </Group>
+                </Input.Wrapper>
+                {partTypes > 1 && (
+                  <Input.Wrapper
+                    label="Factors"
+                    description="Each judge’s sum multiplies each part’s marks by its factor. Set to the defaults whenever the parts change."
+                    inputWrapperOrder={['label', 'input', 'description', 'error']}
+                  >
+                    <Group gap="xs" my={4} align="flex-start">
+                      {v.figures.length > 0 && (
+                        <FactorInput label="Figures" {...form.getInputProps('factors.figures')} />
+                      )}
+                      {v.hasShort && <FactorInput label="Short" {...form.getInputProps('factors.short')} />}
+                      {v.hasLong && <FactorInput label="Free" {...form.getInputProps('factors.long')} />}
+                    </Group>
+                  </Input.Wrapper>
+                )}
+              </>
+            )}
+            {v.discipline && (
+              <Select
+                label="Rotating start order"
+                description="Later compulsory dances or figures start partway down the field"
+                allowDeselect={false}
+                data={[
+                  { value: 'default', label: 'Use the competition’s setting' },
+                  { value: 'on', label: 'Rotate' },
+                  { value: 'off', label: 'Don’t rotate' },
+                ]}
+                {...form.getInputProps('rotateStartOrder')}
+              />
+            )}
+          </Stack>
+        </Box>
         <Group justify="flex-end">
           {keepAdding && (
             <Switch

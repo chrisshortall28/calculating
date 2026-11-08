@@ -1,11 +1,14 @@
 import { z } from 'zod';
 import { db, newId } from '../db/db';
 import { statusForEntries } from '../db/repo';
+import { hasSwaps } from '../domain/panels';
 import { NO_FACTORS } from '../domain/segments';
 import { MAX_COMPULSORY_DANCES, MAX_FIGURES, type Id, type SegmentKey } from '../domain/types';
 
 /** 2: figures & free events. Version 1 files are read as having only dance events. */
 export const FORMAT_VERSION = 2;
+/** 3: events with different judges for some parts (`judgeSwaps`). Only written when an event has some, so other files stay readable by older versions. */
+export const SWAPS_FORMAT_VERSION = 3;
 
 const hexColor = z.string().regex(/^#[0-9a-f]{6}$/i);
 
@@ -18,7 +21,7 @@ const factor = z.number().int().min(1).max(100_000);
 
 const fileSchema = z.object({
   app: z.literal('podium'),
-  formatVersion: z.union([z.literal(1), z.literal(FORMAT_VERSION)]),
+  formatVersion: z.union([z.literal(1), z.literal(FORMAT_VERSION), z.literal(SWAPS_FORMAT_VERSION)]),
   exportedAt: z.string(),
   competition: z.object({
     id: z.string(),
@@ -55,7 +58,9 @@ const fileSchema = z.object({
       hasLong: z.boolean().default(false),
       factors: z.object({ figures: factor, short: factor, long: factor }).default(() => ({ ...NO_FACTORS })),
       judgeIds: z.array(z.string()),
+      judgeSwaps: z.record(z.string(), z.record(z.string(), z.string())).optional(),
       refereeId: z.string().optional(),
+      assistantRefereeId: z.string().optional(),
       rotateStartOrder: z.enum(['default', 'on', 'off']).optional(),
       status: z.enum(['setup', 'ready', 'scoring', 'final']),
     }),
@@ -83,6 +88,17 @@ const fileSchema = z.object({
 
 export type CompetitionFile = z.infer<typeof fileSchema>;
 
+/** `judgeSwaps` with new ids: the segment ids of compulsory dances (`cd:<danceId>`), seats and substitutes are judge ids. */
+function remapSwaps(swaps: Record<string, Record<string, string>> | undefined, id: (old: string) => string) {
+  if (!swaps) return undefined;
+  return Object.fromEntries(
+    Object.entries(swaps).map(([segmentId, seats]) => [
+      segmentId.startsWith('cd:') ? `cd:${id(segmentId.slice(3))}` : segmentId,
+      Object.fromEntries(Object.entries(seats).map(([seat, sub]) => [id(seat), id(sub)])),
+    ]),
+  );
+}
+
 export async function exportCompetition(competitionId: Id): Promise<CompetitionFile> {
   const competition = await db.competitions.get(competitionId);
   if (!competition) throw new Error('Competition not found');
@@ -90,7 +106,7 @@ export async function exportCompetition(competitionId: Id): Promise<CompetitionF
   const eventIds = events.map((e) => e.id);
   return {
     app: 'podium',
-    formatVersion: FORMAT_VERSION,
+    formatVersion: events.some(hasSwaps) ? SWAPS_FORMAT_VERSION : FORMAT_VERSION,
     exportedAt: new Date().toISOString(),
     competition,
     dances: await db.dances.where({ competitionId }).toArray(),
@@ -151,7 +167,9 @@ export async function importCompetition(file: CompetitionFile, mode: 'copy' | 'r
         competitionId: compId,
         compulsoryDanceIds: e.compulsoryDanceIds.map(id),
         judgeIds: e.judgeIds.map(id),
+        ...(e.judgeSwaps ? { judgeSwaps: remapSwaps(e.judgeSwaps, id) } : {}),
         refereeId: e.refereeId && id(e.refereeId),
+        assistantRefereeId: e.assistantRefereeId && id(e.assistantRefereeId),
         // Files from before the ready status: setup events with skaters are ready.
         status: statusForEntries(e.status, file.entries.filter((en) => en.eventId === e.id).length),
       })),
@@ -196,3 +214,85 @@ export const fileNameFor = (name: string, ext: string) =>
       .trim()
       .replace(/\s+/g, '-') || 'competition'
   }.${ext}`;
+
+/**
+ * Adds a file's events to a competition that already exists, leaving that competition's own details
+ * alone. Everything gets fresh ids. Dances, judges and skaters the competition already has (same name;
+ * for skaters the same club too, ignoring case) are reused instead of added again. Returns the number
+ * of events added.
+ */
+export async function importEventsInto(file: CompetitionFile, competitionId: Id) {
+  const map = new Map<string, string>();
+  const fresh = (old: string) => {
+    let v = map.get(old);
+    if (!v) map.set(old, (v = newId()));
+    return v;
+  };
+  const key = (...parts: string[]) => parts.map((p) => p.trim().toLowerCase()).join('\u0000');
+
+  await db.transaction('rw', db.tables, async () => {
+    const target = await db.competitions.get(competitionId);
+    if (!target) throw new Error('Competition not found');
+
+    const reuse = <T extends { id: string }>(incoming: T[], existing: T[], keyOf: (x: T) => string): T[] => {
+      const byKey = new Map(existing.map((x) => [keyOf(x), x.id]));
+      const added: T[] = [];
+      for (const x of incoming) {
+        const found = byKey.get(keyOf(x));
+        if (found) map.set(x.id, found);
+        else {
+          byKey.set(keyOf(x), fresh(x.id));
+          added.push(x);
+        }
+      }
+      return added;
+    };
+
+    const dances = reuse(file.dances, await db.dances.where({ competitionId }).toArray(), (d) => key(d.name));
+    const skaters = reuse(file.skaters, await db.skaters.where({ competitionId }).toArray(), (s) =>
+      key(s.name, s.club),
+    );
+    const judges = reuse(file.judges, await db.judges.where({ competitionId }).toArray(), (j) => key(j.name));
+    await db.dances.bulkAdd(dances.map((d) => ({ ...d, id: fresh(d.id), competitionId })));
+    await db.skaters.bulkAdd(skaters.map((s) => ({ ...s, id: fresh(s.id), competitionId })));
+    await db.judges.bulkAdd(judges.map((j) => ({ ...j, id: fresh(j.id), competitionId })));
+
+    const firstOrder = await db.events.where({ competitionId }).count();
+    const events = [...file.events].sort((a, b) => a.order - b.order);
+    await db.events.bulkAdd(
+      events.map((e, i) => ({
+        ...e,
+        id: fresh(e.id),
+        competitionId,
+        order: firstOrder + i,
+        compulsoryDanceIds: e.compulsoryDanceIds.map(fresh),
+        judgeIds: e.judgeIds.map(fresh),
+        ...(e.judgeSwaps ? { judgeSwaps: remapSwaps(e.judgeSwaps, fresh) } : {}),
+        refereeId: e.refereeId && fresh(e.refereeId),
+        assistantRefereeId: e.assistantRefereeId && fresh(e.assistantRefereeId),
+        status: statusForEntries(e.status, file.entries.filter((en) => en.eventId === e.id).length),
+      })),
+    );
+    await db.entries.bulkAdd(
+      file.entries.map((e) => ({
+        ...e,
+        id: fresh(e.id),
+        eventId: fresh(e.eventId),
+        skaterIds: e.skaterIds.map(fresh),
+      })),
+    );
+    await db.marks.bulkAdd(
+      file.marks.map((m) => ({
+        ...m,
+        eventId: fresh(m.eventId),
+        judgeId: fresh(m.judgeId),
+        entryId: fresh(m.entryId),
+        segmentKey: m.segmentKey.startsWith('cd:')
+          ? (`cd:${fresh(m.segmentKey.slice(3))}` as SegmentKey)
+          : m.segmentKey,
+      })),
+    );
+    await db.competitions.update(competitionId, { updatedAt: Date.now() });
+  });
+  return file.events.length;
+}

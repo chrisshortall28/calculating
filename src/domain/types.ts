@@ -49,8 +49,15 @@ export interface CompEvent {
   factors: Factors;
   /** Ordered judge panel; may be empty until the day. */
   judgeIds: Id[];
+  /**
+   * Judges who sit in a seat instead of the panel's own judge for one part: segment id -> seat (the judge
+   * in `judgeIds`) -> substitute. Absent for events whose panel never changes (see `domain/panels.ts`).
+   */
+  judgeSwaps?: Record<string, Record<Id, Id>>;
   /** The event's referee (a person from the judges roster; may also sit on the panel). Gives no marks. */
   refereeId?: Id;
+  /** The event's assistant referee (also from the judges roster). Gives no marks. */
+  assistantRefereeId?: Id;
   /** Rotating start order for this event: follow the competition's default, or force it on or off. */
   rotateStartOrder?: 'default' | 'on' | 'off';
   status: EventStatus;

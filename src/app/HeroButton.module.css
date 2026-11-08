@@ -1,0 +1,37 @@
+/* Buttons beside a page's tabs shrink to just their icon on a phone, so the tabs keep their room. */
+@media (max-width: 48em) {
+  .label {
+    display: none;
+  }
+
+  .section[data-position='right'] {
+    display: none;
+  }
+
+  .section[data-position='left'] {
+    margin-inline-end: 0;
+  }
+
+  .button {
+    padding-inline: var(--mantine-spacing-sm);
+  }
+}
+
+/* Two buttons beside six tabs (a competition's PDFs and Export) need the room sooner. */
+@media (max-width: 64em) {
+  .pair .label {
+    display: none;
+  }
+
+  .pair .section[data-position='right'] {
+    display: none;
+  }
+
+  .pair .section[data-position='left'] {
+    margin-inline-end: 0;
+  }
+
+  .pair {
+    padding-inline: var(--mantine-spacing-sm);
+  }
+}

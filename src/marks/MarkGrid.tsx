@@ -10,6 +10,8 @@ export interface GridRow {
   id: Id;
   label: string;
   sub?: string;
+  /** The number shown for the row: its place in the start order (default: its position in the grid). */
+  no?: number;
 }
 
 export interface GridJudge {
@@ -158,7 +160,11 @@ export function MarkGrid(props: Props) {
                 className={classes.startNo}
                 title={row.id === firstRowId ? 'Skates first in this part' : undefined}
               >
-                {row.id === firstRowId ? <span className={classes.firstSkater}>{r + 1}</span> : r + 1}
+                {row.id === firstRowId ? (
+                  <span className={classes.firstSkater}>{row.no ?? r + 1}</span>
+                ) : (
+                  (row.no ?? r + 1)
+                )}
               </td>
               <td className={classes.entryCell} title={row.sub ? `${row.label} — ${row.sub}` : row.label}>
                 <Text size="sm" fw={500} truncate>

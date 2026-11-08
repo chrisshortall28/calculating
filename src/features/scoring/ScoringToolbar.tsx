@@ -104,11 +104,11 @@ export function ScoringToolbar(props: {
           onChange={props.onDirection}
           disabled={locked}
           options={[
+            { value: 'across', label: `→ ${cap(props.entryNoun)} by ${props.entryNoun}` },
             {
               value: 'down',
               label: view === 'judge' ? `↓ ${cap(props.noun)} by ${props.noun}` : '↓ Judge by judge',
             },
-            { value: 'across', label: `→ ${cap(props.entryNoun)} by ${props.entryNoun}` },
           ]}
         />
       </div>

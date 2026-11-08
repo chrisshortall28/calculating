@@ -18,6 +18,7 @@ export interface FixtureEvent {
   typeCode?: number;
   judges?: string[];
   referee?: string;
+  assistantReferee?: string;
   compulsory?: { code: number; side?: 'l' | 'r' }[];
   hasShort?: boolean;
   hasLong?: boolean;
@@ -45,6 +46,7 @@ export function buildEventFile(e: FixtureEvent): Uint8Array {
   b[1024] = judges.length;
   judges.forEach((j, i) => text(1026 + i * 40, j));
   if (e.referee) text(1386, e.referee);
+  if (e.assistantReferee) text(1426, e.assistantReferee);
   b[1546] = e.typeCode ?? 8;
   const compulsory = e.compulsory ?? [];
   b[1551] = compulsory.length;

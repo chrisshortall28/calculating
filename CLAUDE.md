@@ -43,6 +43,14 @@ which cascades deletes and touches the competition's `updatedAt`. Components rea
 `useLiveQuery` hooks in `src/app/data.ts`, so writes re-render automatically — there is no other
 state store.
 
+**Judges by section.** `CompEvent.judgeIds` are *seats* (J1…Jn); `judgeSwaps` (segment id → seat → substitute,
+optional) puts another judge in a seat for one dance/figure/programme (`src/domain/panels.ts`). Marks stay keyed
+by the judge who gave them. The scoring engine works in seats and is unchanged: **always read marks through
+`seatMark`** (as `useEventResult` and `loadEventData` do) and write them under `occupant(...)`; with no swaps
+that is the plain lookup, so historic events and files are unaffected. `replaceEventJudge` /
+`setSectionJudge` in `repo.ts` move or delete marks; `updateEvent` and `deleteJudge` tidy swaps and orphaned
+marks. `.pod` files use format 3 only when an event has swaps (see `SWAPS_FORMAT_VERSION`).
+
 **Scoring engine (`src/scoring/`).** Pure functions with no React or DB imports.
 `calculateEvent({ entryIds, judgeIds, segments, mark, tieBreakMarks })` is the single entry point, used both by
 the UI (`src/features/scoring/useEventResult.ts`) and, outside React, by the PDFs
@@ -65,11 +73,15 @@ grid are display-only).
 
 **Rotating start order.** Optional (`Competition.rotateStartOrder` default, `CompEvent.rotateStartOrder` override);
 display-only, never read by `src/scoring/`. `src/domain/startOrder.ts` works out the first skater of each compulsory
-dance/figure; judge sheets, the mark grid and the Entries tab only mark them — rows stay in `startOrder`.
+dance/figure; judge sheets with several dances on one sheet, the by-judge grid and the Entries tab only mark them — rows stay in `startOrder`. The by-dance mark grid (Scoring tab) and per-dance/figure judge sheets (`judgeSheetPage` in `documents.ts`) list each rotating dance/figure from its first skater (`rows` rotated in `ScoringTab.tsx`), keeping each skater's start number.
 
-**PDFs.** pdfmake is lazy-loaded (`src/pdf/pdfmake.ts`). `printJudgeSheets` / `printResults` in
-`src/pdf/actions.ts` must be called directly from a click handler so the PDF tab opens before any
-`await`. Document builders in `documents.ts` are pure and tested by flattening the content tree
+**PDFs.** pdfmake is lazy-loaded (`src/pdf/pdfmake.ts`). `printJudgeSheets` / `printResults` /
+`printSkatingOrder` in `src/pdf/actions.ts` must be called directly from a click handler so the PDF tab opens
+before any `await`. An event's PDF button (beside its tabs) opens `EventPdfModal`, a launchpad that stays open
+and offers skating order (`skatingOrder.ts`), judge sheets (`JudgeSheetOptions`: combined or a sheet per part,
+any subset of parts) and the three results styles (for the whole event, or from one kind of part alone once those parts are marked: `domain/resultScopes.ts`, `pdf/scopedResults.ts`), each with a conceptual preview (`PdfPreviews.tsx`, drawn
+CSS, not the PDF). The competition's PDFs button opens the matching `CompetitionPdfModal`: the spectators' programme, plus
+skating order, judge sheets and results for all events or the ticked ones (`eventIds` on the actions' target). The programme's welcome message is edited and saved there too (not on the Settings tab). Document builders in `documents.ts` are pure and tested by flattening the content tree
 to text (`src/pdf/documents.test.ts`).
 
 **Mark entry.** `src/marks/MarkGrid.tsx` is a keyboard-driven grid (`gridNav.ts` for movement,

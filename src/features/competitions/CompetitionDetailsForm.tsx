@@ -1,4 +1,4 @@
-import { Anchor, Button, ColorInput, Group, Stack, Text, Textarea, TextInput } from '@mantine/core';
+import { Anchor, Button, ColorInput, Group, Stack, Switch, Text, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { clubColors, clubVars, DEFAULT_PRIMARY, DEFAULT_SECONDARY } from '../../app/clubColors';
 import type { Competition } from '../../domain/types';
@@ -6,7 +6,7 @@ import classes from './CompetitionDetailsForm.module.css';
 
 export type CompetitionDetails = Pick<
   Competition,
-  'name' | 'date' | 'venue' | 'primaryColor' | 'secondaryColor' | 'welcome'
+  'name' | 'date' | 'venue' | 'primaryColor' | 'secondaryColor' | 'rotateStartOrder'
 >;
 
 export const emptyCompetitionDetails = (): CompetitionDetails => ({
@@ -22,7 +22,6 @@ export const detailsOf = (c: Competition): CompetitionDetails => ({
   venue: c.venue,
   primaryColor: c.primaryColor,
   secondaryColor: c.secondaryColor,
-  welcome: c.welcome,
 });
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -51,18 +50,21 @@ interface FormValues {
   venue: string;
   primaryColor: string;
   secondaryColor: string;
-  welcome: string;
+  rotateStartOrder: boolean;
 }
 
-/** Name / date / venue / club colours / welcome form, for creating a competition and editing its details. */
+/** Name / date / venue / club colours form, for creating a competition and editing its details. */
 export function CompetitionDetailsForm({
   initial,
   submitLabel,
   onSubmit,
+  creating = false,
 }: {
   initial: CompetitionDetails;
   submitLabel: string;
   onSubmit: (values: CompetitionDetails) => Promise<unknown>;
+  /** When creating, the form also offers the rotating start order switch (changed later on the Settings tab). */
+  creating?: boolean;
 }) {
   const form = useForm<FormValues>({
     initialValues: {
@@ -71,7 +73,7 @@ export function CompetitionDetailsForm({
       venue: initial.venue,
       primaryColor: clubColors(initial).primary,
       secondaryColor: clubColors(initial).secondary,
-      welcome: initial.welcome ?? '',
+      rotateStartOrder: !!initial.rotateStartOrder,
     },
     validate: {
       name: (v) => (v.trim() ? null : 'Name is required'),
@@ -102,7 +104,7 @@ export function CompetitionDetailsForm({
           venue: v.venue.trim(),
           primaryColor: stored(v.primaryColor, DEFAULT_PRIMARY),
           secondaryColor: stored(v.secondaryColor, DEFAULT_SECONDARY),
-          welcome: v.welcome.trim() || undefined,
+          ...(creating ? { rotateStartOrder: v.rotateStartOrder } : {}),
         });
         form.resetDirty();
       })}
@@ -111,6 +113,19 @@ export function CompetitionDetailsForm({
         <TextInput label="Name" data-autofocus required {...form.getInputProps('name')} />
         <TextInput label="Date" type="date" {...form.getInputProps('date')} />
         <TextInput label="Venue" {...form.getInputProps('venue')} />
+
+        {creating && (
+          <div>
+            <Text size="sm" fw={500} mb={4}>
+              Skating order
+            </Text>
+            <Switch
+              label="Rotate the start order between compulsory dances and figures"
+              description="Each dance or figure starts with the first skater of its own group of the field. Each event can override this."
+              {...form.getInputProps('rotateStartOrder', { type: 'checkbox' })}
+            />
+          </div>
+        )}
 
         <div>
           <Group justify="space-between" mb={4}>
@@ -153,15 +168,6 @@ export function CompetitionDetailsForm({
             <span className={classes.previewName}>{values.name.trim() || 'Competition name'}</span>
           </div>
         </div>
-
-        <Textarea
-          label="Programme welcome"
-          description="Opens the programme; leave blank lines between paragraphs. Leave empty for a standard welcome."
-          autosize
-          minRows={3}
-          maxRows={10}
-          {...form.getInputProps('welcome')}
-        />
 
         <Group justify="flex-end">
           <Button type="submit">{submitLabel}</Button>

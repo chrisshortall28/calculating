@@ -110,12 +110,15 @@ export function HeroTabs({
   tabs,
   value,
   onChange,
+  end,
 }: {
   tabs: HeroTab[];
   value: string;
   onChange: (value: string) => void;
+  /** Right-aligned beside the tabs, e.g. a button. */
+  end?: ReactNode;
 }) {
-  return (
+  const list = (
     <Tabs
       value={value}
       onChange={(v) => v && onChange(v)}
@@ -129,5 +132,12 @@ export function HeroTabs({
         ))}
       </Tabs.List>
     </Tabs>
+  );
+  if (!end) return list;
+  return (
+    <div className={classes.tabsRow}>
+      {list}
+      <div className={classes.tabsEnd}>{end}</div>
+    </div>
   );
 }

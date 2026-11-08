@@ -4,9 +4,10 @@ import { modals } from '@mantine/modals';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useCompetition, useJudges, useSkaters } from '../../app/data';
 import { clearMarks, setEventStatus, setMark } from '../../db/repo';
+import { occupant, segmentIdOfKey, segmentPanel, seatMark } from '../../domain/panels';
 import { byId, entryClub, entryHeading, entryName, entryNoun } from '../../domain/entryName';
 import { eventTieBreakMarks, segmentNoun } from '../../domain/segments';
-import { effectiveRotate, firstSkaters } from '../../domain/startOrder';
+import { effectiveRotate, firstSkaters, rotateFrom } from '../../domain/startOrder';
 import type { CompEvent, SegmentKey } from '../../domain/types';
 import { judgeEventRanks } from '../../scoring';
 import type { Direction } from '../../marks/gridNav';
@@ -31,7 +32,7 @@ export function ScoringTab({ event }: { event: CompEvent }) {
   const competition = useCompetition(event.competitionId);
   const [direction, setDirection] = useLocalStorage<Direction>({
     key: 'podium.direction',
-    defaultValue: 'down',
+    defaultValue: 'across',
   });
   const [autoAdvance, setAutoAdvance] = useLocalStorage({ key: 'podium.autoAdvance', defaultValue: true });
   const [numberPad, setNumberPad] = useLocalStorage({ key: 'podium.numberPad', defaultValue: false });
@@ -52,44 +53,65 @@ export function ScoringTab({ event }: { event: CompEvent }) {
   const segResult = result.segments.find((s) => s.segmentId === segment?.id);
   const locked = event.status === 'final';
 
-  // With a rotating start order, the grid keeps the paper sheet's order and tags who skates first.
+  // With a rotating start order, each dance or figure is skated from its own first skater: the by-dance grid
+  // lists the skaters in that order (keeping their start numbers), and the by-judge grid, which shows every
+  // dance at once, keeps the start order and tags who skates each one first.
+  const firstIndexes = competition
+    ? firstSkaters(segments, entries.length, effectiveRotate(event, competition))
+    : new Map<string, number>();
   const firstEntryIds = new Map<string, string>();
-  if (competition)
-    for (const [segId, index] of firstSkaters(segments, entries.length, effectiveRotate(event, competition)))
-      if (entries[index]) firstEntryIds.set(segId, entries[index].id);
+  for (const [segId, index] of firstIndexes) if (entries[index]) firstEntryIds.set(segId, entries[index].id);
   const firstRowId = segment ? firstEntryIds.get(segment.id) : undefined;
+  const firstIndex = segment ? (firstIndexes.get(segment.id) ?? 0) : 0;
 
-  const judges = event.judgeIds.map((id) => ({ id, name: judgeMap.get(id)?.name ?? '?' }));
+  // Seats J1…Jn: who sits in each can differ from part to part, so the grid lists the part's own judges.
+  const seatRaw = useMemo(
+    () => seatMark(event, (k: SegmentKey, j: string, e: string) => markMap.get(markKey(k, j, e))),
+    [event, markMap],
+  );
+  const judges = (segment ? segmentPanel(event, segment.id) : event.judgeIds).map((id) => ({
+    id,
+    name: judgeMap.get(id)?.name ?? '?',
+  }));
   const rows = useMemo(
     () =>
-      entries.map((e) => ({
+      entries.map((e, i) => ({
+        no: i + 1,
         id: e.id,
         label: entryName(e, skaters),
         sub: entryClub(e, skaters),
       })),
     [entries, skaters],
   );
+  const segmentRows = useMemo(() => rotateFrom(rows, firstIndex), [rows, firstIndex]);
 
   // Only show a judge's ordinals once all their marks for this segment are in.
   const ordinals = useMemo(() => {
     if (!segment || !segResult) return undefined;
     const shown = new Map<string, Map<string, number>>();
-    for (const j of event.judgeIds) {
+    for (const seat of event.judgeIds) {
+      const j = occupant(event, segment.id, seat);
       const complete = entries.every((e) => segment.markKeys.every((k) => markMap.has(markKey(k, j, e.id))));
-      if (complete) shown.set(j, segResult.ordinals.get(j)!);
+      if (complete) shown.set(j, segResult.ordinals.get(seat)!);
     }
     return shown;
-  }, [segment, segResult, event.judgeIds, entries, markMap]);
+  }, [segment, segResult, event, entries, markMap]);
 
   const byJudge = view === 'judge';
   const judgeId = judgeSel && event.judgeIds.includes(judgeSel) ? judgeSel : event.judgeIds[0];
   const judgeNo = judgeId ? event.judgeIds.indexOf(judgeId) + 1 : 0;
+  // Parts where someone else sits in the selected seat.
+  const others = judgeId
+    ? segments
+        .filter((s) => occupant(event, s.id, judgeId) !== judgeId)
+        .map((s) => `${judgeMap.get(occupant(event, s.id, judgeId))?.name ?? '?'} in ${s.name}`)
+    : [];
 
   // The selected judge's sheet: each entry's event total once all their marks are in, and the
   // judge's ranking once every mark is in.
   const sheet = useMemo(() => {
     if (!judgeId) return undefined;
-    const mark = (k: SegmentKey, j: string, e: string) => markMap.get(markKey(k, j, e));
+    const mark = seatRaw;
     const entryIds = entries.map((e) => e.id);
     const { sums, ranks } = judgeEventRanks(segments, judgeId, entryIds, mark, eventTieBreakMarks(event));
     const full = (e: string) =>
@@ -98,7 +120,7 @@ export function ScoringTab({ event }: { event: CompEvent }) {
       sums: new Map([...sums].filter(([e]) => full(e))),
       ranks: entryIds.every(full) ? ranks : undefined,
     };
-  }, [judgeId, segments, entries, markMap, event]);
+  }, [judgeId, segments, entries, seatRaw, event]);
 
   // The tabs start after the grid's # and entry columns.
   const gridBox = useRef<HTMLDivElement>(null);
@@ -189,15 +211,20 @@ export function ScoringTab({ event }: { event: CompEvent }) {
               <SegmentPicker
                 value={judgeId ?? ''}
                 onChange={setJudgeSel}
-                segments={judges.map((j, i) => {
+                segments={event.judgeIds.map((seatId, i) => {
                   const total = segments.reduce((n, s) => n + s.markKeys.length, 0) * entries.length;
                   let missing = 0;
                   for (const s of segments)
                     for (const k of s.markKeys)
-                      for (const e of entries) if (!markMap.has(markKey(k, j.id, e.id))) missing++;
+                      for (const e of entries) if (seatRaw(k, seatId, e.id) === undefined) missing++;
                   return {
-                    id: j.id,
-                    name: `J${i + 1} ${j.name}`,
+                    id: seatId,
+                    // A seat that more than one judge sits in over the event has no single name to show.
+                    name: `J${i + 1} ${
+                      segments.some((s) => occupant(event, s.id, seatId) !== seatId)
+                        ? 'Multiple Judges'
+                        : (judgeMap.get(seatId)?.name ?? '?')
+                    }`,
                     done: total - missing,
                     total,
                     complete: total > 0 && missing === 0,
@@ -223,6 +250,11 @@ export function ScoringTab({ event }: { event: CompEvent }) {
             )}
           </div>
           <Card withBorder p="sm" radius="md">
+            {byJudge && judgeId && others.length > 0 && (
+              <Text size="sm" c="dimmed" mb="xs">
+                J{judgeNo}: {judgeMap.get(judgeId)?.name}, with {others.join(', ')}.
+              </Text>
+            )}
             {byJudge && judgeId ? (
               <JudgeGrid
                 focusKey={`${event.id}:${judgeId}`}
@@ -231,9 +263,11 @@ export function ScoringTab({ event }: { event: CompEvent }) {
                 judgeId={judgeId}
                 judgeNo={judgeNo}
                 segments={segments}
-                getValue={(k, j, e) => markMap.get(markKey(k, j, e))}
-                onCommit={(segmentKey, jId, entryId, tenths) => {
-                  void setMark({ eventId: event.id, segmentKey, judgeId: jId, entryId }, tenths);
+                getValue={seatRaw}
+                onCommit={(segmentKey, seatId, entryId, tenths) => {
+                  // A seat's marks belong to whoever sits in it for that part.
+                  const judgeId = occupant(event, segmentIdOfKey(segmentKey), seatId);
+                  void setMark({ eventId: event.id, segmentKey, judgeId, entryId }, tenths);
                   if (event.status === 'setup' || event.status === 'ready')
                     void setEventStatus(event.id, 'scoring');
                 }}
@@ -251,7 +285,7 @@ export function ScoringTab({ event }: { event: CompEvent }) {
             ) : (
               <MarkGrid
                 focusKey={`${event.id}:${segment.id}`}
-                rows={rows}
+                rows={segmentRows}
                 entryLabel={entryHeading[event.entryType]}
                 judges={judges}
                 markKeys={segment.markKeys}

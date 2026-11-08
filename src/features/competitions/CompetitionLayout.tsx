@@ -1,4 +1,4 @@
-import { ActionIcon, Button, Container, Loader, Menu, Modal, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Button, Container, Group, Loader, Menu, Modal, Text, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import {
@@ -16,14 +16,15 @@ import {
 } from '@tabler/icons-react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router';
 import { IconJudge } from '../../app/IconJudge';
+import { PersistentStoragePrompt } from '../../app/PersistentStoragePrompt';
 import { useCompetition } from '../../app/data';
 import { formatLongDate } from '../../app/format';
 import { clubColors } from '../../app/clubColors';
 import { HeroMeta, HeroTabs, PageHero } from '../../app/PageHero';
 import { updateCompetition } from '../../db/repo';
-import { printJudgeSheets, printProgramme, printResults } from '../../pdf/actions';
-import type { ResultsStyle } from '../../pdf/documents';
 import { CompetitionDetailsForm, detailsOf } from './CompetitionDetailsForm';
+import buttonClasses from '../../app/HeroButton.module.css';
+import { CompetitionPdfModal } from './CompetitionPdfModal';
 import { LegacyExportModal } from './LegacyExportModal';
 import { useExportCompetition } from './useExportCompetition';
 
@@ -44,22 +45,13 @@ export function CompetitionLayout() {
   const exportCompetition = useExportCompetition();
   const [editing, { open: openEdit, close: closeEdit }] = useDisclosure(false);
   const [exportingLegacy, { open: openLegacyExport, close: closeLegacyExport }] = useDisclosure(false);
+  const [pdfsOpen, { open: openPdfs, close: closePdfs }] = useDisclosure(false);
   const current = location.pathname.split('/')[3] || 'events';
 
   if (competition === undefined) return <Loader />;
   if (competition === null) return <Text>Competition not found.</Text>;
 
   const colors = clubColors(competition);
-
-  const printAllResults = async (style: ResultsStyle) => {
-    const { complete, total } = await printResults(
-      { competitionId: competition.id },
-      competition.name,
-      style,
-    );
-    if (complete < total)
-      notifications.show({ message: `${complete} of ${total} events are complete and included.` });
-  };
 
   return (
     <>
@@ -87,74 +79,52 @@ export function CompetitionLayout() {
             {competition.venue && <HeroMeta icon={<IconMapPin size={16} />}>{competition.venue}</HeroMeta>}
           </>
         }
-        actions={
-          <>
-            <Menu position="bottom-end">
-              <Menu.Target>
-                <Button
-                  variant="white"
-                  color="navy.9"
-                  leftSection={<IconFileTypePdf size={16} />}
-                  rightSection={<IconChevronDown size={14} />}
-                >
-                  PDF
-                </Button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item onClick={() => printProgramme(competition.id, competition.name)}>
-                  Programme for spectators
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Item
-                  onClick={() => printJudgeSheets({ competitionId: competition.id }, competition.name)}
-                >
-                  Judge sheets — all events
-                </Menu.Item>
-                <Menu.Item
-                  onClick={() => printJudgeSheets({ competitionId: competition.id }, competition.name, true)}
-                >
-                  Judge sheets, a sheet per dance — all events
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Item onClick={() => printAllResults('standard')}>
-                  Results — all complete events
-                </Menu.Item>
-                <Menu.Item onClick={() => printAllResults('withMarks')}>
-                  Results with marks — all complete events
-                </Menu.Item>
-                <Menu.Item onClick={() => printAllResults('guest')}>
-                  Results for guest judges (placings only) — all complete events
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-            <Menu position="bottom-end">
-              <Menu.Target>
-                <Button
-                  color={colors.secondary}
-                  autoContrast
-                  leftSection={<IconDownload size={16} />}
-                  rightSection={<IconChevronDown size={14} />}
-                >
-                  Export
-                </Button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item onClick={() => exportCompetition(competition.id)}>Podium file (.pod)</Menu.Item>
-                <Menu.Item onClick={openLegacyExport}>Calculating For Windows files (.zip)…</Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          </>
-        }
       >
         <HeroTabs
           tabs={TABS}
           value={current}
           onChange={(v) => navigate(`/c/${compId}/${v === 'events' ? '' : v}`)}
+          end={
+            <Group gap="xs" wrap="nowrap">
+              <Button
+                variant="white"
+                color="navy.9"
+                aria-label="PDFs"
+                className={`${buttonClasses.button} ${buttonClasses.pair}`}
+                classNames={{ label: buttonClasses.label, section: buttonClasses.section }}
+                leftSection={<IconFileTypePdf size={16} />}
+                onClick={openPdfs}
+              >
+                PDFs
+              </Button>
+              <Menu position="bottom-end">
+                <Menu.Target>
+                  <Button
+                    color={colors.secondary}
+                    autoContrast
+                    aria-label="Export"
+                    className={`${buttonClasses.button} ${buttonClasses.pair}`}
+                    classNames={{ label: buttonClasses.label, section: buttonClasses.section }}
+                    leftSection={<IconDownload size={16} />}
+                    rightSection={<IconChevronDown size={14} />}
+                  >
+                    Export
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item onClick={() => exportCompetition(competition.id)}>Podium file (.pod)</Menu.Item>
+                  <Menu.Item onClick={openLegacyExport}>Calculating For Windows files (.zip)…</Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            </Group>
+          }
         />
       </PageHero>
       <Container size="lg">
+        <PersistentStoragePrompt />
         <Outlet />
       </Container>
+      <CompetitionPdfModal competition={competition} opened={pdfsOpen} onClose={closePdfs} />
       <LegacyExportModal
         competitionId={competition.id}
         opened={exportingLegacy}

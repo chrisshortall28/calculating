@@ -48,6 +48,8 @@ export interface LegacyEvent {
   kind: LegacyEventKind;
   judges: string[];
   referee: string;
+  /** The next name slot after the referee's (unverified: no sample file has one filled in). */
+  assistantReferee: string;
   compulsory: LegacyCompulsory[];
   hasShort: boolean;
   hasLong: boolean;

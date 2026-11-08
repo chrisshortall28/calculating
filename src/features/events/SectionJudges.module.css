@@ -1,0 +1,21 @@
+.cell {
+  display: block;
+  width: 100%;
+  padding: 2px 4px;
+  border-radius: var(--mantine-radius-sm);
+  text-align: left;
+}
+
+.cell:hover {
+  background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
+}
+
+/* A judge who is not the seat's own: shown in full colour, the usual judges dimmed. */
+.same {
+  color: var(--mantine-color-dimmed);
+}
+
+.changed {
+  background: color-mix(in srgb, var(--mantine-color-medal-5, #ffb018) 22%, transparent);
+  font-weight: 600;
+}

@@ -38,7 +38,7 @@ export function CompetitionSettingsTab() {
         </Title>
         <CompetitionDetailsForm
           // Remount when the stored details change (e.g. edited from the header) so the form shows them.
-          key={`${competition.name}|${competition.date}|${competition.venue}|${competition.primaryColor}|${competition.secondaryColor}|${competition.welcome}`}
+          key={`${competition.name}|${competition.date}|${competition.venue}|${competition.primaryColor}|${competition.secondaryColor}`}
           initial={detailsOf(competition)}
           submitLabel="Save"
           onSubmit={async (values) => {
@@ -53,7 +53,7 @@ export function CompetitionSettingsTab() {
         </Title>
         <Switch
           label="Rotate the start order between compulsory dances and figures"
-          description="The field is split into one group per dance or figure, and each one starts with the first skater of its group (8 skaters, 2 dances: #1 then #5). Judge sheets and the scoring grid keep the original order and show who skates first. Each event can override this."
+          description="The field is split into one group per dance or figure, and each one starts with the first skater of its group (8 skaters, 2 dances: #1 then #5). The scoring grid lists the skaters of each dance or figure in skating order, starting with the first skater, and keeps their start numbers. Judge sheets printed one dance or figure per sheet do the same; sheets holding several dances and the by-judge grid keep the original order and show who skates first. Each event can override this."
           checked={!!competition.rotateStartOrder}
           onChange={(e) => updateCompetition(compId, { rotateStartOrder: e.currentTarget.checked })}
         />

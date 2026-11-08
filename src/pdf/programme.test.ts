@@ -65,6 +65,19 @@ const events = [
   event('e2', 'Junior Couples', 'duo', ['Ann & Bob']),
 ];
 
+const rotating = {
+  ...event('e3', 'Rotating Solo', 'solo', ['Zoe', 'Amy', 'Mia', 'Eve']),
+  segments: [
+    { id: 'cd:a', name: 'Quickstep', kind: 'compulsory' as const, markKeys: ['cd:a' as const] },
+    { id: 'cd:b', name: 'Roller Samba', kind: 'compulsory' as const, markKeys: ['cd:b' as const] },
+    { id: 'fd', name: 'Free Dance', kind: 'free' as const, markKeys: ['fd:A' as const, 'fd:B' as const] },
+  ],
+  firstSkaters: new Map([
+    ['cd:a', 0],
+    ['cd:b', 2],
+  ]),
+};
+
 /** All text in a pdfmake content tree, flattened (excluding the cover's SVG). */
 function texts(node: unknown): string[] {
   if (typeof node === 'string') return node.startsWith('<svg') ? [] : [node];
@@ -88,6 +101,18 @@ describe('programmeDocument', () => {
     expect([...at].sort((a, b) => a - b)).toEqual(at);
   });
 
+  it('marks who skates each dance first when the order rotates, and has no such column otherwise', () => {
+    const t = texts(programmeDocument(competition, [rotating]).content);
+    expect(t).toContain('Skates first');
+    expect(t).toContain('Quickstep');
+    expect(t).toContain('Roller Samba');
+    // The first skaters sit on the right rows: Zoe starts the Quickstep, Mia the Roller Samba.
+    const col = t.filter((s) => s === 'Quickstep' || s === 'Roller Samba');
+    expect(col).toEqual(['Quickstep', 'Roller Samba']);
+    const plain = texts(programmeDocument(competition, events).content);
+    expect(plain).not.toContain('Skates first');
+  });
+
   it('never names the judges or referee, or shows marks or places', () => {
     const t = texts(programmeDocument(competition, events).content).join('\n');
     expect(t).not.toMatch(/Judge|Referee|Place|Points|5\.0/);
@@ -108,7 +133,9 @@ describe('programmeDocument', () => {
   });
 
   it('renders to a PDF', async () => {
-    const blob = await pdfBlob(programmeDocument({ ...competition, secondaryColor: '#ffffff' }, events));
+    const blob = await pdfBlob(
+      programmeDocument({ ...competition, secondaryColor: '#ffffff' }, [...events, rotating]),
+    );
     expect(blob.size).toBeGreaterThan(1000);
   }, 30_000);
 });

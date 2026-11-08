@@ -1,13 +1,10 @@
-import { Accordion, Alert, Badge, Button, Card, Group, Menu, Stack, Table, Text, Title } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
-import { IconChevronDown, IconFileTypePdf } from '@tabler/icons-react';
+import { Accordion, Alert, Badge, Card, Group, Stack, Table, Text, Title } from '@mantine/core';
 import { Fragment, useState } from 'react';
 import { useJudges, useSkaters } from '../../app/data';
 import { byId, entryClub, entryHeading, entryName } from '../../domain/entryName';
-import { factorSummary, markKeyLabel, segmentNoun } from '../../domain/segments';
+import { factorSummary, markKeyLabel } from '../../domain/segments';
 import type { CompEvent, Competition } from '../../domain/types';
 import { formatTenths } from '../../marks/parseMark';
-import { printJudgeSheets, printResults } from '../../pdf/actions';
 import { officialsLine } from '../../pdf/documents';
 import {
   bTotalsUsed,
@@ -18,6 +15,7 @@ import {
   formatVictories,
   type EventResult,
 } from '../../scoring';
+import { occupant, seatSwaps, swapsText } from '../../domain/panels';
 import { markKey, useEventResult } from '../scoring/useEventResult';
 import { RuleBadge, TieExplanations } from './PlacementRule';
 
@@ -25,88 +23,15 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
   const { loading, segments, entries, markMap, result, segmentResults } = useEventResult(event);
   const skaters = byId(useSkaters(event.competitionId));
   const judgeMap = byId(useJudges(event.competitionId));
-  const [busy, setBusy] = useState<string | null>(null);
   if (loading) return null;
 
-  const hasFree = segments.some((s) => s.kind === 'free');
-  const hasCompulsory = segments.some((s) => s.kind === 'compulsory');
   const entryMap = byId(entries);
   const label = (id: string) => (entryMap.get(id) ? entryName(entryMap.get(id)!, skaters) : '?');
   const judgeLabel = (id: string) => `J${event.judgeIds.indexOf(id) + 1}`;
-
-  const run = async (key: string, fn: () => Promise<unknown>) => {
-    setBusy(key);
-    try {
-      await fn();
-    } catch (e) {
-      notifications.show({ color: 'red', title: 'PDF failed', message: (e as Error).message });
-    } finally {
-      setBusy(null);
-    }
-  };
+  const swaps = seatSwaps(event, segments, (id) => judgeMap.get(id));
 
   return (
     <Stack>
-      <Group justify="flex-end">
-        <Menu position="bottom-end">
-          <Menu.Target>
-            <Button
-              leftSection={<IconFileTypePdf size={16} />}
-              rightSection={<IconChevronDown size={14} />}
-              loading={busy !== null}
-            >
-              PDF
-            </Button>
-          </Menu.Target>
-          <Menu.Dropdown>
-            <Menu.Item
-              onClick={() => run('sheets', () => printJudgeSheets({ eventId: event.id }, event.name))}
-            >
-              Judge sheets
-            </Menu.Item>
-            <Menu.Item
-              onClick={() =>
-                run('sheetsPerDance', () => printJudgeSheets({ eventId: event.id }, event.name, true))
-              }
-            >
-              Judge sheets, a sheet per {segmentNoun(event)}
-            </Menu.Item>
-            {hasFree && hasCompulsory && (
-              <Menu.Item
-                onClick={() =>
-                  run('sheetsFree', () => printJudgeSheets({ eventId: event.id }, event.name, false, true))
-                }
-              >
-                Judge sheets, {event.discipline === 'figures' ? 'programmes' : 'free dance'} only
-              </Menu.Item>
-            )}
-            <Menu.Divider />
-            <Menu.Item
-              disabled={!result.complete}
-              onClick={() =>
-                run('standard', () => printResults({ eventId: event.id }, event.name, 'standard'))
-              }
-            >
-              Results
-            </Menu.Item>
-            <Menu.Item
-              disabled={!result.complete}
-              onClick={() =>
-                run('withMarks', () => printResults({ eventId: event.id }, event.name, 'withMarks'))
-              }
-            >
-              Results with marks
-            </Menu.Item>
-            <Menu.Item
-              disabled={!result.complete}
-              onClick={() => run('guest', () => printResults({ eventId: event.id }, event.name, 'guest'))}
-            >
-              Results for guest judges (placings only)
-            </Menu.Item>
-          </Menu.Dropdown>
-        </Menu>
-      </Group>
-
       {!result.complete && (
         <Alert color="yellow" variant="light">
           {event.judgeIds.length === 0
@@ -123,6 +48,8 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
             {officialsLine({
               judges: event.judgeIds.map((j) => judgeMap.get(j)).filter((j) => !!j),
               referee: event.refereeId ? judgeMap.get(event.refereeId) : undefined,
+              assistantReferee: event.assistantRefereeId ? judgeMap.get(event.assistantRefereeId) : undefined,
+              swaps,
             })}
           </Text>
           <Table striped>
@@ -137,7 +64,11 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
                 <Table.Th ta="center">Majority victories</Table.Th>
                 <Table.Th ta="right">Total sums</Table.Th>
                 {event.judgeIds.map((j, ji) => (
-                  <Table.Th key={j} ta="center" title={`${judgeMap.get(j)?.name ?? ''} — ranking by sum`}>
+                  <Table.Th
+                    key={j}
+                    ta="center"
+                    title={`${judgeMap.get(j)?.name ?? ''}${swapsText(swaps, ji + 1) ? ` (${swapsText(swaps, ji + 1)})` : ''} — ranking by sum`}
+                  >
                     J{ji + 1}
                   </Table.Th>
                 ))}
@@ -228,7 +159,7 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
                         <Table.Th rowSpan={2}>{entryHeading[event.entryType]}</Table.Th>
                         {event.judgeIds.map((j, ji) => (
                           <Table.Th key={j} ta="center" colSpan={seg.markKeys.length + (sr.complete ? 1 : 0)}>
-                            J{ji + 1} {judgeMap.get(j)?.name}
+                            J{ji + 1} {judgeMap.get(occupant(event, seg.id, j))?.name}
                           </Table.Th>
                         ))}
                       </Table.Tr>
@@ -265,7 +196,9 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
                               <Fragment key={j}>
                                 {seg.markKeys.map((k) => (
                                   <Table.Td key={k} ta="center">
-                                    {formatTenths(markMap.get(markKey(k, j, e.id))) || '—'}
+                                    {formatTenths(
+                                      markMap.get(markKey(k, occupant(event, seg.id, j), e.id)),
+                                    ) || '—'}
                                   </Table.Td>
                                 ))}
                                 {sr.complete && (

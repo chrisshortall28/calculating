@@ -219,18 +219,27 @@ function eventSection(c: Competition, d: EventData, number: number): Content {
         margin: [0, 8, 0, 6],
       }
     : { text: '', margin: [0, 4, 0, 0] };
+  // A rotating start order: each compulsory dance or figure begins with a different skater, so the table says
+  // which dances each skater starts.
+  const startsBy = new Map<number, string[]>();
+  for (const seg of d.segments) {
+    const at = d.firstSkaters.get(seg.id);
+    if (at !== undefined) startsBy.set(at, [...(startsBy.get(at) ?? []), seg.name]);
+  }
+  const rotating = d.rows.length > 0 && startsBy.size > 0;
   const order: Content =
     d.rows.length === 0
       ? { text: 'Entries to be confirmed.', italics: true, color: '#555' }
       : {
           table: {
             headerRows: 1,
-            widths: [30, '*', '*'],
+            widths: [30, '*', '*', ...(rotating ? [110] : [])],
             body: [
               [
                 { text: 'Order', style: 'progTh', alignment: 'center' },
                 { text: entryHeading[type], style: 'progTh' },
                 { text: 'Club', style: 'progTh' },
+                ...(rotating ? [{ text: 'Skates first', style: 'progTh' }] : []),
               ],
               ...d.rows.map((r, i): TableCell[] => [
                 { text: String(i + 1), bold: true, color: ink, alignment: 'center', fontSize: 12 },
@@ -241,6 +250,9 @@ function eventSection(c: Competition, d: EventData, number: number): Content {
                   ],
                 },
                 { text: r.club, color: '#444' },
+                ...(rotating
+                  ? [{ text: (startsBy.get(i) ?? []).join(', '), bold: true, color: ink, fontSize: 9 }]
+                  : []),
               ]),
             ],
           },
