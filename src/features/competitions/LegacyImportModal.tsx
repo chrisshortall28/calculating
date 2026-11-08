@@ -26,7 +26,7 @@ import { formatLongDate } from '../../app/format';
 import type { EntryType } from '../../domain/types';
 import { db } from '../../db/db';
 import { entryTypeLabel } from '../../db/repo';
-import { importCompetition, parseCompetitionFile } from '../../io/competitionFile';
+import { importCompetition, importEventsInto, parseCompetitionFile } from '../../io/competitionFile';
 import { convertLegacyCompetition, type LegacyChoices, type LegacyIssues } from '../../legacy/convert';
 import { readLegacyFiles, type LegacyFilesRead } from '../../legacy/readFiles';
 import { summariseConversion } from '../../legacy/summary';
@@ -246,6 +246,9 @@ function Review({
   const navigate = useNavigate();
   const [importing, setImporting] = useState(false);
   const [choices, setChoices] = useState<LegacyChoices>({});
+  /** Id of the competition to add the events to; empty means a new competition (the usual case). */
+  const [targetId, setTargetId] = useState('');
+  const competitions = useLiveQuery(() => db.competitions.orderBy('updatedAt').reverse().toArray(), []);
   const conversion = useMemo(
     () => convertLegacyCompetition(read.competitions[chosen]!, choices),
     [read, chosen, choices],
@@ -258,13 +261,22 @@ function Review({
     );
   }, [summary.competition.name, summary.competition.date]);
 
+  const target = targetId ? competitions?.find((c) => c.id === targetId) : undefined;
+
   const doImport = async () => {
     setImporting(true);
     try {
-      const id = await importCompetition(parseCompetitionFile(conversion.file), 'replace');
+      const file = parseCompetitionFile(conversion.file);
+      let id: string;
+      if (target) {
+        id = target.id;
+        await importEventsInto(file, id);
+      } else id = await importCompetition(file, 'replace');
       notifications.show({
         color: 'green',
-        message: `Imported “${summary.competition.name}” (${plural(summary.counts.events, 'event')})`,
+        message: target
+          ? `Added ${plural(summary.counts.events, 'event')} to “${target.name}”`
+          : `Imported “${summary.competition.name}” (${plural(summary.counts.events, 'event')})`,
       });
       onDone();
       navigate(`/c/${id}`);
@@ -308,12 +320,31 @@ function Review({
         <Badge variant="light">{plural(counts.marks, 'mark')}</Badge>
       </Group>
 
-      {existing && (
+      {!target && existing && (
         <Alert color="yellow" icon={<IconAlertTriangle size={18} />}>
           “{existing.name}” on the same date is already on this device. Importing adds another competition; it
           does not replace it.
         </Alert>
       )}
+
+      <Select
+        label="Import into"
+        description={
+          target
+            ? 'The events are added to this competition; its name, date and venue stay as they are. Judges, skaters and dances with the same names are reused.'
+            : 'This creates a new competition, which is what you want unless you are adding to one you already have.'
+        }
+        allowDeselect={false}
+        value={targetId}
+        onChange={(v) => setTargetId(v ?? '')}
+        data={[
+          { value: '', label: 'A new competition' },
+          ...(competitions ?? []).map((c) => ({
+            value: c.id,
+            label: [c.name, formatLongDate(c.date)].filter(Boolean).join(' · '),
+          })),
+        ]}
+      />
 
       <ScrollArea.Autosize mah={260} type="auto">
         <Table stickyHeader verticalSpacing={4} fz="sm">
@@ -433,7 +464,7 @@ function Review({
           loading={importing}
           disabled={counts.events === 0}
         >
-          Import competition
+          {target ? 'Add events' : 'Import competition'}
         </Button>
       </Group>
     </Stack>

@@ -196,3 +196,83 @@ export const fileNameFor = (name: string, ext: string) =>
       .trim()
       .replace(/\s+/g, '-') || 'competition'
   }.${ext}`;
+
+/**
+ * Adds a file's events to a competition that already exists, leaving that competition's own details
+ * alone. Everything gets fresh ids. Dances, judges and skaters the competition already has (same name;
+ * for skaters the same club too, ignoring case) are reused instead of added again. Returns the number
+ * of events added.
+ */
+export async function importEventsInto(file: CompetitionFile, competitionId: Id) {
+  const map = new Map<string, string>();
+  const fresh = (old: string) => {
+    let v = map.get(old);
+    if (!v) map.set(old, (v = newId()));
+    return v;
+  };
+  const key = (...parts: string[]) => parts.map((p) => p.trim().toLowerCase()).join('\u0000');
+
+  await db.transaction('rw', db.tables, async () => {
+    const target = await db.competitions.get(competitionId);
+    if (!target) throw new Error('Competition not found');
+
+    const reuse = <T extends { id: string }>(incoming: T[], existing: T[], keyOf: (x: T) => string): T[] => {
+      const byKey = new Map(existing.map((x) => [keyOf(x), x.id]));
+      const added: T[] = [];
+      for (const x of incoming) {
+        const found = byKey.get(keyOf(x));
+        if (found) map.set(x.id, found);
+        else {
+          byKey.set(keyOf(x), fresh(x.id));
+          added.push(x);
+        }
+      }
+      return added;
+    };
+
+    const dances = reuse(file.dances, await db.dances.where({ competitionId }).toArray(), (d) => key(d.name));
+    const skaters = reuse(file.skaters, await db.skaters.where({ competitionId }).toArray(), (s) =>
+      key(s.name, s.club),
+    );
+    const judges = reuse(file.judges, await db.judges.where({ competitionId }).toArray(), (j) => key(j.name));
+    await db.dances.bulkAdd(dances.map((d) => ({ ...d, id: fresh(d.id), competitionId })));
+    await db.skaters.bulkAdd(skaters.map((s) => ({ ...s, id: fresh(s.id), competitionId })));
+    await db.judges.bulkAdd(judges.map((j) => ({ ...j, id: fresh(j.id), competitionId })));
+
+    const firstOrder = await db.events.where({ competitionId }).count();
+    const events = [...file.events].sort((a, b) => a.order - b.order);
+    await db.events.bulkAdd(
+      events.map((e, i) => ({
+        ...e,
+        id: fresh(e.id),
+        competitionId,
+        order: firstOrder + i,
+        compulsoryDanceIds: e.compulsoryDanceIds.map(fresh),
+        judgeIds: e.judgeIds.map(fresh),
+        refereeId: e.refereeId && fresh(e.refereeId),
+        status: statusForEntries(e.status, file.entries.filter((en) => en.eventId === e.id).length),
+      })),
+    );
+    await db.entries.bulkAdd(
+      file.entries.map((e) => ({
+        ...e,
+        id: fresh(e.id),
+        eventId: fresh(e.eventId),
+        skaterIds: e.skaterIds.map(fresh),
+      })),
+    );
+    await db.marks.bulkAdd(
+      file.marks.map((m) => ({
+        ...m,
+        eventId: fresh(m.eventId),
+        judgeId: fresh(m.judgeId),
+        entryId: fresh(m.entryId),
+        segmentKey: m.segmentKey.startsWith('cd:')
+          ? (`cd:${fresh(m.segmentKey.slice(3))}` as SegmentKey)
+          : m.segmentKey,
+      })),
+    );
+    await db.competitions.update(competitionId, { updatedAt: Date.now() });
+  });
+  return file.events.length;
+}

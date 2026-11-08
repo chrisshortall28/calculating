@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../db/db';
 import { danceEventDefaults } from '../domain/segments';
 import * as repo from '../db/repo';
-import { exportCompetition, importCompetition, parseCompetitionFile } from './competitionFile';
+import {
+  exportCompetition,
+  importCompetition,
+  importEventsInto,
+  parseCompetitionFile,
+} from './competitionFile';
 
 async function seed() {
   const compId = await repo.createCompetition({ name: 'Spring Open', date: '2026-10-01', venue: 'Rink' });
@@ -223,5 +228,41 @@ describe('figures & free events in files', () => {
       hasLong: false,
       factors: { figures: 100, short: 100, long: 100 },
     });
+  });
+
+  it('adds a file’s events to an existing competition, reusing what it already has', async () => {
+    const { compId } = await seed();
+    const file = await exportCompetition(compId);
+    const targetId = await repo.createCompetition({ name: 'Target', date: '', venue: '' });
+    const existingJudge = await repo.addJudge(targetId, 'judge one');
+    const before = await db.dances.where({ competitionId: targetId }).count();
+
+    expect(await importEventsInto(file, targetId)).toBe(1);
+    expect(await importEventsInto(file, targetId)).toBe(1);
+
+    const merged = await exportCompetition(targetId);
+    expect(merged.competition.name).toBe('Target');
+    expect(merged.events.map((e) => e.order).sort()).toEqual([0, 1]);
+    // Default dances and the same-named judge are reused, not duplicated.
+    expect(merged.dances).toHaveLength(before);
+    expect(merged.judges.filter((j) => j.name.toLowerCase() === 'judge one')).toEqual([
+      expect.objectContaining({ id: existingJudge }),
+    ]);
+    expect(merged.skaters).toHaveLength(2);
+    expect(merged.entries).toHaveLength(4);
+    expect(merged.marks).toHaveLength(4);
+    const ids = new Set([
+      ...merged.dances.map((d) => d.id),
+      ...merged.judges.map((j) => j.id),
+      ...merged.skaters.map((s) => s.id),
+    ]);
+    for (const e of merged.events) {
+      expect(e.judgeIds.every((j) => ids.has(j))).toBe(true);
+      expect(e.compulsoryDanceIds.every((d) => ids.has(d))).toBe(true);
+      expect(ids.has(e.refereeId!)).toBe(true);
+    }
+    for (const m of merged.marks) expect(ids.has(m.judgeId)).toBe(true);
+    // The original competition is untouched.
+    expect((await exportCompetition(compId)).marks).toHaveLength(2);
   });
 });
