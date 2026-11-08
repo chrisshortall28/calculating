@@ -15,7 +15,7 @@ import {
 import { useForm } from '@mantine/form';
 import { useRef, type ComponentProps } from 'react';
 import { IconPlus, IconX } from '@tabler/icons-react';
-import { useDances } from '../../app/data';
+import { useDances, useEvents } from '../../app/data';
 import { FIGURES, figureLabel } from '../../domain/figures';
 import { cfKey, danceEventDefaults, defaultFactors, NO_FACTORS } from '../../domain/segments';
 import {
@@ -102,8 +102,11 @@ export function EventDetailsForm({
   submitLabel,
   onSubmit,
   keepAdding,
+  eventId,
 }: {
   competitionId: string;
+  /** The event being edited, so it does not count as a duplicate of itself. */
+  eventId?: string;
   initial?: EventDetails;
   submitLabel: string;
   onSubmit: (values: EventDetails) => unknown;
@@ -115,6 +118,7 @@ export function EventDetailsForm({
 }) {
   const nameRef = useRef<HTMLInputElement>(null);
   const dances = useDances(competitionId);
+  const events = useEvents(competitionId);
   const form = useForm<FormValues>({
     initialValues: initial
       ? {
@@ -150,6 +154,10 @@ export function EventDetailsForm({
     },
   });
   const v = form.values;
+  const typedName = v.name.trim().toLowerCase();
+  const duplicateName =
+    typedName !== '' &&
+    (events ?? []).some((e) => e.id !== eventId && e.name.trim().toLowerCase() === typedName);
 
   /** Changes the figures or programmes, and puts the factors back to the defaults for the new mix. */
   const setParts = (next: Partial<Pick<FormValues, 'figures' | 'hasShort' | 'hasLong'>>) => {
@@ -201,6 +209,11 @@ export function EventDetailsForm({
           required
           {...form.getInputProps('name')}
         />
+        {duplicateName && (
+          <Text size="xs" c="orange.8" mt={-8}>
+            Another event in this competition already has this name.
+          </Text>
+        )}
         <Input.Wrapper
           label="Event type"
           withAsterisk

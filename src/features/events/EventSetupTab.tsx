@@ -40,6 +40,7 @@ export function EventSetupTab({ event }: { event: CompEvent }) {
         <EventDetailsForm
           key={event.id}
           competitionId={event.competitionId}
+          eventId={event.id}
           initial={{
             name: event.name,
             entryType: event.entryType,
