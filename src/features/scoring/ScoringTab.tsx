@@ -6,7 +6,7 @@ import { useCompetition, useJudges, useSkaters } from '../../app/data';
 import { clearMarks, setEventStatus, setMark } from '../../db/repo';
 import { byId, entryClub, entryHeading, entryName, entryNoun } from '../../domain/entryName';
 import { eventTieBreakMarks, segmentNoun } from '../../domain/segments';
-import { effectiveRotate, firstSkaters } from '../../domain/startOrder';
+import { effectiveRotate, firstSkaters, rotateFrom } from '../../domain/startOrder';
 import type { CompEvent, SegmentKey } from '../../domain/types';
 import { judgeEventRanks } from '../../scoring';
 import type { Direction } from '../../marks/gridNav';
@@ -74,10 +74,7 @@ export function ScoringTab({ event }: { event: CompEvent }) {
       })),
     [entries, skaters],
   );
-  const segmentRows = useMemo(
-    () => [...rows.slice(firstIndex), ...rows.slice(0, firstIndex)],
-    [rows, firstIndex],
-  );
+  const segmentRows = useMemo(() => rotateFrom(rows, firstIndex), [rows, firstIndex]);
 
   // Only show a judge's ordinals once all their marks for this segment are in.
   const ordinals = useMemo(() => {

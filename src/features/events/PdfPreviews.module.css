@@ -1,0 +1,144 @@
+/* Conceptual mini pages: paper stays white and ink dark in both colour schemes, like the real PDFs. */
+.stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  padding: var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-md);
+  background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-8));
+  overflow: hidden;
+}
+
+.pages {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.stack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.stack > .paper + .paper {
+  margin-top: -76%;
+  margin-left: 14px;
+}
+
+.paper {
+  --ink: #3a3f4b;
+  --line: #d6dae1;
+  box-sizing: border-box;
+  flex: none;
+  width: 100px;
+  aspect-ratio: 1 / 1.414;
+  padding: 8px 7px;
+  border-radius: 2px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 18%),
+    0 4px 10px rgb(0 0 0 / 12%);
+  font-size: 6.5px;
+  line-height: 1.25;
+  overflow: hidden;
+}
+
+.landscape {
+  width: 172px;
+  aspect-ratio: 1.414 / 1;
+}
+
+.stack .landscape {
+  width: 160px;
+}
+
+.heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 5px;
+  padding-bottom: 3px;
+  border-bottom: 1.5px solid var(--mantine-color-navy-9, #0b1d3a);
+}
+
+.heading b {
+  overflow: hidden;
+  font-size: 7.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.heading span {
+  flex: none;
+  color: #7b8190;
+  font-size: 5.5px;
+}
+
+.row {
+  display: grid;
+  align-items: center;
+  gap: 3px;
+  min-height: 11px;
+  border-bottom: 0.5px solid var(--line);
+}
+
+.first {
+  background: color-mix(in srgb, var(--mantine-color-medal-5, #ffb018) 35%, transparent);
+  font-weight: 700;
+}
+
+.num {
+  text-align: center;
+}
+
+.bar {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--line);
+}
+
+.bar.short {
+  width: 60%;
+}
+
+.cell {
+  align-self: stretch;
+  border-left: 0.5px solid var(--line);
+  min-height: 9px;
+}
+
+.mark {
+  align-self: center;
+  height: 7px;
+  border: 0.5px solid #9aa0ad;
+  border-radius: 1px;
+}
+
+.head {
+  color: #7b8190;
+  font-size: 5.5px;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.partName {
+  overflow: hidden;
+  padding: 1px 2px;
+  background: #eceef2;
+  font-weight: 700;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.more {
+  align-self: center;
+  color: var(--mantine-color-dimmed);
+  font-size: 11px;
+  white-space: nowrap;
+}

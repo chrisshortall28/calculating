@@ -67,9 +67,12 @@ grid are display-only).
 display-only, never read by `src/scoring/`. `src/domain/startOrder.ts` works out the first skater of each compulsory
 dance/figure; judge sheets with several dances on one sheet, the by-judge grid and the Entries tab only mark them — rows stay in `startOrder`. The by-dance mark grid (Scoring tab) and per-dance/figure judge sheets (`judgeSheetPage` in `documents.ts`) list each rotating dance/figure from its first skater (`rows` rotated in `ScoringTab.tsx`), keeping each skater's start number.
 
-**PDFs.** pdfmake is lazy-loaded (`src/pdf/pdfmake.ts`). `printJudgeSheets` / `printResults` in
-`src/pdf/actions.ts` must be called directly from a click handler so the PDF tab opens before any
-`await`. Document builders in `documents.ts` are pure and tested by flattening the content tree
+**PDFs.** pdfmake is lazy-loaded (`src/pdf/pdfmake.ts`). `printJudgeSheets` / `printResults` /
+`printSkatingOrder` in `src/pdf/actions.ts` must be called directly from a click handler so the PDF tab opens
+before any `await`. An event's PDF button (beside its tabs) opens `EventPdfModal`, a launchpad that stays open
+and offers skating order (`skatingOrder.ts`), judge sheets (`JudgeSheetOptions`: combined or a sheet per part,
+any subset of parts) and the three results styles, each with a conceptual preview (`PdfPreviews.tsx`, drawn
+CSS, not the PDF). The competition-level PDF menu in `CompetitionLayout.tsx` is still a dropdown. Document builders in `documents.ts` are pure and tested by flattening the content tree
 to text (`src/pdf/documents.test.ts`).
 
 **Mark entry.** `src/marks/MarkGrid.tsx` is a keyboard-driven grid (`gridNav.ts` for movement,

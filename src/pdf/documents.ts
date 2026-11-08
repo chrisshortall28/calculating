@@ -2,6 +2,7 @@ import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interface
 import { clubColors, onColor } from '../app/clubColors';
 import { entryHeading } from '../domain/entryName';
 import { factorSummary, markKeyLabel } from '../domain/segments';
+import { rotateFrom } from '../domain/startOrder';
 import { formatTenths } from '../marks/parseMark';
 import {
   bTotalsUsed,
@@ -81,7 +82,7 @@ interface Official {
 const DANCES_PER_SHEET = 4;
 
 /** Entries one landscape sheet lists in a column; a single dance's sheet with more takes a second column. */
-const ROWS_PER_COLUMN = 12;
+export const ROWS_PER_COLUMN = 12;
 
 /** Splits the dances into as few sheets as fit, sharing them out evenly (5 dances → 3 + 2). */
 function sheetParts<T>(segments: T[]): T[][] {
@@ -149,8 +150,10 @@ function judgeSheetPage(
   // A sheet for one dance or figure of a rotating event lists the skaters from that part's first skater,
   // keeping their start numbers; a sheet with several parts keeps the start order and marks each first skater.
   const firstIndex = segments.length === 1 ? (d.firstSkaters.get(segments[0]!.id) ?? 0) : 0;
-  const ordered = d.rows.map((row, index) => ({ row, index }));
-  ordered.push(...ordered.splice(0, firstIndex));
+  const ordered = rotateFrom(
+    d.rows.map((row, index) => ({ row, index })),
+    firstIndex,
+  );
   const entryRow = (r: EventData['rows'][number], i: number): TableCell[] => [
     {
       text: String(i + 1),
@@ -209,17 +212,22 @@ function judgeSheetPage(
   ];
 }
 
+export interface JudgeSheetOptions {
+  /** `combined` (default): as many parts as fit on each sheet; `perPart`: a sheet for each dance, figure or programme. */
+  layout?: 'combined' | 'perPart';
+  /** Only these parts (segment ids), for a single event; default all. A combined sheet then has no totals. */
+  segmentIds?: ReadonlySet<string>;
+  /** Unnamed judges' sheets when an event has no judges yet. */
+  blankCount?: number;
+}
+
 /**
  * One sheet per judge on the panel (or `blankCount` unnamed sheets if no judges are assigned
  * yet), followed by a sheet for the referee (unnamed if no referee is assigned yet).
  */
-export function judgeSheets(
-  events: EventData[],
-  blankCount = 3,
-  perDance = false,
-  /** Only the free parts (free dance, or the programmes), one sheet each, with no totals. */
-  freeOnly = false,
-): Content[] {
+export function judgeSheets(events: EventData[], options: JudgeSheetOptions = {}): Content[] {
+  const { layout = 'combined', segmentIds, blankCount = 3 } = options;
+  const wanted = (s: { id: string }) => !segmentIds || segmentIds.has(s.id);
   const pages: Content[][] = [];
   for (const d of events) {
     if (d.segments.length === 0) continue;
@@ -228,11 +236,11 @@ export function judgeSheets(
       : Array.from({ length: blankCount }, (_, i) => ({ role: 'Judge', label: `J${i + 1}`, name: '' }));
     officials.push({ role: 'Referee', label: '', name: '' });
     const compulsory = d.segments.filter((s) => s.kind === 'compulsory').length;
-    if (perDance || freeOnly) {
+    if (layout === 'perPart') {
       // One sheet per dance, figure or programme, with no totals (CIPA places only the whole event).
       for (const o of officials)
         d.segments.forEach((seg, i) => {
-          if (freeOnly && seg.kind !== 'free') return;
+          if (!wanted(seg)) return;
           // Compulsory parts say which one they are of the event, so the judge can't mix the sheets up.
           const noun = d.event.discipline === 'figures' ? 'Figure' : 'Dance';
           const number = seg.kind === 'compulsory' ? ` (${noun} ${i + 1} of ${compulsory})` : '';
@@ -252,10 +260,16 @@ export function judgeSheets(
         });
       continue;
     }
-    const parts = sheetParts(d.segments);
+    const chosen = d.segments.filter(wanted);
+    if (chosen.length === 0) continue;
+    const parts = sheetParts(chosen);
+    // Totals add up every part, so they are left off when only some parts are printed.
+    const partial = chosen.length < d.segments.length;
     for (const o of officials)
       parts.forEach((segments, index) =>
-        pages.push(judgeSheetPage(d, o, segments, { index, count: parts.length })),
+        pages.push(
+          judgeSheetPage(d, o, segments, { index, count: parts.length, ...(partial && { totals: false }) }),
+        ),
       );
   }
   return withPageBreaks(pages);
@@ -566,10 +580,9 @@ export function resultsDocument(
 /** Judges' sheets are handed out loose, one or more per official, so they carry no page numbers. */
 export function judgeSheetsDocument(
   events: EventData[],
-  perDance = false,
-  freeOnly = false,
+  options: JudgeSheetOptions = {},
 ): TDocumentDefinitions {
-  return document(judgeSheets(events, 3, perDance, freeOnly), true, undefined, false);
+  return document(judgeSheets(events, options), true, undefined, false);
 }
 
 /** `pageHeader` is repeated at the top of every page. */

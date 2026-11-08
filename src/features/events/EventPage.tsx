@@ -23,7 +23,7 @@ import { ResultsTab } from '../results/ResultsTab';
 import { ScoringTab } from '../scoring/ScoringTab';
 import { EntriesTab } from './EntriesTab';
 import { EventJudgesTab } from './EventJudgesTab';
-import { EventPdfMenu } from './EventPdfMenu';
+import { EventPdfButton } from './EventPdfButton';
 import { EventSetupTab } from './EventSetupTab';
 import { StatusBadge } from './StatusBadge';
 
@@ -101,7 +101,7 @@ export function EventPage() {
       >
         <HeroTabs
           tabs={tabs(event)}
-          end={<EventPdfMenu event={event} />}
+          end={<EventPdfButton event={event} />}
           value={tab}
           onChange={(v) => navigate(`/c/${compId}/e/${eventId}/${v}`, { replace: true })}
         />

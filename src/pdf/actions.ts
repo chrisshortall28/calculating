@@ -1,10 +1,11 @@
 import { db } from '../db/db';
 import type { Id } from '../domain/types';
 import { fileNameFor } from '../io/competitionFile';
-import { judgeSheetsDocument, resultsDocument, type ResultsStyle } from './documents';
+import { judgeSheetsDocument, resultsDocument, type JudgeSheetOptions, type ResultsStyle } from './documents';
 import { loadCompetitionEvents, loadEventData, type EventData } from './loadEvent';
 import { openPdf } from './pdfmake';
 import { programmeDocument } from './programme';
+import { skatingOrderDocument } from './skatingOrder';
 
 type Target = { eventId: Id } | { competitionId: Id };
 
@@ -12,12 +13,12 @@ const load = async (target: Target): Promise<EventData[]> =>
   'eventId' in target ? [await loadEventData(target.eventId)] : loadCompetitionEvents(target.competitionId);
 
 /** Call directly from a click handler (the PDF tab must open before any await). */
-/** `perDance` prints a separate sheet for each dance or figure instead of one sheet for the whole event; `freeOnly` prints just the free dance (or programmes). */
-export function printJudgeSheets(target: Target, name: string, perDance = false, freeOnly = false) {
+export function printJudgeSheets(target: Target, name: string, options: JudgeSheetOptions = {}) {
+  const { layout, segmentIds } = options;
   return openPdf(
-    load(target).then((events) => judgeSheetsDocument(events, perDance, freeOnly)),
+    load(target).then((events) => judgeSheetsDocument(events, options)),
     fileNameFor(
-      `${name} judge sheets${freeOnly ? ' (free only)' : perDance ? ' (sheet per dance)' : ''}`,
+      `${name} judge sheets${segmentIds ? ' (some parts)' : layout === 'perPart' ? ' (sheet per part)' : ''}`,
       'pdf',
     ),
   );
@@ -46,4 +47,12 @@ export function printProgramme(competitionId: Id, name: string) {
     ([competition, events]) => programmeDocument(competition!, events),
   );
   return openPdf(doc, fileNameFor(`${name} programme`, 'pdf'));
+}
+
+/** The skating order of an event's dances, figures or programmes (`segmentIds` picks which). Call directly from a click handler. */
+export function printSkatingOrder(eventId: Id, name: string, segmentIds?: ReadonlySet<string>) {
+  return openPdf(
+    load({ eventId }).then((events) => skatingOrderDocument(events, segmentIds)),
+    fileNameFor(`${name} skating order`, 'pdf'),
+  );
 }

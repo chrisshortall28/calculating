@@ -21,10 +21,15 @@ export function partStartIndexes(entryCount: number, partCount: number): number[
   return starts;
 }
 
+/** The items starting from  and wrapping round to the ones before it. */
+export function rotateFrom<T>(items: readonly T[], index: number): T[] {
+  return [...items.slice(index), ...items.slice(0, index)];
+}
+
 /** The entries in the order part `partIndex` is skated: starting at the part's first skater, then wrapping round. */
 export function rotatedOrder<T>(entries: readonly T[], partIndex: number, partCount: number): T[] {
   const start = partStartIndexes(entries.length, partCount)[partIndex] ?? 0;
-  return [...entries.slice(start), ...entries.slice(0, start)];
+  return rotateFrom(entries, start);
 }
 
 /** Whether the event rotates its start order: its own setting, else the competition's default. */

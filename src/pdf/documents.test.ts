@@ -2,54 +2,10 @@ import { describe, expect, it } from 'vitest';
 import type { TDocumentDefinitions } from 'pdfmake/interfaces';
 import { defaultFactors, eventSegments, eventTieBreakMarks } from '../domain/segments';
 import type { CompEvent, SegmentKey } from '../domain/types';
-import { danceEventDefaults } from '../domain/segments';
 import { calculateEvent } from '../scoring';
 import { judgeSheets, judgeSheetsDocument, resultsDocument, resultsPages } from './documents';
 import type { EventData } from './loadEvent';
-
-function sampleEvent(): EventData {
-  const segments = [
-    { id: 'cd:w', name: 'Waltz', kind: 'compulsory' as const, markKeys: ['cd:w' as SegmentKey] },
-  ];
-  const rows = ['Amy', 'Beth'].map((name, i) => ({
-    id: `e${i}`,
-    name,
-    club: 'Club',
-    members: '',
-    skaterIds: [],
-  }));
-  const judges = ['Helen', 'Ian', 'Jo'].map((name, i) => ({ id: `j${i}`, competitionId: 'c', name }));
-  const mark = (_k: SegmentKey, _j: string, e: string) => (e === 'e0' ? 50 : 40);
-  return {
-    competition: { id: 'c', name: 'Comp', date: '', venue: '', createdAt: 0, updatedAt: 0 },
-    event: {
-      id: 'ev',
-      competitionId: 'c',
-      name: 'Event',
-      order: 0,
-      entryType: 'solo',
-      compulsoryDanceIds: ['w'],
-      hasFreeDance: false,
-      ...danceEventDefaults(),
-      judgeIds: judges.map((j) => j.id),
-      refereeId: 'r',
-      status: 'final',
-    },
-    segments,
-    firstSkaters: new Map<string, number>(),
-    rows,
-    judges,
-    referee: { id: 'r', competitionId: 'c', name: 'Kate' },
-    mark,
-    result: calculateEvent({
-      entryIds: ['e0', 'e1'],
-      judgeIds: judges.map((j) => j.id),
-      segments,
-      mark,
-      tieBreakMarks: [],
-    }),
-  };
-}
+import { sampleEvent } from './testEvent';
 
 /** All text in a pdfmake content tree, flattened. */
 function texts(node: unknown): string[] {
@@ -187,7 +143,7 @@ describe('judgeSheets', () => {
         ['cd:1', 1],
       ]),
     };
-    const [dance1, dance2] = judgeSheets([d], 3, true) as unknown[];
+    const [dance1, dance2] = judgeSheets([d], { layout: 'perPart' }) as unknown[];
     const order = (page: unknown) => texts(page).filter((t) => ['Amy', 'Beth'].includes(t.split(' ')[0]!));
     const names = d.rows.map((r) => r.name);
     expect(order(dance1)).toEqual(names);
@@ -198,7 +154,7 @@ describe('judgeSheets', () => {
 
   it('prints a sheet per dance, without totals, when asked', () => {
     const d = withDances(3);
-    const pages = judgeSheets([d], 3, true);
+    const pages = judgeSheets([d], { layout: 'perPart' });
     expect(pages).toHaveLength(3 * 4); // 3 dances x (3 judges + referee)
     const t = texts(pages);
     expect(t).toEqual(
@@ -216,13 +172,31 @@ describe('judgeSheets', () => {
         { id: 'fd', name: 'Free Dance', kind: 'free' as const, markKeys: ['fd:A', 'fd:B'] as SegmentKey[] },
       ],
     };
-    const pages = judgeSheets([d], 3, false, true);
+    const only = { layout: 'perPart' as const, segmentIds: new Set(['fd']) };
+    const pages = judgeSheets([d], only);
     expect(pages).toHaveLength(4); // one sheet each for 3 judges + the referee
     const t = texts(pages[0]);
     expect(t).toEqual(expect.arrayContaining(['Event — Free Dance', 'A', 'B']));
     expect(t).not.toContain('Dance 1');
     expect(t).not.toContain('Total points');
-    expect(judgeSheets([withDances(2)], 3, false, true)).toHaveLength(0);
+    expect(judgeSheets([withDances(2)], only)).toHaveLength(0);
+  });
+
+  it('prints chosen parts only, numbered within the whole event, and without totals on a combined sheet', () => {
+    const d = withDances(3);
+    const pick = new Set(['cd:1', 'cd:2']);
+    const perPart = texts(judgeSheets([d], { layout: 'perPart', segmentIds: pick }));
+    expect(perPart).toEqual(
+      expect.arrayContaining(['Event — Dance 2 (Dance 2 of 3)', 'Event — Dance 3 (Dance 3 of 3)']),
+    );
+    expect(perPart).not.toContain('Event — Dance 1 (Dance 1 of 3)');
+    const combined = judgeSheets([d], { segmentIds: pick });
+    expect(combined).toHaveLength(4); // one sheet each for 3 judges + the referee
+    const t = texts(combined);
+    expect(t).toEqual(expect.arrayContaining(['Dance 2', 'Dance 3']));
+    expect(t).not.toContain('Dance 1');
+    expect(t).not.toContain('Total points');
+    expect(texts(judgeSheets([d]))).toContain('Total points');
   });
 
   describe('a long entry list on per-dance sheets', () => {
@@ -246,13 +220,13 @@ describe('judgeSheets', () => {
     };
 
     it('keeps up to 12 entries in a single table', () => {
-      const pages = judgeSheets([withEntries(12)], 3, true);
+      const pages = judgeSheets([withEntries(12)], { layout: 'perPart' });
       expect(pages).toHaveLength(4);
       expect(tables(pages[0])).toHaveLength(1);
     });
 
     it('puts the overflow in a second column on the same sheet', () => {
-      const pages = judgeSheets([withEntries(15)], 3, true);
+      const pages = judgeSheets([withEntries(15)], { layout: 'perPart' });
       expect(pages).toHaveLength(4); // one sheet each for 3 judges + the referee
       const [left, right] = tables(pages[0]);
       expect(left!.body).toHaveLength(2 + 12); // two header rows
@@ -261,7 +235,7 @@ describe('judgeSheets', () => {
     });
 
     it('carries on to another sheet after 24 entries', () => {
-      const pages = judgeSheets([withEntries(25)], 3, true);
+      const pages = judgeSheets([withEntries(25)], { layout: 'perPart' });
       expect(pages).toHaveLength(8);
       expect(texts(pages[0])).toContain('Event — Dance 1 (Dance 1 of 1) · Sheet 1 of 2');
       expect(texts(tables(pages[1])).filter((t) => /^\d+$/.test(t))).toEqual(['25']);
