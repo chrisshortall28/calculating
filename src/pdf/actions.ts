@@ -7,10 +7,15 @@ import { openPdf } from './pdfmake';
 import { programmeDocument } from './programme';
 import { skatingOrderDocument } from './skatingOrder';
 
-type Target = { eventId: Id } | { competitionId: Id };
+/** One event, or a competition's events (`eventIds`: only those, default all). */
+type Target = { eventId: Id } | { competitionId: Id; eventIds?: ReadonlySet<Id> };
 
 const load = async (target: Target): Promise<EventData[]> =>
-  'eventId' in target ? [await loadEventData(target.eventId)] : loadCompetitionEvents(target.competitionId);
+  'eventId' in target
+    ? [await loadEventData(target.eventId)]
+    : (await loadCompetitionEvents(target.competitionId)).filter(
+        (d) => !target.eventIds || target.eventIds.has(d.event.id),
+      );
 
 /** Call directly from a click handler (the PDF tab must open before any await). */
 export function printJudgeSheets(target: Target, name: string, options: JudgeSheetOptions = {}) {
@@ -49,10 +54,10 @@ export function printProgramme(competitionId: Id, name: string) {
   return openPdf(doc, fileNameFor(`${name} programme`, 'pdf'));
 }
 
-/** The skating order of an event's dances, figures or programmes (`segmentIds` picks which). Call directly from a click handler. */
-export function printSkatingOrder(eventId: Id, name: string, segmentIds?: ReadonlySet<string>) {
+/** The skating order of an event's (or several events') dances, figures or programmes (`segmentIds` picks which, for one event). Call directly from a click handler. */
+export function printSkatingOrder(target: Target, name: string, segmentIds?: ReadonlySet<string>) {
   return openPdf(
-    load({ eventId }).then((events) => skatingOrderDocument(events, segmentIds)),
+    load(target).then((events) => skatingOrderDocument(events, segmentIds)),
     fileNameFor(`${name} skating order`, 'pdf'),
   );
 }

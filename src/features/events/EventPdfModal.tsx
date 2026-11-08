@@ -26,7 +26,7 @@ import { JudgeSheetsPreview, ResultsPreview, SkatingOrderPreview, splitEvenly } 
 type Section = 'order' | 'sheets' | 'results';
 type Layout = 'combined' | 'perPart';
 
-const RESULTS: { value: ResultsStyle; label: string; description: string }[] = [
+export const RESULTS: { value: ResultsStyle; label: string; description: string }[] = [
   {
     value: 'standard',
     label: 'Results',
@@ -284,7 +284,9 @@ export function EventPdfModal({
               loading={busy}
               disabled={orderParts.length === 0}
               onClick={() =>
-                run(() => printSkatingOrder(event.id, event.name, new Set(orderParts.map((s) => s.id))))
+                run(() =>
+                  printSkatingOrder({ eventId: event.id }, event.name, new Set(orderParts.map((s) => s.id))),
+                )
               }
             >
               Create skating order

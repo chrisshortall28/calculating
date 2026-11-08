@@ -82,12 +82,12 @@ describe('EventPdfModal', () => {
     fireEvent.click(open);
 
     await waitFor(() => expect(actions.printSkatingOrder).toHaveBeenCalledTimes(1));
-    const [id, name, parts] = actions.printSkatingOrder.mock.calls[0] as unknown as [
+    const [target, name, parts] = actions.printSkatingOrder.mock.calls[0] as unknown as [
       string,
       string,
       Set<string>,
     ];
-    expect(id).toBe(event.id);
+    expect(target).toEqual({ eventId: event.id });
     expect(name).toBe('Novice');
     expect(parts.size).toBe(2); // the first dance and the free dance
     expect(onClose).not.toHaveBeenCalled();

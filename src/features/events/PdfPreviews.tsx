@@ -226,3 +226,53 @@ export function ResultsPreview({
     </div>
   );
 }
+
+/** The spectators' programme: a cover in the club colours, then a welcome page listing the events. */
+export function ProgrammePreview({
+  title,
+  events,
+  colors,
+}: {
+  title: string;
+  events: string[];
+  colors: { primary: string; secondary: string };
+}) {
+  return (
+    <div className={classes.stage} data-testid="programme-preview">
+      <div className={classes.pages}>
+        <div className={classes.paper} style={{ background: colors.primary, color: '#fff', padding: 0 }}>
+          <div
+            style={{
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              padding: 8,
+            }}
+          >
+            <div style={{ height: 2, width: 24, marginBottom: 6, background: colors.secondary }} />
+            <b style={{ fontSize: 9, lineHeight: 1.15 }}>{title}</b>
+          </div>
+        </div>
+        <Paper>
+          <Heading title="Welcome" side="programme" />
+          {[0, 1, 2].map((i) => (
+            <div key={i} className={classes.row} style={{ gridTemplateColumns: '1fr', borderBottom: 'none' }}>
+              <span className={classes.bar} />
+            </div>
+          ))}
+          <div style={{ marginTop: 4 }}>
+            {events.slice(0, 4).map((e, i) => (
+              <div key={i} className={classes.row} style={{ gridTemplateColumns: '10px 1fr' }}>
+                <span className={classes.num}>{i + 1}</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {e}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Paper>
+      </div>
+    </div>
+  );
+}

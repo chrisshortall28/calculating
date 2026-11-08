@@ -22,9 +22,8 @@ import { formatLongDate } from '../../app/format';
 import { clubColors } from '../../app/clubColors';
 import { HeroMeta, HeroTabs, PageHero } from '../../app/PageHero';
 import { updateCompetition } from '../../db/repo';
-import { printJudgeSheets, printProgramme, printResults } from '../../pdf/actions';
-import type { ResultsStyle } from '../../pdf/documents';
 import { CompetitionDetailsForm, detailsOf } from './CompetitionDetailsForm';
+import { CompetitionPdfModal } from './CompetitionPdfModal';
 import { LegacyExportModal } from './LegacyExportModal';
 import { useExportCompetition } from './useExportCompetition';
 
@@ -45,22 +44,13 @@ export function CompetitionLayout() {
   const exportCompetition = useExportCompetition();
   const [editing, { open: openEdit, close: closeEdit }] = useDisclosure(false);
   const [exportingLegacy, { open: openLegacyExport, close: closeLegacyExport }] = useDisclosure(false);
+  const [pdfsOpen, { open: openPdfs, close: closePdfs }] = useDisclosure(false);
   const current = location.pathname.split('/')[3] || 'events';
 
   if (competition === undefined) return <Loader />;
   if (competition === null) return <Text>Competition not found.</Text>;
 
   const colors = clubColors(competition);
-
-  const printAllResults = async (style: ResultsStyle) => {
-    const { complete, total } = await printResults(
-      { competitionId: competition.id },
-      competition.name,
-      style,
-    );
-    if (complete < total)
-      notifications.show({ message: `${complete} of ${total} events are complete and included.` });
-  };
 
   return (
     <>
@@ -90,48 +80,15 @@ export function CompetitionLayout() {
         }
         actions={
           <>
-            <Menu position="bottom-end">
-              <Menu.Target>
-                <Button
-                  variant="white"
-                  color="navy.9"
-                  leftSection={<IconFileTypePdf size={16} />}
-                  rightSection={<IconChevronDown size={14} />}
-                >
-                  PDF
-                </Button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item onClick={() => printProgramme(competition.id, competition.name)}>
-                  Programme for spectators
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Item
-                  onClick={() => printJudgeSheets({ competitionId: competition.id }, competition.name)}
-                >
-                  Judge sheets — all events
-                </Menu.Item>
-                <Menu.Item
-                  onClick={() =>
-                    printJudgeSheets({ competitionId: competition.id }, competition.name, {
-                      layout: 'perPart',
-                    })
-                  }
-                >
-                  Judge sheets, a sheet per dance — all events
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Item onClick={() => printAllResults('standard')}>
-                  Results — all complete events
-                </Menu.Item>
-                <Menu.Item onClick={() => printAllResults('withMarks')}>
-                  Results with marks — all complete events
-                </Menu.Item>
-                <Menu.Item onClick={() => printAllResults('guest')}>
-                  Results for guest judges (placings only) — all complete events
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
+            <Button
+              variant="white"
+              color="navy.9"
+              aria-label="PDFs"
+              leftSection={<IconFileTypePdf size={16} />}
+              onClick={openPdfs}
+            >
+              PDFs
+            </Button>
             <Menu position="bottom-end">
               <Menu.Target>
                 <Button
@@ -161,6 +118,7 @@ export function CompetitionLayout() {
         <PersistentStoragePrompt />
         <Outlet />
       </Container>
+      <CompetitionPdfModal competition={competition} opened={pdfsOpen} onClose={closePdfs} />
       <LegacyExportModal
         competitionId={competition.id}
         opened={exportingLegacy}
