@@ -215,6 +215,12 @@ export function convertLegacyCompetition(
     const eventId = newId();
     const judgeIds = ev.judges.map(judgeId);
     const refereeId = ev.referee ? judgeId(ev.referee) : undefined;
+    const assistantRefereeId = ev.assistantReferee ? judgeId(ev.assistantReferee) : undefined;
+    if (assistantRefereeId)
+      note(
+        `${ev.assistantReferee} was read as the assistant referee (the name stored after the referee's; not yet verified against the application).`,
+        'info',
+      );
 
     // What the event is made of, and which Podium mark each legacy block becomes.
     let entryType: EntryType;
@@ -234,6 +240,7 @@ export function convertLegacyCompetition(
       factors: { figures: 100, short: 100, long: 100 },
       judgeIds,
       ...(refereeId ? { refereeId } : {}),
+      ...(assistantRefereeId ? { assistantRefereeId } : {}),
       status: 'setup',
     };
 

@@ -60,6 +60,7 @@ const fileSchema = z.object({
       judgeIds: z.array(z.string()),
       judgeSwaps: z.record(z.string(), z.record(z.string(), z.string())).optional(),
       refereeId: z.string().optional(),
+      assistantRefereeId: z.string().optional(),
       rotateStartOrder: z.enum(['default', 'on', 'off']).optional(),
       status: z.enum(['setup', 'ready', 'scoring', 'final']),
     }),
@@ -168,6 +169,7 @@ export async function importCompetition(file: CompetitionFile, mode: 'copy' | 'r
         judgeIds: e.judgeIds.map(id),
         ...(e.judgeSwaps ? { judgeSwaps: remapSwaps(e.judgeSwaps, id) } : {}),
         refereeId: e.refereeId && id(e.refereeId),
+        assistantRefereeId: e.assistantRefereeId && id(e.assistantRefereeId),
         // Files from before the ready status: setup events with skaters are ready.
         status: statusForEntries(e.status, file.entries.filter((en) => en.eventId === e.id).length),
       })),
@@ -267,6 +269,7 @@ export async function importEventsInto(file: CompetitionFile, competitionId: Id)
         judgeIds: e.judgeIds.map(fresh),
         ...(e.judgeSwaps ? { judgeSwaps: remapSwaps(e.judgeSwaps, fresh) } : {}),
         refereeId: e.refereeId && fresh(e.refereeId),
+        assistantRefereeId: e.assistantRefereeId && fresh(e.assistantRefereeId),
         status: statusForEntries(e.status, file.entries.filter((en) => en.eventId === e.id).length),
       })),
     );

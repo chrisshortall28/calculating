@@ -72,6 +72,7 @@ describe('writeDanceEvent', () => {
     kind: 'dance',
     judges: ['J1', 'J2', 'J3'],
     referee: 'J1',
+    assistantReferee: '',
     compulsory: kind === 'free' ? [] : [{ code: 20 }, { code: 38 }],
     hasShort: false,
     hasLong: kind !== 'compulsory',

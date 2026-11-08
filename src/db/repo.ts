@@ -399,6 +399,7 @@ export async function deleteJudge(id: Id) {
     const usesJudge = (e: CompEvent) =>
       e.judgeIds.includes(id) ||
       e.refereeId === id ||
+      e.assistantRefereeId === id ||
       Object.values(e.judgeSwaps ?? {}).some((seats) => id in seats || Object.values(seats).includes(id));
     const affected = events.filter(usesJudge);
     for (const ev of affected) {
@@ -415,6 +416,7 @@ export async function deleteJudge(id: Id) {
         judgeIds: ev.judgeIds.filter((j) => j !== id),
         ...(ev.judgeSwaps ? { judgeSwaps } : {}),
         ...(ev.refereeId === id ? { refereeId: undefined } : {}),
+        ...(ev.assistantRefereeId === id ? { assistantRefereeId: undefined } : {}),
       });
     }
     await db.marks.where({ judgeId: id }).delete();

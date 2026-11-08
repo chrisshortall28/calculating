@@ -97,6 +97,7 @@ export function readLegacyEvent(fileName: string, b: Uint8Array): LegacyEvent {
     kind,
     judges,
     referee: ascii(b, 1386, TEXT),
+    assistantReferee: ascii(b, 1426, TEXT),
     compulsory,
     hasShort: b[1597] === 1,
     hasLong: b[1645] === 1,

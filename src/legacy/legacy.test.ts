@@ -131,6 +131,32 @@ describe('guessDanceEntryType', () => {
 });
 
 describe('convertLegacyCompetition', () => {
+  it('reads the assistant referee from the name slot after the referee, and imports them as one', () => {
+    const e = read({
+      name: 'E',
+      referee: 'Ref',
+      assistantReferee: 'Assistant Ann',
+      compulsory: [{ code: 20 }],
+    });
+    expect(e).toMatchObject({ referee: 'Ref', assistantReferee: 'Assistant Ann' });
+    const { file, warnings } = convert({
+      name: 'E',
+      judges: ['Emma', 'Robert', 'Charlie'],
+      referee: 'Emma',
+      assistantReferee: 'Assistant Ann',
+      compulsory: [{ code: 20 }],
+      entries: [{ name: 'Elora Noah', club: 'Meridian', blocks: { 0: [13, 13, 12] } }],
+    });
+    const ann = file.judges.find((j) => j.name === 'Assistant Ann')!;
+    expect(file.events[0]!.assistantRefereeId).toBe(ann.id);
+    expect(file.events[0]!.refereeId).toBe(file.judges.find((j) => j.name === 'Emma')!.id);
+    expect(warnings.some((w) => /assistant referee/.test(w.message) && w.level === 'info')).toBe(true);
+    // An event whose file has none (all the sample files) gets none and no note.
+    const plain = convert({ name: 'E', referee: 'Emma', compulsory: [{ code: 20 }] });
+    expect(plain.file.events[0]!.assistantRefereeId).toBeUndefined();
+    expect(plain.warnings.some((w) => /assistant referee/.test(w.message))).toBe(false);
+  });
+
   it('converts a dance event with compulsory dances, a free dance and a panel', () => {
     const { file, warnings } = convert({
       name: '2A Newcomer Solo',

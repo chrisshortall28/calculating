@@ -26,6 +26,7 @@ export interface EventData {
   /** Judges who sit in a seat for only some parts (see `domain/panels.ts`). */
   swaps?: SeatSwap[];
   referee?: Judge;
+  assistantReferee?: Judge;
   mark: (key: SegmentKey, judgeId: Id, entryId: Id) => number | undefined;
   result: EventResult;
 }
@@ -68,6 +69,7 @@ export async function loadEventData(eventId: Id): Promise<EventData> {
     judges: event.judgeIds.map((id) => judgeMap.get(id)!).filter(Boolean),
     swaps: seatSwaps(event, segments, (id) => judgeMap.get(id)),
     referee: event.refereeId ? judgeMap.get(event.refereeId) : undefined,
+    assistantReferee: event.assistantRefereeId ? judgeMap.get(event.assistantRefereeId) : undefined,
     mark,
     result,
   };

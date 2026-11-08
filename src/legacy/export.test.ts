@@ -540,3 +540,25 @@ describe('events with different judges for some parts', () => {
     void first;
   });
 });
+
+describe('assistant referee', () => {
+  it('is written after the referee, and an event without one is written as before', () => {
+    const file = podiumCompetition(compulsory('Novice', { referee: 'Ref Person' }));
+    const event = file.events[0]!;
+    const asst = { id: 'asst', competitionId: file.competition.id, name: 'Assistant Ann' };
+    const withAsst: CompetitionFile = {
+      ...file,
+      judges: [...file.judges, asst],
+      events: [{ ...event, assistantRefereeId: asst.id }],
+    };
+    const plain = exportLegacyEvents(file).files[0]!.data;
+    const out = exportLegacyEvents(withAsst).files[0]!.data;
+    const back = readLegacyEvent('DATA001B.ROL', out);
+    expect(back).toMatchObject({ referee: 'Ref Person', assistantReferee: 'Assistant Ann' });
+    expect(readLegacyEvent('DATA001B.ROL', plain).assistantReferee).toBe('');
+    // Same size as an export without one; the name slot is blank there, and the checksums follow the content.
+    expect(out.length).toBe(plain.length);
+    expect(checksumProblems(out)).toEqual([]);
+    expect([...plain.slice(1426, 1466)].every((x) => x === 0)).toBe(true);
+  });
+});

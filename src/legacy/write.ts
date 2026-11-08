@@ -31,6 +31,8 @@ export interface WriteEvent {
   name: string;
   judges: string[];
   referee: string;
+  /** Written to the name slot after the referee's (unverified, see docs/legacy-format.md). */
+  assistantReferee?: string;
   profile: EventProfile;
   /** The application's dance numbers, one per compulsory dance (up to 4); the figure numbers of a figures event. */
   dances: number[];
@@ -77,6 +79,7 @@ export function writeDanceEvent(event: WriteEvent): Uint8Array {
   file[1024] = event.judges.length;
   event.judges.forEach((judge, i) => text(1026 + 40 * i, judge, 40));
   text(1386, event.referee, 40);
+  if (event.assistantReferee) text(1426, event.assistantReferee, 40);
   const factor: Record<Part, [number, number]> = {
     C: event.factors?.compulsory ?? [1, 1],
     S: event.factors?.short ?? [1, 1],

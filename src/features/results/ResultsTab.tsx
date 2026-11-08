@@ -48,6 +48,7 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
             {officialsLine({
               judges: event.judgeIds.map((j) => judgeMap.get(j)).filter((j) => !!j),
               referee: event.refereeId ? judgeMap.get(event.refereeId) : undefined,
+              assistantReferee: event.assistantRefereeId ? judgeMap.get(event.assistantRefereeId) : undefined,
               swaps,
             })}
           </Text>

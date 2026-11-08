@@ -324,3 +324,41 @@ describe('figures & free events in files', () => {
     });
   });
 });
+
+describe('assistant referee in files', () => {
+  beforeEach(async () => {
+    await db.delete();
+    await db.open();
+  });
+
+  it('is kept, with new ids, when copying or adding events to another competition', async () => {
+    const { compId, eventId } = await seed();
+    const asst = await repo.addJudge(compId, 'Assistant Ann');
+    await repo.updateEvent(eventId, { assistantRefereeId: asst });
+    const file = await exportCompetition(compId);
+    expect(file.events[0]!.assistantRefereeId).toBe(asst);
+
+    const copy = await exportCompetition(
+      await importCompetition(parseCompetitionFile(JSON.parse(JSON.stringify(file))), 'copy'),
+    );
+    const ann = copy.judges.find((j) => j.name === 'Assistant Ann')!;
+    expect(ann.id).not.toBe(asst);
+    expect(copy.events[0]!.assistantRefereeId).toBe(ann.id);
+
+    const targetId = await repo.createCompetition({ name: 'Target', date: '', venue: '' });
+    await importEventsInto(file, targetId);
+    const merged = await exportCompetition(targetId);
+    expect(merged.judges.find((j) => j.id === merged.events[0]!.assistantRefereeId)?.name).toBe(
+      'Assistant Ann',
+    );
+  });
+
+  it('is cleared with the judge, and files without one are unchanged', async () => {
+    const { compId, eventId } = await seed();
+    expect(JSON.stringify(await exportCompetition(compId))).not.toContain('assistantRefereeId');
+    const asst = await repo.addJudge(compId, 'Assistant Ann');
+    await repo.updateEvent(eventId, { assistantRefereeId: asst });
+    await repo.deleteJudge(asst);
+    expect((await db.events.get(eventId))!.assistantRefereeId).toBeUndefined();
+  });
+});

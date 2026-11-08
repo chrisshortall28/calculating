@@ -217,6 +217,9 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
         name: truncate(event.name, 'event'),
         judges: event.judgeIds.map((id) => truncate(judgeName.get(id) ?? 'Judge', 'judge')),
         referee: event.refereeId ? truncate(judgeName.get(event.refereeId) ?? '', 'judge') : '',
+        ...(event.assistantRefereeId
+          ? { assistantReferee: truncate(judgeName.get(event.assistantRefereeId) ?? '', 'judge') }
+          : {}),
         profile,
         dances,
         ...(figures ? { sides: event.figures.map((f) => f.side) } : {}),

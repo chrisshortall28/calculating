@@ -277,6 +277,7 @@ export function judgeSheets(events: EventData[], options: JudgeSheetOptions = {}
 }
 
 type Officials = Pick<EventData, 'judges' | 'referee'> & {
+  assistantReferee?: EventData['assistantReferee'];
   /** Judges who sit in a seat for only some parts. */
   swaps?: SeatSwap[];
 };
@@ -290,16 +291,23 @@ const judgesText = (d: Officials) =>
     .join(', ') || '—';
 const refereeText = (d: Officials) => d.referee?.name ?? '—';
 
-/** "Judges: J1 A, J2 B, J3 C · Referee: D" (referee shown as "—" if not assigned) */
+/** "Judges: J1 A, J2 B, J3 C · Referee: D" (referee shown as "—" if not assigned), then "· Assistant referee: E" when there is one */
 export function officialsLine(d: Officials): string {
-  return `Judges: ${judgesText(d)} · Referee: ${refereeText(d)}`;
+  return `Judges: ${judgesText(d)} · Referee: ${refereeText(d)}${d.assistantReferee ? ` · Assistant referee: ${d.assistantReferee.name}` : ''}`;
 }
 
 /** The event's officials as labelled lines, under the results table. */
 function officialsBlock(d: Officials): Content {
   const row = (label: string, value: string) => [{ text: label, bold: true }, { text: value }];
   return {
-    table: { widths: [52, '*'], body: [row('Judges', judgesText(d)), row('Referee', refereeText(d))] },
+    table: {
+      widths: [88, '*'],
+      body: [
+        row('Judges', judgesText(d)),
+        row('Referee', refereeText(d)),
+        ...(d.assistantReferee ? [row('Assistant referee', d.assistantReferee.name)] : []),
+      ],
+    },
     layout: 'noBorders',
     margin: [0, 8, 0, 0],
   };

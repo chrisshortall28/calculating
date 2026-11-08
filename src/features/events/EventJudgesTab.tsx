@@ -27,7 +27,7 @@ import { SortableList } from '../../app/SortableList';
 import { startsWithFilter } from '../../app/nameFilter';
 import { marksAffectedByEventChange, updateEvent } from '../../db/repo';
 import { byId } from '../../domain/entryName';
-import type { CompEvent } from '../../domain/types';
+import type { CompEvent, Judge } from '../../domain/types';
 import { confirmMarkLoss } from './confirmMarkLoss';
 import { ChangeJudgeModal, RenameJudgeModal, resolveJudge } from './PanelJudgeModals';
 import { SectionJudges } from './SectionJudges';
@@ -36,18 +36,10 @@ export function EventJudgesTab({ event }: { event: CompEvent }) {
   const judgeList = useJudges(event.competitionId) ?? [];
   const judges = byId(judgeList);
   const [name, setName] = useState('');
-  const [refName, setRefName] = useState('');
   const [renaming, setRenaming] = useState<string>();
   const [changing, setChanging] = useState<string>();
   const panel = event.judgeIds.map((id) => judges.get(id)).filter((j) => !!j);
   const available = judgeList.filter((j) => !event.judgeIds.includes(j.id)).map((j) => j.name);
-  const referee = event.refereeId ? judges.get(event.refereeId) : undefined;
-  const refereePanelPos = event.refereeId ? event.judgeIds.indexOf(event.refereeId) : -1;
-  // Panel members first — the referee is often one of the judges.
-  const refereeOptions = [...panel, ...judgeList.filter((j) => !event.judgeIds.includes(j.id))]
-    .filter((j) => j.id !== event.refereeId)
-    .map((j) => j.name);
-
   const addJudgeToPanel = async (judgeName: string) => {
     const n = judgeName.trim();
     if (!n) return;
@@ -70,18 +62,6 @@ export function EventJudgesTab({ event }: { event: CompEvent }) {
   };
 
   const setReferee = (refereeId: string | undefined) => updateEvent(event.id, { refereeId });
-
-  const chooseReferee = async (refereeName: string) => {
-    const n = refereeName.trim();
-    if (!n) return;
-    await setReferee(await resolveJudge(event.competitionId, n, judgeList));
-    setRefName('');
-  };
-
-  const submitReferee = (e: React.FormEvent) => {
-    e.preventDefault();
-    void chooseReferee(refName);
-  };
 
   return (
     <Stack maw={640}>
@@ -182,56 +162,22 @@ export function EventJudgesTab({ event }: { event: CompEvent }) {
 
       <SectionJudges event={event} />
 
-      <Card withBorder>
-        <Title order={5} mb="xs">
-          Referee
-        </Title>
-        {referee ? (
-          <Group justify="space-between" mb="sm">
-            <Group gap="xs">
-              <IconFlagFilled size={16} color="var(--mantine-color-grape-6)" />
-              <Text fw={500}>{referee.name}</Text>
-              {refereePanelPos >= 0 && (
-                <Text size="sm" c="dimmed">
-                  (also judge J{refereePanelPos + 1})
-                </Text>
-              )}
-            </Group>
-            <Tooltip label="Remove referee">
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                onClick={() => setReferee(undefined)}
-                aria-label="Remove referee"
-              >
-                <IconX size={16} />
-              </ActionIcon>
-            </Tooltip>
-          </Group>
-        ) : (
-          <Text size="sm" c="dimmed" mb="sm">
-            No referee assigned yet. The referee can also be one of the judges.
-          </Text>
-        )}
-        <form onSubmit={submitReferee}>
-          <Group align="flex-end">
-            <Autocomplete
-              label={referee ? 'Change referee' : 'Set referee'}
-              description="Pick a judge or type a new name"
-              data={refereeOptions}
-              filter={startsWithFilter}
-              value={refName}
-              onChange={setRefName}
-              onOptionSubmit={(v) => void chooseReferee(v)}
-              maxDropdownHeight={280}
-              style={{ flex: 1 }}
-            />
-            <Button type="submit" variant="light" color="grape">
-              Set
-            </Button>
-          </Group>
-        </form>
-      </Card>
+      <OfficialCard
+        event={event}
+        field="refereeId"
+        title="Referee"
+        none="No referee assigned yet. The referee can also be one of the judges."
+        roster={judgeList}
+        panel={panel}
+      />
+      <OfficialCard
+        event={event}
+        field="assistantRefereeId"
+        title="Assistant referee"
+        none="No assistant referee assigned yet."
+        roster={judgeList}
+        panel={panel}
+      />
       <RenameJudgeModal
         judge={judges.get(renaming ?? '')}
         roster={judgeList}
@@ -245,5 +191,98 @@ export function EventJudgesTab({ event }: { event: CompEvent }) {
         onClose={() => setChanging(undefined)}
       />
     </Stack>
+  );
+}
+
+/** The event's referee or assistant referee: shown with a button to remove, and a box to pick or type another. */
+function OfficialCard({
+  event,
+  field,
+  title,
+  none,
+  roster,
+  panel,
+}: {
+  event: CompEvent;
+  field: 'refereeId' | 'assistantRefereeId';
+  title: string;
+  none: string;
+  roster: Judge[];
+  panel: Judge[];
+}) {
+  const [name, setName] = useState('');
+  const currentId = event[field];
+  const current = roster.find((j) => j.id === currentId);
+  const panelPos = currentId ? event.judgeIds.indexOf(currentId) : -1;
+  const role = title.toLowerCase();
+  // Panel members first: the referee is often one of the judges.
+  const options = [...panel, ...roster.filter((j) => !event.judgeIds.includes(j.id))]
+    .filter((j) => j.id !== currentId)
+    .map((j) => j.name);
+
+  const set = (id: string | undefined) => updateEvent(event.id, { [field]: id });
+  const choose = async (chosen: string) => {
+    const n = chosen.trim();
+    if (!n) return;
+    await set(await resolveJudge(event.competitionId, n, roster));
+    setName('');
+  };
+
+  return (
+    <Card withBorder>
+      <Title order={5} mb="xs">
+        {title}
+      </Title>
+      {current ? (
+        <Group justify="space-between" mb="sm">
+          <Group gap="xs">
+            <IconFlagFilled size={16} color="var(--mantine-color-grape-6)" />
+            <Text fw={500}>{current.name}</Text>
+            {panelPos >= 0 && (
+              <Text size="sm" c="dimmed">
+                (also judge J{panelPos + 1})
+              </Text>
+            )}
+          </Group>
+          <Tooltip label={`Remove ${role}`}>
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              onClick={() => set(undefined)}
+              aria-label={`Remove ${role}`}
+            >
+              <IconX size={16} />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
+      ) : (
+        <Text size="sm" c="dimmed" mb="sm">
+          {none}
+        </Text>
+      )}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void choose(name);
+        }}
+      >
+        <Group align="flex-end">
+          <Autocomplete
+            label={`${current ? 'Change' : 'Set'} ${role}`}
+            description="Pick a judge or type a new name"
+            data={options}
+            filter={startsWithFilter}
+            value={name}
+            onChange={setName}
+            onOptionSubmit={(v) => void choose(v)}
+            maxDropdownHeight={280}
+            style={{ flex: 1 }}
+          />
+          <Button type="submit" variant="light" color="grape">
+            Set
+          </Button>
+        </Group>
+      </form>
+    </Card>
   );
 }

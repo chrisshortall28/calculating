@@ -56,6 +56,8 @@ export interface CompEvent {
   judgeSwaps?: Record<string, Record<Id, Id>>;
   /** The event's referee (a person from the judges roster; may also sit on the panel). Gives no marks. */
   refereeId?: Id;
+  /** The event's assistant referee (also from the judges roster). Gives no marks. */
+  assistantRefereeId?: Id;
   /** Rotating start order for this event: follow the competition's default, or force it on or off. */
   rotateStartOrder?: 'default' | 'on' | 'off';
   status: EventStatus;

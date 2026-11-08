@@ -120,3 +120,20 @@ describe('EventJudgesTab judge changes', () => {
     );
   });
 });
+
+describe('EventJudgesTab assistant referee', () => {
+  it('sets, shows and removes the assistant referee separately from the referee', async () => {
+    const { eventId, ann } = await seed();
+    renderTab(eventId);
+    expect(await screen.findByText('No assistant referee assigned yet.')).toBeTruthy();
+    const box = (await screen.findAllByLabelText('Set assistant referee'))[0]!;
+    fireEvent.change(box, { target: { value: 'Anna Judge' } });
+    fireEvent.click(screen.getAllByText('Set')[1]!);
+    await waitFor(async () => expect((await db.events.get(eventId))!.assistantRefereeId).toBe(ann));
+    expect((await db.events.get(eventId))!.refereeId).toBeUndefined();
+    expect((await screen.findAllByText('(also judge J1)')).length).toBe(1);
+
+    fireEvent.click(await screen.findByLabelText('Remove assistant referee'));
+    await waitFor(async () => expect((await db.events.get(eventId))!.assistantRefereeId).toBeUndefined());
+  });
+});

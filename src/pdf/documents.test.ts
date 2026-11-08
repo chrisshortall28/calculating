@@ -382,3 +382,17 @@ describe('officialsLine with different judges for some parts', () => {
     );
   });
 });
+
+describe('officialsLine with an assistant referee', () => {
+  it('names the assistant referee after the referee, only when there is one', () => {
+    const d = sampleEvent();
+    const assistantReferee = { id: 'a', competitionId: 'c', name: 'Ann' };
+    expect(officialsLine({ judges: d.judges, referee: d.referee, assistantReferee })).toBe(
+      'Judges: J1 Helen, J2 Ian, J3 Jo · Referee: Kate · Assistant referee: Ann',
+    );
+    expect(texts(resultsPages([{ ...d, assistantReferee }], 'standard', true))).toEqual(
+      expect.arrayContaining(['Assistant referee', 'Ann']),
+    );
+    expect(texts(resultsPages([d], 'standard', true))).not.toContain('Assistant referee');
+  });
+});
