@@ -19,7 +19,8 @@ import {
   segmentIdOfKey,
   segmentPanel,
 } from '../domain/panels';
-import { cdKey, eventMarkKeys } from '../domain/segments';
+import { cdKey, eventMarkKeys, eventSegments } from '../domain/segments';
+import { ownOrderSegments } from '../domain/startOrder';
 import { db, newId, type MarkPK } from './db';
 
 /** Dances a new competition starts with: the WorldSkate 2026 Dance Book's dances plus other
@@ -166,6 +167,13 @@ async function tidyEvent(eventId: Id) {
   const judgeSwaps = cleanSwaps(ev);
   if (JSON.stringify(judgeSwaps) !== JSON.stringify(ev.judgeSwaps))
     await db.events.update(eventId, { judgeSwaps });
+  // Own start orders only for parts that still exist and follow another part.
+  if (ev.partOrders) {
+    const own = new Set(ownOrderSegments(eventSegments(ev, [])).map((sg) => sg.id));
+    const kept = Object.fromEntries(Object.entries(ev.partOrders).filter(([id]) => own.has(id)));
+    if (Object.keys(kept).length !== Object.keys(ev.partOrders).length)
+      await db.events.update(eventId, { partOrders: Object.keys(kept).length > 0 ? kept : undefined });
+  }
   const tidy = { ...ev, judgeSwaps };
   const keys = eventMarkKeys(tidy);
   await db.marks
@@ -368,10 +376,31 @@ export async function deleteEntry(id: Id) {
     const entry = await db.entries.get(id);
     await deleteEntryTx(id);
     if (entry) {
+      const ev = await db.events.get(entry.eventId);
+      if (ev?.partOrders) {
+        const partOrders = Object.fromEntries(
+          Object.entries(ev.partOrders).map(([seg, ids]) => [seg, ids.filter((e) => e !== id)]),
+        );
+        await db.events.update(ev.id, { partOrders });
+      }
       const rest = await db.entries.where({ eventId: entry.eventId }).sortBy('startOrder');
       await Promise.all(rest.map((e, i) => db.entries.update(e.id, { startOrder: i })));
       await syncReadyStatus(entry.eventId);
     }
+  });
+}
+
+/** Sets (or, with undefined, clears so it follows the start order) the order one later part is skated in. */
+export async function setPartOrder(eventId: Id, segmentId: string, order: Id[] | undefined) {
+  await db.transaction('rw', db.events, db.competitions, async () => {
+    const ev = await db.events.get(eventId);
+    if (!ev) return;
+    const rest = Object.fromEntries(Object.entries(ev.partOrders ?? {}).filter(([id]) => id !== segmentId));
+    const partOrders = order ? { ...rest, [segmentId]: order } : rest;
+    await db.events.update(eventId, {
+      partOrders: Object.keys(partOrders).length > 0 ? partOrders : undefined,
+    });
+    await touch(ev.competitionId);
   });
 }
 

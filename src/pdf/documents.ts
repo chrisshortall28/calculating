@@ -3,7 +3,7 @@ import { clubColors, onColor } from '../app/clubColors';
 import { entryHeading } from '../domain/entryName';
 import { factorSummary, markKeyLabel } from '../domain/segments';
 import { swapsText, type SeatSwap } from '../domain/panels';
-import { rotateFrom } from '../domain/startOrder';
+import { inSegmentOrder } from '../domain/startOrder';
 import { formatTenths } from '../marks/parseMark';
 import {
   bTotalsUsed,
@@ -151,9 +151,11 @@ function judgeSheetPage(
   // A sheet for one dance or figure of a rotating event lists the skaters from that part's first skater,
   // keeping their start numbers; a sheet with several parts keeps the start order and marks each first skater.
   const firstIndex = segments.length === 1 ? (d.firstSkaters.get(segments[0]!.id) ?? 0) : 0;
-  const ordered = rotateFrom(
+  const ordered = inSegmentOrder(
     d.rows.map((row, index) => ({ row, index })),
+    segments.length === 1 ? segments[0]!.id : '',
     firstIndex,
+    d.partOrders,
   );
   const entryRow = (r: EventData['rows'][number], i: number): TableCell[] => [
     {

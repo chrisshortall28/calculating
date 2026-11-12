@@ -168,6 +168,14 @@ the first skater of its group: 8 skaters and 2 dances start with #1 and #5; 13 s
 with #1, #6 and #10 (`src/domain/startOrder.ts`). The judge sheets and the scoring grid keep the
 entries' order and mark who skates first.
 
+### Skating order for later parts
+
+Every part is skated in the event's start order (the Entries tab) unless it comes after other parts: the
+free dance after the compulsory dances, the short or free programme after the figures. Those can be given
+an order of their own (`CompEvent.partOrders`, entry ids per part), on the Entries tab: dragged,
+randomised, or set from the placings after the parts before it, lowest placed first. A part without one
+follows the start order, so older events and files are unchanged. Display only: it is never read by scoring.
+
 ### Compulsory figures
 
 The 53 figures are built in (`src/domain/figures.ts`), shown as e.g. "39. Paragraph Loops BOI -

@@ -8,6 +8,14 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.7.1',
+    date: '2026-11-09',
+    changes: [
+      'Skating order: the free dance, short programme and free programme can now have a skating order of their own. On an event’s Entries tab, pick the part next to Start order to change its order, or to set it from the results so far with the lowest placed skating first; until you do, every part follows the start order as before. The scoring grid, judge sheets and skating order PDF follow each part’s order. This replaces the Reverse order by results button.',
+      'Calculating For Windows: the skating order stored in an event file is now used instead of the order the skaters were entered in, including a different order for the free dance or programmes, and is written when exporting.',
+    ],
+  },
+  {
     version: '1.7.0',
     date: '2026-11-08',
     changes: [

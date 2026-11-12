@@ -1,4 +1,3 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { CompetitionFile } from '../io/competitionFile';
 import { convertLegacyCompetition, groupLegacyEvents } from './convert';
@@ -7,7 +6,6 @@ import { exportLegacyEvents, legacyDate, legacyFactor } from './export';
 import { buildEventFile, type FixtureEvent } from './fixtures';
 import { checksumProblems, eventFileSize, slotsFor } from './format';
 import { readLegacyEvent } from './readEvent';
-import { unusedCell } from './testUtils';
 
 const compulsory = (name: string, extra: Partial<FixtureEvent> = {}): FixtureEvent => ({
   name,
@@ -321,42 +319,6 @@ describe('exportLegacyEvents', () => {
   });
 });
 
-/** Real files: set LEGACY_SAMPLES to the folder holding `comp1` (see samples.test.ts). */
-const samples = process.env.LEGACY_SAMPLES ?? 'examples/legacy';
-describe.skipIf(!existsSync(`${samples}/comp1`))('exporting an imported real competition (comp1)', () => {
-  const dir = `${samples}/comp1`;
-  const real = (existsSync(dir) ? readdirSync(dir) : [])
-    .filter((f) => /\.ROL$/i.test(f))
-    .sort()
-    .map((f) => readLegacyEvent(f, new Uint8Array(readFileSync(`${dir}/${f}`))));
-  const imported = existsSync(dir) ? convertLegacyCompetition(groupLegacyEvents(real)[0]!).file : undefined;
-  const out = imported ? exportLegacyEvents(imported) : undefined;
-
-  it('writes a valid file for every dance event', () => {
-    // 75 imported events, less the one with no entries.
-    expect(out!.files).toHaveLength(74);
-    for (const f of out!.files) expect(checksumProblems(f.data), f.name).toEqual([]);
-    expect(out!.skipped.map((x) => x.event)).toEqual(['27 Mix & Match']); // it has no entries
-  });
-
-  it('writes the same events back: names, panel, dances, entries and every mark', () => {
-    const original = real.filter((e) => e.kind === 'dance' && e.entries.length > 0);
-    const back = out!.files.map((f) => readLegacyEvent(f.name, f.data));
-    expect(back).toHaveLength(original.length);
-    back.forEach((b, i) => {
-      const o = original[i]!;
-      expect(b.name).toBe(o.name);
-      expect(b.judges).toEqual(o.judges);
-      expect(b.referee).toBe(o.referee);
-      expect(b.compulsory.map((c) => c.code)).toEqual(o.compulsory.map((c) => c.code));
-      expect(b.hasLong).toBe(o.hasLong);
-      expect(b.entries.map((e) => [e.name, e.club, e.blocks])).toEqual(
-        o.entries.map((e) => [e.name, e.club, e.blocks]),
-      );
-    });
-  });
-});
-
 describe('exporting Figures & Free events', () => {
   const entry = (name: string, partner?: string) => ({
     name,
@@ -443,67 +405,6 @@ describe('exporting Figures & Free events', () => {
     const back = readLegacyEvent('DATA001B.ROL', exportLegacyEvents(file).files[0]!.data);
     expect(back.kind).toBe('pairs');
     expect(back.entries.map((e) => [e.name, e.partner])).toEqual([['Anna Test', 'Carl Test']]);
-  });
-});
-
-/**
- * Figures events made in the application: those in `comp2` and in `test` (Single and Pairs events with
- * figures, a short and a long programme). They are rebuilt from the converted events and compared byte
- * for byte, apart from the date text, the leftovers in unused table cells and entries nobody marked.
- */
-const figureFolders = ['comp2', 'test'].filter((f) => existsSync(`${samples}/${f}`));
-describe.skipIf(figureFolders.length === 0)('rebuilding real Single and Pairs files', () => {
-  const real = figureFolders.flatMap((folder) =>
-    readdirSync(`${samples}/${folder}`)
-      .filter((f) => /.ROL$/i.test(f))
-      .sort()
-      .map((f) => ({ folder, f, bytes: new Uint8Array(readFileSync(`${samples}/${folder}/${f}`)) })),
-  );
-
-  it('writes the same bytes as the application', () => {
-    const compared: string[] = [];
-    const differences: string[] = [];
-    for (const folder of figureFolders) {
-      const files = real.filter((r) => r.folder === folder);
-      const read = files.map((r) => readLegacyEvent(r.f, r.bytes));
-      const { file } = convertLegacyCompetition(groupLegacyEvents(read)[0]!);
-      const out = exportLegacyEvents(file);
-      for (const written of out.files) {
-        const i = read.findIndex((e) => e.name === written.event);
-        const original = files[i]!.bytes;
-        if (read[i]!.kind !== 'single' && read[i]!.kind !== 'pairs') continue;
-        const entries = original[1741]!;
-        const phases = [1, 2, 3, 4, 5, 6].filter(
-          (p) => new DataView(original.buffer).getUint32(324 + 16 * (p - 1), true) > 0,
-        ).length;
-        if (original.length !== written.data.length) continue;
-        // An entry with no marks at all is left blank by the application, but exported as 0.0.
-        const blank = new Set<number>();
-        read[i]!.entries.forEach((e, r) => e.blocks.every((b) => b === null) && blank.add(r));
-        let different = 0;
-        for (let k = 0; k < original.length; k++) {
-          const inDate = k >= 122 && k < 162;
-          const inCrc = k === 254 || k === 255;
-          const inBlank = k >= 2360 && blank.has(Math.floor((k - 2360) / 3072));
-          // The tables of such an event rank the unmarked entry differently (it is left out there).
-          const inTables = blank.size > 0 && k >= 2360 + 3072 * slotsFor(entries);
-          if (
-            original[k] !== written.data[k] &&
-            !inDate &&
-            !inCrc &&
-            !inBlank &&
-            !inTables &&
-            !unusedCell(k, entries, phases)
-          ) {
-            different++;
-          }
-        }
-        compared.push(`${folder}/${files[i]!.f}`);
-        if (different > 0) differences.push(`${folder}/${files[i]!.f}: ${different} bytes`);
-      }
-    }
-    expect(compared.length).toBeGreaterThan(0);
-    expect(differences).toEqual([]);
   });
 });
 

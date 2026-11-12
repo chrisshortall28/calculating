@@ -7,6 +7,8 @@ import type {
   LegacyWarning,
 } from './types';
 
+import { START_ORDER_AT } from './profiles';
+
 /** Thrown when a file is not a Calculating For Windows event file. */
 export class LegacyFormatError extends Error {}
 
@@ -89,6 +91,16 @@ export function readLegacyEvent(fileName: string, b: Uint8Array): LegacyEvent {
     });
   }
 
+  // Each kind of part has a list of row numbers (1-based); one that is not a complete order of the rows is unused.
+  const startOrders: LegacyEvent['startOrders'] = {};
+  if (entries.length === entryCount) {
+    for (const [part, at] of Object.entries(START_ORDER_AT) as ['C' | 'S' | 'L', number][]) {
+      const rows = Array.from({ length: entryCount }, (_, i) => b[at + i]! - 1);
+      if (entryCount > 0 && new Set(rows).size === entryCount && rows.every((r) => r >= 0 && r < entryCount))
+        startOrders[part] = rows;
+    }
+  }
+
   return {
     fileName,
     competition: { name: ascii(b, 2, TEXT), venue: ascii(b, 82, TEXT), date: ascii(b, 122, TEXT) },
@@ -107,6 +119,7 @@ export function readLegacyEvent(fileName: string, b: Uint8Array): LegacyEvent {
       long: fraction(b[1649]!, b[1650]!),
     },
     entries,
+    startOrders,
     warnings,
   };
 }

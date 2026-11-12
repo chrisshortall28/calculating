@@ -7,7 +7,7 @@ import { clearMarks, setEventStatus, setMark } from '../../db/repo';
 import { occupant, segmentIdOfKey, segmentPanel, seatMark } from '../../domain/panels';
 import { byId, entryClub, entryHeading, entryName, entryNoun } from '../../domain/entryName';
 import { eventTieBreakMarks, segmentNoun } from '../../domain/segments';
-import { effectiveRotate, firstSkaters, rotateFrom } from '../../domain/startOrder';
+import { effectiveRotate, firstSkaters, inSegmentOrder, partOrderPositions } from '../../domain/startOrder';
 import type { CompEvent, SegmentKey } from '../../domain/types';
 import { judgeEventRanks } from '../../scoring';
 import type { Direction } from '../../marks/gridNav';
@@ -83,7 +83,20 @@ export function ScoringTab({ event }: { event: CompEvent }) {
       })),
     [entries, skaters],
   );
-  const segmentRows = useMemo(() => rotateFrom(rows, firstIndex), [rows, firstIndex]);
+  // A later part (free dance, programme) can have its own order too.
+  const ownOrders = useMemo(
+    () =>
+      partOrderPositions(
+        event,
+        segments,
+        entries.map((e) => e.id),
+      ),
+    [event, segments, entries],
+  );
+  const segmentRows = useMemo(
+    () => inSegmentOrder(rows, segment?.id ?? '', firstIndex, ownOrders),
+    [rows, segment, firstIndex, ownOrders],
+  );
 
   // Only show a judge's ordinals once all their marks for this segment are in.
   const ordinals = useMemo(() => {

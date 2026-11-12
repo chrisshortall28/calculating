@@ -98,3 +98,13 @@ describe('skatingOrderDocument', () => {
     expect(texts(skatingOrderDocument([event(2)], new Set()).content)).toContain('Nothing to print.');
   });
 });
+
+describe('a part with its own order', () => {
+  it('lists the free dance in its own order, keeping the start numbers, while the dances follow the start order', () => {
+    const d = { ...event(2), partOrders: new Map([['fd', [3, 1, 0, 2]]]) };
+    const [dance1, , free] = skatingOrderPages([d]);
+    expect(names(dance1)).toEqual(['Amy', 'Beth', 'Cat', 'Dee']);
+    expect(names(free)).toEqual(['Dee', 'Beth', 'Amy', 'Cat']);
+    expect(texts(free)).toEqual(expect.arrayContaining(['4', '2', '1', '3']));
+  });
+});

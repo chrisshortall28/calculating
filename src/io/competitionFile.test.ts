@@ -9,6 +9,7 @@ import {
   importCompetition,
   importEventsInto,
   parseCompetitionFile,
+  ORDERS_FORMAT_VERSION,
   SWAPS_FORMAT_VERSION,
 } from './competitionFile';
 
@@ -322,6 +323,44 @@ describe('figures & free events in files', () => {
       expect(event!.judgeIds).toContain(seat);
       expect(merged.judges.some((j) => j.id === substitute && j.name === 'Sub Judge')).toBe(true);
     });
+  });
+});
+
+describe('own start orders for later parts', () => {
+  beforeEach(async () => {
+    await db.delete();
+    await db.open();
+  });
+
+  it('are written as format 4 only when a part has one, and survive copying with new ids', async () => {
+    const { compId, eventId, e1, e2 } = await seed();
+    expect((await exportCompetition(compId)).formatVersion).toBe(FORMAT_VERSION);
+    await repo.setPartOrder(eventId, 'fd', [e2, e1]);
+    const file = await exportCompetition(compId);
+    expect(file.formatVersion).toBe(ORDERS_FORMAT_VERSION);
+    expect(file.events[0]!.partOrders).toEqual({ fd: [e2, e1] });
+
+    const copyId = await importCompetition(parseCompetitionFile(JSON.parse(JSON.stringify(file))), 'copy');
+    const copy = await exportCompetition(copyId);
+    const [first, second] = [...copy.entries].sort((a, b) => a.startOrder - b.startOrder);
+    expect(copy.events[0]!.partOrders).toEqual({ fd: [second!.id, first!.id] });
+
+    // Clearing it goes back to the old format, and files without it import as before.
+    await repo.setPartOrder(eventId, 'fd', undefined);
+    const plain = await exportCompetition(compId);
+    expect(plain.formatVersion).toBe(FORMAT_VERSION);
+    expect(JSON.stringify(plain)).not.toContain('partOrders');
+    expect(parseCompetitionFile(JSON.parse(JSON.stringify(plain))).events[0]!.partOrders).toBeUndefined();
+  });
+
+  it('drop a removed entry, and are tidied when the part goes', async () => {
+    const { compId, eventId, e1, e2 } = await seed();
+    await repo.setPartOrder(eventId, 'fd', [e2, e1]);
+    await repo.deleteEntry(e1);
+    expect((await db.events.get(eventId))!.partOrders).toEqual({ fd: [e2] });
+    await repo.updateEvent(eventId, { hasFreeDance: false });
+    expect((await db.events.get(eventId))!.partOrders).toBeUndefined();
+    expect(compId).toBeTruthy();
   });
 });
 

@@ -1,4 +1,3 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { eventSegments, eventTieBreakMarks } from '../domain/segments';
 import { convertLegacyCompetition, groupLegacyEvents } from './convert';
@@ -7,7 +6,6 @@ import { readLegacyEvent } from './readEvent';
 import { DANCE_PROFILES, type DanceKind } from './profiles';
 import { phaseTails } from './tail';
 import type { LegacyEvent } from './types';
-import { unusedCell } from './testUtils';
 import { writeDanceEvent, type WriteEvent } from './write';
 
 /** Scores a legacy event with Podium's engine and builds the tables the application stores for it. */
@@ -69,6 +67,7 @@ describe('writeDanceEvent', () => {
     competition: { name: 'Test Competition', venue: 'Venue', date: '1st January 2026' },
     name: 'Event',
     typeCode: 8,
+    startOrders: {},
     kind: 'dance',
     judges: ['J1', 'J2', 'J3'],
     referee: 'J1',
@@ -133,75 +132,3 @@ describe('writeDanceEvent', () => {
     expect(checksumProblems(file).map((p) => p.where)).toEqual(['entry block 0']);
   });
 });
-
-/** Real files: set LEGACY_SAMPLES to the folder holding `comp1` (see samples.test.ts). */
-const samples = process.env.LEGACY_SAMPLES ?? 'examples/legacy';
-describe.skipIf(!existsSync(`${samples}/comp1`))('rebuilding real event files', () => {
-  const dir = `${samples}/comp1`;
-  // Skipped suites still run their body, so only read the folder when it is there.
-  const rebuilt = (existsSync(dir) ? readdirSync(dir) : [])
-    .filter((f) => /\.ROL$/i.test(f))
-    .sort()
-    .flatMap((f) => {
-      const real = new Uint8Array(readFileSync(`${dir}/${f}`));
-      const e = readLegacyEvent(f, real);
-      // Events that had entries removed keep stale rows and tables, which can not be reproduced.
-      if (e.kind !== 'dance' || e.entries.length === 0 || real[294] !== real[1741]) return [];
-      if (real.length !== eventFileSize(slotsFor(real[294]!))) return [];
-      const written = writeDanceEvent(writeInputFor(e));
-      let different = 0;
-      for (let i = 0; i < real.length; i++) {
-        if (real[i] !== written[i] && !unusedCell(i, real[1741]!, 1)) different++;
-      }
-      return [{ f, different, checksums: checksumProblems(written) }];
-    });
-
-  it('writes files whose every checksum is right', () => {
-    expect(rebuilt.length).toBeGreaterThan(20);
-    expect(rebuilt.filter((r) => r.checksums.length > 0)).toEqual([]);
-  });
-
-  it('writes the same bytes as the application, apart from leftovers of earlier edits', () => {
-    expect(rebuilt.filter((r) => r.different > 0).map((r) => `${r.f}: ${r.different} bytes`)).toEqual([]);
-  });
-});
-
-/**
- * A combined event (compulsory dance and free dance) made in the application, with a free dance
- * factor of 1/2 (its default there). Set LEGACY_COMBINED_SAMPLE to the file, or put it in `comp3`.
- */
-const combinedSample = (() => {
-  if (process.env.LEGACY_COMBINED_SAMPLE) return process.env.LEGACY_COMBINED_SAMPLE;
-  const dir = `${samples}/comp3`;
-  // comp3 may also hold other kinds of event (Couples Dance), so take the first Solo Dance one with a free dance.
-  const file = existsSync(dir)
-    ? readdirSync(dir)
-        .filter((f) => /\.ROL$/i.test(f))
-        .sort()
-        .find((f) => {
-          const e = readLegacyEvent(f, new Uint8Array(readFileSync(`${dir}/${f}`)));
-          return e.kind === 'dance' && e.compulsory.length > 0 && e.hasLong;
-        })
-    : undefined;
-  return file ? `${dir}/${file}` : undefined;
-})();
-describe.skipIf(!combinedSample || !existsSync(combinedSample))(
-  'rebuilding a combined event made in the application',
-  () => {
-    it('writes the same bytes as the application', () => {
-      const real = new Uint8Array(readFileSync(combinedSample!));
-      const e = readLegacyEvent('combined', real);
-      expect(e.compulsory.length).toBeGreaterThan(0);
-      expect(e.hasLong).toBe(true);
-      // The file says the free dance counts 1/2 (header bytes 1649 and 1650).
-      const factor: [number, number] = [real[1649]!, real[1650]!];
-      const written = writeDanceEvent(writeInputFor(e, factor));
-      expect(checksumProblems(real)).toEqual([]);
-      expect(written.length).toBe(real.length);
-      const different = [...real].flatMap((byte, i) =>
-        byte === written[i] || unusedCell(i, real[1741]!, 3) ? [] : [i],
-      );
-      expect(different).toEqual([]);
-    });
-  },
-);

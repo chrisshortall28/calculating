@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { db, newId } from '../db/db';
 import { statusForEntries } from '../db/repo';
+import { hasPartOrders } from '../domain/startOrder';
 import { hasSwaps } from '../domain/panels';
 import { NO_FACTORS } from '../domain/segments';
 import { MAX_COMPULSORY_DANCES, MAX_FIGURES, type Id, type SegmentKey } from '../domain/types';
@@ -9,6 +10,9 @@ import { MAX_COMPULSORY_DANCES, MAX_FIGURES, type Id, type SegmentKey } from '..
 export const FORMAT_VERSION = 2;
 /** 3: events with different judges for some parts (`judgeSwaps`). Only written when an event has some, so other files stay readable by older versions. */
 export const SWAPS_FORMAT_VERSION = 3;
+
+/** 4: events with their own start orders for later parts (`partOrders`). Only written when an event has some. */
+export const ORDERS_FORMAT_VERSION = 4;
 
 const hexColor = z.string().regex(/^#[0-9a-f]{6}$/i);
 
@@ -21,7 +25,12 @@ const factor = z.number().int().min(1).max(100_000);
 
 const fileSchema = z.object({
   app: z.literal('podium'),
-  formatVersion: z.union([z.literal(1), z.literal(FORMAT_VERSION), z.literal(SWAPS_FORMAT_VERSION)]),
+  formatVersion: z.union([
+    z.literal(1),
+    z.literal(FORMAT_VERSION),
+    z.literal(SWAPS_FORMAT_VERSION),
+    z.literal(ORDERS_FORMAT_VERSION),
+  ]),
   exportedAt: z.string(),
   competition: z.object({
     id: z.string(),
@@ -62,6 +71,7 @@ const fileSchema = z.object({
       refereeId: z.string().optional(),
       assistantRefereeId: z.string().optional(),
       rotateStartOrder: z.enum(['default', 'on', 'off']).optional(),
+      partOrders: z.record(z.string(), z.array(z.string())).optional(),
       status: z.enum(['setup', 'ready', 'scoring', 'final']),
     }),
   ),
@@ -88,6 +98,12 @@ const fileSchema = z.object({
 
 export type CompetitionFile = z.infer<typeof fileSchema>;
 
+/** `partOrders` with new ids for the entries. */
+function remapPartOrders(orders: Record<string, string[]> | undefined, id: (old: string) => string) {
+  if (!orders) return undefined;
+  return Object.fromEntries(Object.entries(orders).map(([segmentId, ids]) => [segmentId, ids.map(id)]));
+}
+
 /** `judgeSwaps` with new ids: the segment ids of compulsory dances (`cd:<danceId>`), seats and substitutes are judge ids. */
 function remapSwaps(swaps: Record<string, Record<string, string>> | undefined, id: (old: string) => string) {
   if (!swaps) return undefined;
@@ -106,7 +122,11 @@ export async function exportCompetition(competitionId: Id): Promise<CompetitionF
   const eventIds = events.map((e) => e.id);
   return {
     app: 'podium',
-    formatVersion: events.some(hasSwaps) ? SWAPS_FORMAT_VERSION : FORMAT_VERSION,
+    formatVersion: events.some(hasPartOrders)
+      ? ORDERS_FORMAT_VERSION
+      : events.some(hasSwaps)
+        ? SWAPS_FORMAT_VERSION
+        : FORMAT_VERSION,
     exportedAt: new Date().toISOString(),
     competition,
     dances: await db.dances.where({ competitionId }).toArray(),
@@ -168,6 +188,7 @@ export async function importCompetition(file: CompetitionFile, mode: 'copy' | 'r
         compulsoryDanceIds: e.compulsoryDanceIds.map(id),
         judgeIds: e.judgeIds.map(id),
         ...(e.judgeSwaps ? { judgeSwaps: remapSwaps(e.judgeSwaps, id) } : {}),
+        ...(e.partOrders ? { partOrders: remapPartOrders(e.partOrders, id) } : {}),
         refereeId: e.refereeId && id(e.refereeId),
         assistantRefereeId: e.assistantRefereeId && id(e.assistantRefereeId),
         // Files from before the ready status: setup events with skaters are ready.
@@ -268,6 +289,7 @@ export async function importEventsInto(file: CompetitionFile, competitionId: Id)
         compulsoryDanceIds: e.compulsoryDanceIds.map(fresh),
         judgeIds: e.judgeIds.map(fresh),
         ...(e.judgeSwaps ? { judgeSwaps: remapSwaps(e.judgeSwaps, fresh) } : {}),
+        ...(e.partOrders ? { partOrders: remapPartOrders(e.partOrders, fresh) } : {}),
         refereeId: e.refereeId && fresh(e.refereeId),
         assistantRefereeId: e.assistantRefereeId && fresh(e.assistantRefereeId),
         status: statusForEntries(e.status, file.entries.filter((en) => en.eventId === e.id).length),
