@@ -1,6 +1,6 @@
 import { Button, Group, Modal, Progress, Stack, Text, UnstyledButton, type ButtonProps } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconMapPin, IconPlus, IconTrophy } from '@tabler/icons-react';
+import { IconFolderOpen, IconMapPin, IconPlus, IconTrophy } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useNavigate } from 'react-router';
 import { clubColors, clubVars } from '../../app/clubColors';
@@ -10,6 +10,8 @@ import { createCompetition } from '../../db/repo';
 import type { Competition } from '../../domain/types';
 import { CompetitionDetailsForm, emptyCompetitionDetails } from './CompetitionDetailsForm';
 import classes from './CompetitionCard.module.css';
+import { confirmDeleteCompetition } from './confirmDeleteCompetition';
+import { useExportCompetition } from './useExportCompetition';
 
 export interface CompetitionStats {
   events: number;
@@ -51,47 +53,62 @@ export function CompetitionCard({
   stats?: CompetitionStats;
 }) {
   const tile = dateTile(c.date);
+  const exportCompetition = useExportCompetition();
   return (
-    <UnstyledButton
-      component={Link}
-      to={`/c/${c.id}`}
-      className={classes.card}
-      style={clubVars(clubColors(c))}
-    >
-      <div className={classes.band}>
-        <div className={classes.dateTile}>
-          {tile ? (
-            <>
-              <span className={classes.day}>{tile.day}</span>
-              <span className={classes.month}>{tile.month}</span>
-            </>
-          ) : (
-            <IconTrophy size={22} />
-          )}
-        </div>
-        <Text className={classes.name} lineClamp={2}>
-          {c.name}
-        </Text>
-      </div>
-      <Stack gap="sm" p="md">
-        <Group gap={6} c="dimmed" wrap="nowrap">
-          <IconMapPin size={16} />
-          <Text size="sm" truncate>
-            {c.venue || 'No venue set'}
+    <div className={classes.card} style={clubVars(clubColors(c))}>
+      <UnstyledButton component={Link} to={`/c/${c.id}`} className={classes.link} aria-label={c.name}>
+        <div className={classes.band}>
+          <div className={classes.dateTile}>
+            {tile ? (
+              <>
+                <span className={classes.day}>{tile.day}</span>
+                <span className={classes.month}>{tile.month}</span>
+              </>
+            ) : (
+              <IconTrophy size={22} />
+            )}
+          </div>
+          <Text className={classes.name} lineClamp={2}>
+            {c.name}
           </Text>
-        </Group>
-        <Group grow gap="xs">
-          <Stat label="Events" value={`${s.final}/${s.events}`} />
-          <Stat label="Skaters" value={s.skaters} />
-          <Stat label="Judges" value={s.judges} />
-        </Group>
-        <Progress
-          value={s.events ? (100 * s.final) / s.events : 0}
-          color={s.events && s.final === s.events ? 'teal' : 'medal.5'}
+        </div>
+        <Stack gap="sm" p="md">
+          <Group gap={6} c="dimmed" wrap="nowrap">
+            <IconMapPin size={16} />
+            <Text size="sm" truncate>
+              {c.venue || 'No venue set'}
+            </Text>
+          </Group>
+          <Group grow gap="xs">
+            <Stat label="Events" value={`${s.final}/${s.events}`} />
+            <Stat label="Skaters" value={s.skaters} />
+            <Stat label="Judges" value={s.judges} />
+          </Group>
+          <Progress
+            value={s.events ? (100 * s.final) / s.events : 0}
+            color={s.events && s.final === s.events ? 'teal' : 'medal.5'}
+            size="sm"
+          />
+        </Stack>
+      </UnstyledButton>
+      <Group gap="xs" px="md" pb="md" wrap="nowrap">
+        <Button
+          component={Link}
+          to={`/c/${c.id}`}
           size="sm"
-        />
-      </Stack>
-    </UnstyledButton>
+          flex={1}
+          leftSection={<IconFolderOpen size={16} />}
+        >
+          Open
+        </Button>
+        <Button variant="default" size="sm" px="sm" onClick={() => exportCompetition(c.id)}>
+          Export
+        </Button>
+        <Button variant="light" color="red" size="sm" px="sm" onClick={() => confirmDeleteCompetition(c)}>
+          Delete
+        </Button>
+      </Group>
+    </div>
   );
 }
 
