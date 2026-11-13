@@ -1,7 +1,8 @@
 import { Button, Group, Modal, Progress, Stack, Text, UnstyledButton, type ButtonProps } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconFolderOpen, IconMapPin, IconPlus, IconTrophy } from '@tabler/icons-react';
+import { IconMapPin, IconPlus, IconTrophy } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { clubColors, clubVars } from '../../app/clubColors';
 import { dateTile } from '../../app/format';
@@ -10,6 +11,7 @@ import { createCompetition } from '../../db/repo';
 import type { Competition } from '../../domain/types';
 import { CompetitionDetailsForm, emptyCompetitionDetails } from './CompetitionDetailsForm';
 import classes from './CompetitionCard.module.css';
+import { CompetitionPdfModal } from './CompetitionPdfModal';
 import { confirmDeleteCompetition } from './confirmDeleteCompetition';
 import { useExportCompetition } from './useExportCompetition';
 
@@ -54,6 +56,7 @@ export function CompetitionCard({
 }) {
   const tile = dateTile(c.date);
   const exportCompetition = useExportCompetition();
+  const [pdfs, setPdfs] = useState<'unused' | 'open' | 'closed'>('unused');
   return (
     <div className={classes.card} style={clubVars(clubColors(c))}>
       <UnstyledButton component={Link} to={`/c/${c.id}`} className={classes.link} aria-label={c.name}>
@@ -91,23 +94,21 @@ export function CompetitionCard({
           />
         </Stack>
       </UnstyledButton>
-      <Group gap="xs" px="md" pb="md" wrap="nowrap">
-        <Button
-          component={Link}
-          to={`/c/${c.id}`}
-          size="sm"
-          flex={1}
-          leftSection={<IconFolderOpen size={16} />}
-        >
-          Open
+      <Group grow gap="xs" px="md" pb="md" wrap="nowrap">
+        <Button size="sm" px="xs" onClick={() => setPdfs('open')}>
+          PDFs
         </Button>
-        <Button variant="default" size="sm" px="sm" onClick={() => exportCompetition(c.id)}>
+        <Button variant="default" size="sm" px="xs" onClick={() => exportCompetition(c.id)}>
           Export
         </Button>
-        <Button variant="light" color="red" size="sm" px="sm" onClick={() => confirmDeleteCompetition(c)}>
+        <Button variant="light" color="red" size="sm" px="xs" onClick={() => confirmDeleteCompetition(c)}>
           Delete
         </Button>
       </Group>
+      {/* Mounted on first use, so a page of cards does not load every competition's events. */}
+      {pdfs !== 'unused' && (
+        <CompetitionPdfModal competition={c} opened={pdfs === 'open'} onClose={() => setPdfs('closed')} />
+      )}
     </div>
   );
 }
