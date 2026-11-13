@@ -95,7 +95,7 @@ export function CompetitionCard({
         </Stack>
       </UnstyledButton>
       <Group grow gap="xs" px="md" pb="md" wrap="nowrap">
-        <Button size="sm" px="xs" onClick={() => setPdfs('open')}>
+        <Button variant="default" size="sm" px="xs" onClick={() => setPdfs('open')}>
           PDFs
         </Button>
         <Button variant="default" size="sm" px="xs" onClick={() => exportCompetition(c.id)}>
