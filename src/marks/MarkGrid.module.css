@@ -44,7 +44,9 @@
   background: light-dark(var(--mantine-color-blue-0), rgba(34, 139, 230, 0.12));
 }
 
-.activeCol {
+.activeCol,
+.activeRow .startNo,
+.activeRow .firstSkater {
   color: var(--mantine-color-blue-filled);
 }
 
