@@ -82,7 +82,7 @@ describe('Export for Calculating For Windows', () => {
     const onClose = open(id);
 
     await screen.findByText('DATA001B.ROL');
-    expect(screen.getByText('2A Solo')).toBeTruthy();
+    expect(screen.getByText('2A • Solo')).toBeTruthy();
     expect(screen.getByText('Not exported')).toBeTruthy();
     expect(screen.getByText(/Nothing: it has no figures or programmes/)).toBeTruthy();
 

@@ -13,6 +13,7 @@ import { db } from '../../db/db';
 import { createEvent, entryTypeLabel, reorderEvents } from '../../db/repo';
 import { byId } from '../../domain/entryName';
 import { eventSegments } from '../../domain/segments';
+import { eventTitle } from '../../domain/eventTitle';
 import { EventDetailsForm } from './EventDetailsForm';
 import classes from './EventsTab.module.css';
 import { StatusBadge } from './StatusBadge';
@@ -86,7 +87,7 @@ export function EventsTab() {
                 <Stack gap={4} className={classes.info}>
                   <Group gap="xs">
                     <Text component={Link} to={`/c/${compId}/e/${ev.id}`} className={classes.name} truncate>
-                      {ev.name}
+                      {eventTitle(ev)}
                     </Text>
                     <Badge variant="light" size="sm" color={entryTypeColor[ev.entryType]}>
                       {entryTypeLabel[ev.entryType]}
@@ -161,7 +162,7 @@ export function EventsTab() {
           onSubmit={async (values) => {
             const id = await createEvent(compId, values);
             if (keepAdding) {
-              notifications.show({ color: 'green', message: `Added “${values.name}”` });
+              notifications.show({ color: 'green', message: `Added “${eventTitle(values)}”` });
               return;
             }
             close();

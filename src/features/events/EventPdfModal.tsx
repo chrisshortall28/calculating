@@ -1,3 +1,4 @@
+import { eventTitle } from '../../domain/eventTitle';
 import {
   Alert,
   Anchor,
@@ -178,7 +179,7 @@ export function EventPdfModal({
       title={
         <Group gap="xs">
           <IconFileTypePdf size={20} />
-          <Text fw={700}>PDFs for {event.name}</Text>
+          <Text fw={700}>PDFs for {eventTitle(event)}</Text>
         </Group>
       }
     >
@@ -334,7 +335,11 @@ export function EventPdfModal({
               disabled={orderParts.length === 0}
               onClick={() =>
                 run(() =>
-                  printSkatingOrder({ eventId: event.id }, event.name, new Set(orderParts.map((s) => s.id))),
+                  printSkatingOrder(
+                    { eventId: event.id },
+                    eventTitle(event),
+                    new Set(orderParts.map((s) => s.id)),
+                  ),
                 )
               }
             >
@@ -348,7 +353,7 @@ export function EventPdfModal({
               disabled={sheetParts.length === 0}
               onClick={() =>
                 run(() =>
-                  printJudgeSheets({ eventId: event.id }, event.name, {
+                  printJudgeSheets({ eventId: event.id }, eventTitle(event), {
                     layout,
                     ...(sheetParts.length < segments.length && {
                       segmentIds: new Set(sheetParts.map((s) => s.id)),
@@ -365,7 +370,9 @@ export function EventPdfModal({
               leftSection={<IconFileTypePdf size={16} />}
               loading={busy}
               disabled={!chosen.ready}
-              onClick={() => run(() => printResults({ eventId: event.id }, event.name, style, chosen.scope))}
+              onClick={() =>
+                run(() => printResults({ eventId: event.id }, eventTitle(event), style, chosen.scope))
+              }
             >
               Create results
             </Button>

@@ -84,4 +84,42 @@ describe('EventDetailsForm', () => {
     fireEvent.change(screen.getByLabelText(/Event name/), { target: { value: 'Novice Ladies' } });
     expect(screen.queryByText(warning)).toBeNull();
   });
+
+  it('compares full titles: the same name is fine under another event number', async () => {
+    const compId = await createCompetition({
+      name: 'C',
+      date: '',
+      venue: '',
+      primaryColor: '#000000',
+      secondaryColor: '#000000',
+      welcome: '',
+    });
+    const event = {
+      name: 'Novice Ladies',
+      entryType: 'solo' as const,
+      discipline: 'dance' as const,
+      compulsoryDanceIds: [],
+      hasFreeDance: true,
+      figures: [],
+      hasShort: false,
+      hasLong: false,
+      factors: { figures: 0, short: 0, long: 0 },
+    };
+    await createEvent(compId, { ...event, number: '2A' });
+    const plain = 'Another event in this competition already has this name.';
+    const numbered = 'Another event in this competition already has this number and name.';
+    render(
+      <MantineProvider env="test">
+        <EventDetailsForm competitionId={compId} submitLabel="Add" onSubmit={() => {}} />
+      </MantineProvider>,
+    );
+    // No number: the full title is just the name, which no other event has.
+    fireEvent.change(screen.getByLabelText(/Event name/), { target: { value: 'Novice Ladies' } });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByText(plain)).toBeNull();
+    fireEvent.change(screen.getByLabelText('Number'), { target: { value: '2B' } });
+    expect(screen.queryByText(numbered)).toBeNull();
+    fireEvent.change(screen.getByLabelText('Number'), { target: { value: '2a' } });
+    expect(await screen.findByText(numbered)).toBeTruthy();
+  });
 });

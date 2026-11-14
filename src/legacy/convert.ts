@@ -1,3 +1,4 @@
+import { splitEventNumber } from '../domain/eventTitle';
 import { FIGURES } from '../domain/figures';
 import { cfKey, danceFreeFactor } from '../domain/segments';
 import type { EntryType, EventFigure, Id, SegmentKey } from '../domain/types';
@@ -231,7 +232,8 @@ export function convertLegacyCompetition(
     const event: FileEvent = {
       id: eventId,
       competitionId,
-      name: ev.name,
+      // A name such as "2A Novice Ladies" carries the event number.
+      ...splitEventNumber(ev.name),
       order: file.events.length,
       entryType: 'solo',
       compulsoryDanceIds: [],

@@ -101,6 +101,20 @@ describe('exportLegacyEvents', () => {
     expect(out.warnings).toEqual([]);
   });
 
+  it('writes an event number in front of the name, and reads it back', () => {
+    const file = podiumCompetition(compulsory('2A Novice Ladies'), compulsory('Junior Men'));
+    expect(file.events.map((e) => [e.number, e.name])).toEqual([
+      ['2A', 'Novice Ladies'],
+      [undefined, 'Junior Men'],
+    ]);
+    const out = exportLegacyEvents(file);
+    expect(out.files.map((f) => f.event)).toEqual(['2A • Novice Ladies', 'Junior Men']);
+    expect(out.files.map((f) => readLegacyEvent(f.name, f.data).name)).toEqual([
+      '2A Novice Ladies',
+      'Junior Men',
+    ]);
+  });
+
   it('round-trips an imported competition: the exported files read back as the same events', () => {
     const file = podiumCompetition(
       compulsory('Solo', { judges: ['Emma', 'Robert', 'Charlie'], referee: 'Emma' }),

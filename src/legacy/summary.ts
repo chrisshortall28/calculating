@@ -1,3 +1,4 @@
+import { eventTitle } from '../domain/eventTitle';
 import type { EntryType } from '../domain/types';
 import type { LegacyConversion } from './convert';
 
@@ -34,7 +35,7 @@ export function summariseConversion({ file, warnings, skippedEvents }: LegacyCon
     },
     events: file.events.map((e) => ({
       id: e.id,
-      name: e.name,
+      name: eventTitle(e),
       entryType: e.entryType,
       figures: e.discipline === 'figures',
       entries: entries.get(e.id) ?? 0,

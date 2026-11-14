@@ -78,7 +78,7 @@ describe('Import legacy', () => {
     );
 
     await screen.findByText('Test Competition');
-    expect(screen.getByText('1A Rising Stars')).toBeTruthy();
+    expect(screen.getByText('1A • Rising Stars')).toBeTruthy();
     expect(screen.getByText('Not imported')).toBeTruthy();
     expect(screen.getByText(/Ignored 1 other file: roller\.tlg/)).toBeTruthy();
 
@@ -120,7 +120,7 @@ describe('Import legacy', () => {
 
     fireEvent.change(await screen.findByLabelText('Dance number 99'), { target: { value: 'Bachata' } });
     fireEvent.change(screen.getByLabelText('Date'), { target: { value: '2026-09-05' } });
-    fireEvent.click(screen.getAllByLabelText('Entries in 1A Rising Stars')[0]!);
+    fireEvent.click(screen.getAllByLabelText('Entries in 1A • Rising Stars')[0]!);
     fireEvent.click(await screen.findByRole('option', { name: 'Duo' }));
     expect(screen.queryByText(/is not known yet/)).toBeNull();
 

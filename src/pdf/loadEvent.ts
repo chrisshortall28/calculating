@@ -1,5 +1,6 @@
 import { db } from '../db/db';
 import { byId, entryClub, entryMembers, entryName } from '../domain/entryName';
+import { eventNumberLabel } from '../domain/eventTitle';
 import { seatMark, seatSwaps, type SeatSwap } from '../domain/panels';
 import { effectiveRotate, firstSkaters, partOrderPositions } from '../domain/startOrder';
 import { eventSegments, eventTieBreakMarks, type Segment } from '../domain/segments';
@@ -18,6 +19,8 @@ export interface EventRow {
 export interface EventData {
   competition: Competition;
   event: CompEvent;
+  /** The number the PDFs show for the event: its own, or without one its place in the competition's running order. */
+  number: string;
   segments: Segment[];
   /** Rotating start order: segment id -> position in `rows` of the entry that skates it first. */
   firstSkaters: Map<string, number>;
@@ -39,7 +42,8 @@ export interface EventData {
 export async function loadEventData(eventId: Id): Promise<EventData> {
   const event = (await db.events.get(eventId))!;
   const competition = (await db.competitions.get(event.competitionId))!;
-  const [dances, skaterList, judgeList, entries, marks] = await Promise.all([
+  const [siblings, dances, skaterList, judgeList, entries, marks] = await Promise.all([
+    db.events.where({ competitionId: event.competitionId }).sortBy('order'),
     db.dances.where({ competitionId: event.competitionId }).toArray(),
     db.skaters.where({ competitionId: event.competitionId }).toArray(),
     db.judges.where({ competitionId: event.competitionId }).toArray(),
@@ -61,6 +65,7 @@ export async function loadEventData(eventId: Id): Promise<EventData> {
   return {
     competition,
     event,
+    number: eventNumberLabel(event, siblings.findIndex((e) => e.id === eventId) + 1),
     segments,
     firstSkaters: firstSkaters(segments, entries.length, effectiveRotate(event, competition)),
     partOrders: partOrderPositions(

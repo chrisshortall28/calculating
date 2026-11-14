@@ -1,3 +1,4 @@
+import { eventTitle } from '../../domain/eventTitle';
 import { ActionIcon, Badge, Container, Loader, Text, Tooltip } from '@mantine/core';
 import {
   IconAdjustments,
@@ -84,9 +85,9 @@ export function EventPage() {
         crumbs={[
           { label: 'Competitions', to: '/competitions' },
           { label: competition.name, to: `/c/${compId}` },
-          { label: event.name },
+          { label: eventTitle(event) },
         ]}
-        title={event.name}
+        title={eventTitle(event)}
         titleStart={<NeighbourLink event={prev} direction="previous" compId={compId} tab={tab} />}
         titleEnd={<NeighbourLink event={next} direction="next" compId={compId} tab={tab} />}
         badges={
@@ -132,7 +133,7 @@ function NeighbourLink({
 }) {
   const Icon = direction === 'previous' ? IconChevronLeft : IconChevronRight;
   const label = event
-    ? `${direction === 'previous' ? 'Previous' : 'Next'} event: ${event.name}`
+    ? `${direction === 'previous' ? 'Previous' : 'Next'} event: ${eventTitle(event)}`
     : `No ${direction} event`;
   const common = { variant: 'subtle', c: 'var(--club-on-primary)', size: 'lg', 'aria-label': label } as const;
   if (!event) {

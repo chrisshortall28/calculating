@@ -1,3 +1,4 @@
+import { eventTitle, legacyEventName } from '../domain/eventTitle';
 import { FIGURES } from '../domain/figures';
 import { occupant, segmentIdOfKey, seatSwaps } from '../domain/panels';
 import { cfKey, danceFreeFactor, eventSegments, eventTieBreakMarks } from '../domain/segments';
@@ -97,7 +98,9 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
   const unmarked = new Map<string, number>(); // event -> marks missing from blocks that have others, as 0.0
 
   for (const event of events) {
-    const skip = (reason: string) => result.skipped.push({ event: event.name, reason });
+    // Named in the lists and warnings by its full title; the file itself gets "2A Name".
+    const title = eventTitle(event);
+    const skip = (reason: string) => result.skipped.push({ event: title, reason });
     const unsupported = unsupportedReason(event);
     if (unsupported) {
       skip(unsupported);
@@ -160,7 +163,7 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
       const match = matchLegacyDance(name);
       if (!match) {
         if (!unnamedDances.has(name)) unnamedDances.set(name, new Set());
-        unnamedDances.get(name)!.add(event.name);
+        unnamedDances.get(name)!.add(title);
         return 0;
       }
       if (!match.exact) nearDances.set(name, match.name);
@@ -213,8 +216,8 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
         blocks,
       };
     });
-    if (missing > 0) unmarked.set(event.name, missing);
-    if (blank > 0) left.set(event.name, blank);
+    if (missing > 0) unmarked.set(title, missing);
+    if (blank > 0) left.set(title, blank);
 
     const entryIds = entries.map((e) => e.id);
     const bTotal = (key: SegmentKey) =>
@@ -228,12 +231,12 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
 
     result.files.push({
       name: `DATA${String(result.files.length + 1).padStart(3, '0')}B.ROL`,
-      event: event.name,
+      event: title,
       data: writeDanceEvent({
         competition: truncate(file.competition.name, 'competition'),
         venue: truncate(file.competition.venue, 'venue'),
         date: legacyDate(file.competition.date),
-        name: truncate(event.name, 'event'),
+        name: truncate(legacyEventName(event), 'event'),
         judges: event.judgeIds.map((id) => truncate(judgeName.get(id) ?? 'Judge', 'judge')),
         referee: event.refereeId ? truncate(judgeName.get(event.refereeId) ?? '', 'judge') : '',
         ...(event.assistantRefereeId

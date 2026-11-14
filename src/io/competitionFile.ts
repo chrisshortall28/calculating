@@ -14,6 +14,9 @@ export const SWAPS_FORMAT_VERSION = 3;
 /** 4: events with their own start orders for later parts (`partOrders`). Only written when an event has some. */
 export const ORDERS_FORMAT_VERSION = 4;
 
+/** 5: events with an event number (`number`). Only written when an event has one. */
+export const NUMBERS_FORMAT_VERSION = 5;
+
 const hexColor = z.string().regex(/^#[0-9a-f]{6}$/i);
 
 const segmentKey = z.custom<SegmentKey>(
@@ -30,6 +33,7 @@ const fileSchema = z.object({
     z.literal(FORMAT_VERSION),
     z.literal(SWAPS_FORMAT_VERSION),
     z.literal(ORDERS_FORMAT_VERSION),
+    z.literal(NUMBERS_FORMAT_VERSION),
   ]),
   exportedAt: z.string(),
   competition: z.object({
@@ -54,6 +58,7 @@ const fileSchema = z.object({
       id: z.string(),
       competitionId: z.string(),
       name: z.string(),
+      number: z.string().optional(),
       order: z.number(),
       entryType: z.enum(['solo', 'duo', 'couples', 'team', 'single', 'pairs']),
       compulsoryDanceIds: z.array(z.string()).max(MAX_COMPULSORY_DANCES),
@@ -122,11 +127,13 @@ export async function exportCompetition(competitionId: Id): Promise<CompetitionF
   const eventIds = events.map((e) => e.id);
   return {
     app: 'podium',
-    formatVersion: events.some(hasPartOrders)
-      ? ORDERS_FORMAT_VERSION
-      : events.some(hasSwaps)
-        ? SWAPS_FORMAT_VERSION
-        : FORMAT_VERSION,
+    formatVersion: events.some((e) => e.number)
+      ? NUMBERS_FORMAT_VERSION
+      : events.some(hasPartOrders)
+        ? ORDERS_FORMAT_VERSION
+        : events.some(hasSwaps)
+          ? SWAPS_FORMAT_VERSION
+          : FORMAT_VERSION,
     exportedAt: new Date().toISOString(),
     competition,
     dances: await db.dances.where({ competitionId }).toArray(),
