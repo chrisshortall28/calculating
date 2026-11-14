@@ -5,6 +5,7 @@ import {
   Checkbox,
   Group,
   Modal,
+  ScrollArea,
   Radio,
   SegmentedControl,
   SimpleGrid,
@@ -128,19 +129,24 @@ export function CompetitionPdfModal({
           </Anchor>
         </Group>
       </Group>
-      {events.map((e) => (
-        <Checkbox
-          key={e.id}
-          label={e.name}
-          checked={!off.has(e.id)}
-          onChange={(ev) => {
-            const next = new Set(off);
-            if (ev.currentTarget.checked) next.delete(e.id);
-            else next.add(e.id);
-            setOff(next);
-          }}
-        />
-      ))}
+      {/* Scrolls on its own, so a long list of events doesn't make the modal taller. */}
+      <ScrollArea.Autosize mah={168} type="auto" offsetScrollbars>
+        <Stack gap={6}>
+          {events.map((e) => (
+            <Checkbox
+              key={e.id}
+              label={e.name}
+              checked={!off.has(e.id)}
+              onChange={(ev) => {
+                const next = new Set(off);
+                if (ev.currentTarget.checked) next.delete(e.id);
+                else next.add(e.id);
+                setOff(next);
+              }}
+            />
+          ))}
+        </Stack>
+      </ScrollArea.Autosize>
     </Stack>
   );
 

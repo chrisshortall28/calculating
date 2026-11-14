@@ -3,7 +3,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 240px;
+  min-height: 340px;
   padding: var(--mantine-spacing-md);
   border-radius: var(--mantine-radius-md);
   background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-8));
@@ -11,7 +11,12 @@
 }
 
 .pages {
+  /* The mini pages are drawn in px at a small size, then enlarged as a whole. */
+  --preview-zoom: 1.45;
+  zoom: var(--preview-zoom);
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: flex-start;
   gap: 10px;
 }
@@ -136,9 +141,10 @@
   white-space: nowrap;
 }
 
+/* Beside the pages when there is room, otherwise below them; kept at 11px despite the zoom. */
 .more {
   align-self: center;
   color: var(--mantine-color-dimmed);
-  font-size: 11px;
+  font-size: calc(11px / var(--preview-zoom));
   white-space: nowrap;
 }
