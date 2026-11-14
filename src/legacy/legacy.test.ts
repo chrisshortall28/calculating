@@ -176,7 +176,8 @@ describe('convertLegacyCompetition', () => {
     expect(parseCompetitionFile(file)).toBeTruthy();
     const [event] = file.events;
     expect(event).toMatchObject({
-      name: '2A Newcomer Solo',
+      number: '2A',
+      name: 'Newcomer Solo',
       entryType: 'solo',
       discipline: 'dance',
       hasFreeDance: true,
