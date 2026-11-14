@@ -5,6 +5,7 @@ import {
   Checkbox,
   Group,
   Modal,
+  ScrollArea,
   Radio,
   SegmentedControl,
   SimpleGrid,
@@ -37,6 +38,7 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 
 // The previews are illustrations, so they assume a typical field rather than counting skaters.
 const SAMPLE_ENTRIES = 6;
+const NONE_OFF: ReadonlySet<string> = new Set();
 
 /**
  * Launchpad for a competition's PDFs: the spectators' programme, and skating order, judge sheets and results
@@ -54,8 +56,10 @@ export function CompetitionPdfModal({
   const events = useEvents(competition.id) ?? [];
   const dances = useDances(competition.id);
   const [section, setSection] = useState<Section>('programme');
-  /** The unticked events, so events added later start ticked. */
-  const [off, setOff] = useState<ReadonlySet<string>>(new Set());
+  /** Each tab's unticked events (so events added later start ticked); the tabs are ticked separately. */
+  const [offBySection, setOffBySection] = useState<Partial<Record<Section, ReadonlySet<string>>>>({});
+  const off = offBySection[section] ?? NONE_OFF;
+  const setOff = (next: ReadonlySet<string>) => setOffBySection((prev) => ({ ...prev, [section]: next }));
   const [layout, setLayout] = useState<Layout>('combined');
   const [style, setStyle] = useState<ResultsStyle>('standard');
   const [busy, setBusy] = useState(false);
@@ -112,7 +116,7 @@ export function CompetitionPdfModal({
     <Stack gap={6}>
       <Group justify="space-between">
         <Text size="sm" fw={600}>
-          Which events
+          Which events ({chosen.length}/{events.length})
         </Text>
         <Group gap="sm">
           <Anchor component="button" type="button" size="xs" onClick={() => setOff(new Set())}>
@@ -128,19 +132,33 @@ export function CompetitionPdfModal({
           </Anchor>
         </Group>
       </Group>
-      {events.map((e) => (
-        <Checkbox
-          key={e.id}
-          label={e.name}
-          checked={!off.has(e.id)}
-          onChange={(ev) => {
-            const next = new Set(off);
-            if (ev.currentTarget.checked) next.delete(e.id);
-            else next.add(e.id);
-            setOff(next);
-          }}
-        />
-      ))}
+      {/* Scrolls on its own, so a long list of events doesn't make the modal taller. */}
+      <ScrollArea.Autosize
+        mah={168}
+        type="auto"
+        offsetScrollbars
+        p={8}
+        style={{
+          border: '1px solid var(--mantine-color-default-border)',
+          borderRadius: 'var(--mantine-radius-sm)',
+        }}
+      >
+        <Stack gap={6}>
+          {events.map((e) => (
+            <Checkbox
+              key={e.id}
+              label={e.name}
+              checked={!off.has(e.id)}
+              onChange={(ev) => {
+                const next = new Set(off);
+                if (ev.currentTarget.checked) next.delete(e.id);
+                else next.add(e.id);
+                setOff(next);
+              }}
+            />
+          ))}
+        </Stack>
+      </ScrollArea.Autosize>
     </Stack>
   );
 

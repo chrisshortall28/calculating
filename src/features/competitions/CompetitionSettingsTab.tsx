@@ -1,10 +1,10 @@
 import { Button, Card, Group, Stack, Switch, Text, Title } from '@mantine/core';
-import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { useNavigate, useParams } from 'react-router';
 import { useCompetition } from '../../app/data';
-import { deleteCompetition, updateCompetition } from '../../db/repo';
+import { updateCompetition } from '../../db/repo';
 import { CompetitionDetailsForm, detailsOf } from './CompetitionDetailsForm';
+import { confirmDeleteCompetition } from './confirmDeleteCompetition';
 
 export function CompetitionSettingsTab() {
   const { compId } = useParams() as { compId: string };
@@ -13,22 +13,7 @@ export function CompetitionSettingsTab() {
 
   if (!competition) return null;
 
-  const confirmDelete = () =>
-    modals.openConfirmModal({
-      title: 'Delete competition',
-      children: (
-        <Text size="sm">
-          Permanently delete “{competition.name}” and all its events, entries and marks from this device?
-          Export a file first if you may need it again.
-        </Text>
-      ),
-      labels: { confirm: 'Delete', cancel: 'Cancel' },
-      confirmProps: { color: 'red' },
-      onConfirm: async () => {
-        await deleteCompetition(compId);
-        navigate('/competitions');
-      },
-    });
+  const confirmDelete = () => confirmDeleteCompetition(competition, () => navigate('/competitions'));
 
   return (
     <Stack maw={520}>

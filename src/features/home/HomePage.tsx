@@ -161,7 +161,7 @@ export function HomePage() {
                 )
               )}
               <Card withBorder className={classes.startCard}>
-                <Stack gap="sm" h="100%" justify="space-between">
+                <div className={classes.startInner}>
                   <div>
                     <Text className="display" fz={24}>
                       Calculating an event?
@@ -198,7 +198,7 @@ export function HomePage() {
                       All competitions{count ? ` (${count})` : ''}
                     </Button>
                   </Stack>
-                </Stack>
+                </div>
               </Card>
             </SimpleGrid>
           </Stack>

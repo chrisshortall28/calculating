@@ -27,9 +27,13 @@ import { EventPdfButton } from './EventPdfButton';
 import { EventSetupTab } from './EventSetupTab';
 import { StatusBadge } from './StatusBadge';
 
+/** The entries tab is named for the whole list, so one-skater events say "Skaters", not the column heading "Skater". */
+const entriesTabLabel = (event: CompEvent) =>
+  event.entryType === 'solo' || event.entryType === 'single' ? 'Skaters' : entryHeading[event.entryType];
+
 const tabs = (event: CompEvent) => [
   { value: 'setup', label: 'Setup', icon: <IconAdjustments size={18} /> },
-  { value: 'entries', label: entryHeading[event.entryType], icon: <IconUsers size={18} /> },
+  { value: 'entries', label: entriesTabLabel(event), icon: <IconUsers size={18} /> },
   { value: 'judges', label: 'Judges', icon: <IconJudge size={18} /> },
   { value: 'scoring', label: 'Scoring', icon: <IconPencilBolt size={18} /> },
   { value: 'results', label: 'Results', icon: <IconTrophy size={18} /> },

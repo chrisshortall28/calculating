@@ -2,6 +2,7 @@ import { Button, Group, Modal, Progress, Stack, Text, UnstyledButton, type Butto
 import { useDisclosure } from '@mantine/hooks';
 import { IconMapPin, IconPlus, IconTrophy } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { clubColors, clubVars } from '../../app/clubColors';
 import { dateTile } from '../../app/format';
@@ -10,6 +11,9 @@ import { createCompetition } from '../../db/repo';
 import type { Competition } from '../../domain/types';
 import { CompetitionDetailsForm, emptyCompetitionDetails } from './CompetitionDetailsForm';
 import classes from './CompetitionCard.module.css';
+import { CompetitionPdfModal } from './CompetitionPdfModal';
+import { confirmDeleteCompetition } from './confirmDeleteCompetition';
+import { useExportCompetition } from './useExportCompetition';
 
 export interface CompetitionStats {
   events: number;
@@ -51,47 +55,61 @@ export function CompetitionCard({
   stats?: CompetitionStats;
 }) {
   const tile = dateTile(c.date);
+  const exportCompetition = useExportCompetition();
+  const [pdfs, setPdfs] = useState<'unused' | 'open' | 'closed'>('unused');
   return (
-    <UnstyledButton
-      component={Link}
-      to={`/c/${c.id}`}
-      className={classes.card}
-      style={clubVars(clubColors(c))}
-    >
-      <div className={classes.band}>
-        <div className={classes.dateTile}>
-          {tile ? (
-            <>
-              <span className={classes.day}>{tile.day}</span>
-              <span className={classes.month}>{tile.month}</span>
-            </>
-          ) : (
-            <IconTrophy size={22} />
-          )}
-        </div>
-        <Text className={classes.name} lineClamp={2}>
-          {c.name}
-        </Text>
-      </div>
-      <Stack gap="sm" p="md">
-        <Group gap={6} c="dimmed" wrap="nowrap">
-          <IconMapPin size={16} />
-          <Text size="sm" truncate>
-            {c.venue || 'No venue set'}
+    <div className={classes.card} style={clubVars(clubColors(c))}>
+      <UnstyledButton component={Link} to={`/c/${c.id}`} className={classes.link} aria-label={c.name}>
+        <div className={classes.band}>
+          <div className={classes.dateTile}>
+            {tile ? (
+              <>
+                <span className={classes.day}>{tile.day}</span>
+                <span className={classes.month}>{tile.month}</span>
+              </>
+            ) : (
+              <IconTrophy size={22} />
+            )}
+          </div>
+          <Text className={classes.name} lineClamp={2}>
+            {c.name}
           </Text>
-        </Group>
-        <Group grow gap="xs">
-          <Stat label="Events" value={`${s.final}/${s.events}`} />
-          <Stat label="Skaters" value={s.skaters} />
-          <Stat label="Judges" value={s.judges} />
-        </Group>
-        <Progress
-          value={s.events ? (100 * s.final) / s.events : 0}
-          color={s.events && s.final === s.events ? 'teal' : 'medal.5'}
-          size="sm"
-        />
-      </Stack>
-    </UnstyledButton>
+        </div>
+        <Stack gap="sm" p="md">
+          <Group gap={6} c="dimmed" wrap="nowrap">
+            <IconMapPin size={16} />
+            <Text size="sm" truncate>
+              {c.venue || 'No venue set'}
+            </Text>
+          </Group>
+          <Group grow gap="xs">
+            <Stat label="Events" value={`${s.final}/${s.events}`} />
+            <Stat label="Skaters" value={s.skaters} />
+            <Stat label="Judges" value={s.judges} />
+          </Group>
+          <Progress
+            value={s.events ? (100 * s.final) / s.events : 0}
+            color={s.events && s.final === s.events ? 'teal' : 'medal.5'}
+            size="sm"
+          />
+        </Stack>
+      </UnstyledButton>
+      <Group grow gap="xs" px="md" pb="md" wrap="nowrap">
+        <Button variant="default" size="sm" px="xs" onClick={() => setPdfs('open')}>
+          PDFs
+        </Button>
+        <Button variant="default" size="sm" px="xs" onClick={() => exportCompetition(c.id)}>
+          Export
+        </Button>
+        <Button variant="light" color="red" size="sm" px="xs" onClick={() => confirmDeleteCompetition(c)}>
+          Delete
+        </Button>
+      </Group>
+      {/* Mounted on first use, so a page of cards does not load every competition's events. */}
+      {pdfs !== 'unused' && (
+        <CompetitionPdfModal competition={c} opened={pdfs === 'open'} onClose={() => setPdfs('closed')} />
+      )}
+    </div>
   );
 }
 

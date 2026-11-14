@@ -1,5 +1,5 @@
 import type { Segment } from './segments';
-import type { CompEvent, Competition } from './types';
+import type { CompEvent, Competition, Id } from './types';
 
 /**
  * Rotating start order: the field is split into one group per compulsory part (dance or figure),
@@ -53,3 +53,61 @@ export function firstSkaters(segments: Segment[], entryCount: number, rotate: bo
   parts.forEach((s, i) => out.set(s.id, starts[i]!));
   return out;
 }
+
+/**
+ * Own start orders. By default every part is skated in the entries' start order (rotated for the
+ * compulsory parts when the event rotates). A part that comes after others — the free dance after the
+ * compulsory dances, the short or free programme after the figures — can instead keep its own order in
+ * `CompEvent.partOrders`. Display only: scoring never depends on skating order.
+ */
+
+/** The parts that can have their own order: free parts that follow at least one other part. */
+export function ownOrderSegments(segments: Segment[]): Segment[] {
+  return segments.filter((s, i) => s.kind === 'free' && i > 0);
+}
+
+/**
+ * A saved order made whole: entries that have gone are dropped and entries added since (not in the saved
+ * order) follow, in start order.
+ */
+export function resolvePartOrder(entryIds: readonly Id[], saved: readonly Id[]): Id[] {
+  const present = new Set(entryIds);
+  const kept = saved.filter((id, i) => present.has(id) && saved.indexOf(id) === i);
+  const keptSet = new Set(kept);
+  return [...kept, ...entryIds.filter((id) => !keptSet.has(id))];
+}
+
+/**
+ * For each part with its own order, the positions (in start order) of the entries in the order that part is
+ * skated. Parts that follow the start order are absent.
+ */
+export function partOrderPositions(
+  event: Pick<CompEvent, 'partOrders'>,
+  segments: Segment[],
+  entryIds: readonly Id[],
+): Map<string, number[]> {
+  const out = new Map<string, number[]>();
+  for (const segment of ownOrderSegments(segments)) {
+    const saved = event.partOrders?.[segment.id];
+    if (!saved) continue;
+    const position = new Map(entryIds.map((id, i) => [id, i]));
+    const positions = resolvePartOrder(entryIds, saved).map((id) => position.get(id)!);
+    if (positions.some((p, i) => p !== i)) out.set(segment.id, positions);
+  }
+  return out;
+}
+
+/** The items (in start order) in the order a part is skated: its own order, else rotated from its first skater. */
+export function inSegmentOrder<T>(
+  items: readonly T[],
+  segmentId: string,
+  firstIndex: number,
+  own?: ReadonlyMap<string, number[]>,
+): T[] {
+  const positions = own?.get(segmentId);
+  return positions ? positions.map((p) => items[p]!) : rotateFrom(items, firstIndex);
+}
+
+/** Whether the event has an own order saved for any part (such a file needs a newer reader). */
+export const hasPartOrders = (event: Pick<CompEvent, 'partOrders'>) =>
+  Object.values(event.partOrders ?? {}).some((ids) => ids.length > 0);

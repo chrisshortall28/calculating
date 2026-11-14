@@ -1,7 +1,8 @@
 import { FIGURES } from '../domain/figures';
 import { occupant, segmentIdOfKey, seatSwaps } from '../domain/panels';
 import { cfKey, danceFreeFactor, eventSegments, eventTieBreakMarks } from '../domain/segments';
-import type { Dance, SegmentKey } from '../domain/types';
+import { resolvePartOrder } from '../domain/startOrder';
+import type { CompEvent, Dance, SegmentKey } from '../domain/types';
 import type { CompetitionFile } from '../io/competitionFile';
 import { matchLegacyDance } from './dances';
 import {
@@ -9,10 +10,28 @@ import {
   figuresProfile,
   figuresSupported,
   type DanceKind,
+  type Part,
   type EventProfile,
 } from './profiles';
 import { phaseTails } from './tail';
 import type { LegacyWarning } from './types';
+
+/** The start-order lists of an event's parts that have their own order: positions in the entries (in start order). */
+function partStartOrders(
+  event: Pick<CompEvent, 'partOrders'>,
+  figures: boolean,
+  entryIds: string[],
+): Partial<Record<Part, number[]>> {
+  const partOf: Record<string, Part> = { sp: 'S', lp: 'L', fd: 'L' };
+  const out: Partial<Record<Part, number[]>> = {};
+  for (const [segmentId, saved] of Object.entries(event.partOrders ?? {})) {
+    const part = partOf[segmentId];
+    if (!part || (figures && segmentId === 'fd') || (!figures && segmentId !== 'fd')) continue;
+    const position = new Map(entryIds.map((id, i) => [id, i]));
+    out[part] = resolvePartOrder(entryIds, saved).map((id) => position.get(id)!);
+  }
+  return out;
+}
 import { MAX_CLUB, MAX_DANCES, MAX_JUDGES, MAX_NAME, writeDanceEvent, type WriteEntry } from './write';
 
 type FileEvent = CompetitionFile['events'][number];
@@ -224,6 +243,11 @@ export function exportLegacyEvents(file: CompetitionFile): LegacyExport {
         dances,
         ...(figures ? { sides: event.figures.map((f) => f.side) } : {}),
         entries: exported,
+        startOrders: partStartOrders(
+          event,
+          figures,
+          entries.map((e) => e.id),
+        ),
         freeFactor: figures
           ? legacyFactor(event.factors.long)
           : legacyFactor(danceFreeFactor(event.compulsoryDanceIds.length)),

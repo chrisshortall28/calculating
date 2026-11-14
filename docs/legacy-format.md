@@ -42,8 +42,12 @@ row 8 repeats row 7, "Chloe Stapleton"). A real entry that withdrew before skati
 blank marks (event `3A`, row 8), so blank marks do not mean "stale".
 
 The start order is stored as a list of row numbers (1-based) at offset 2054 (events with compulsory
-dances) or 2262 (free-dance-only events). In all 75 sample events it is simply 1, 2, ..., N, so rows
-are already in start order.
+dances) or 2262 (free-dance-only events). In 74 of the 75 first sample events it is simply 1, 2, ..., N;
+in a later sample ("Classic Novice Solo Dance", 14 skaters, 2 dances) it is a real order (`9 12 7 11 14 3 ...`) that
+overrides the natural row order. There is one list per kind of part, not one per dance: compulsory dances or
+figures (2054), short programme (2158), free dance or long programme (2262). A list that is not a complete
+permutation of 1..N (e.g. all zeros) is unused. Podium reads the first list as the start order and keeps a later
+list that differs as that part's own order; the exporter writes them back.
 
 ## Header (offsets 0 to 2361)
 

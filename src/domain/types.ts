@@ -60,6 +60,11 @@ export interface CompEvent {
   assistantRefereeId?: Id;
   /** Rotating start order for this event: follow the competition's default, or force it on or off. */
   rotateStartOrder?: 'default' | 'on' | 'off';
+  /**
+   * Own start orders for parts that follow others: segment id (`fd`, `sp`, `lp`) -> entry ids in the order they
+   * skate it. A part with none follows the entries' start order. See `domain/startOrder.ts`.
+   */
+  partOrders?: Record<string, Id[]>;
   status: EventStatus;
 }
 

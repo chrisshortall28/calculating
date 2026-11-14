@@ -25,6 +25,8 @@ export interface FixtureEvent {
   /** [numerator, denominator] pairs. */
   factors?: { compulsory?: [number, number]; short?: [number, number]; long?: [number, number] };
   entries?: FixtureEntry[];
+  /** Start-order lists, as 1-based row numbers: compulsory (offset 2054), short (2158) and free dance or long (2262). */
+  startOrders?: { C?: number[]; S?: number[]; L?: number[] };
   /** Entry rows after the real ones, as the app leaves behind when entries are removed. */
   staleRows?: number;
 }
@@ -61,6 +63,12 @@ export function buildEventFile(e: FixtureEvent): Uint8Array {
   b[1645] = e.hasLong ? 1 : 0;
   [b[1649], b[1650]] = f.long ?? [1, 1];
   b[1741] = entries.length;
+  for (const [part, at] of [
+    ['C', 2054],
+    ['S', 2158],
+    ['L', 2262],
+  ] as const)
+    e.startOrders?.[part]?.forEach((row, i) => (b[at + i] = row));
   b[294] = rows;
 
   for (let r = 0; r < rows; r++) {

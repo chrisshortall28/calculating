@@ -75,6 +75,12 @@ grid are display-only).
 display-only, never read by `src/scoring/`. `src/domain/startOrder.ts` works out the first skater of each compulsory
 dance/figure; judge sheets with several dances on one sheet, the by-judge grid and the Entries tab only mark them — rows stay in `startOrder`. The by-dance mark grid (Scoring tab) and per-dance/figure judge sheets (`judgeSheetPage` in `documents.ts`) list each rotating dance/figure from its first skater (`rows` rotated in `ScoringTab.tsx`), keeping each skater's start number.
 
+**Skating order for later parts.** `CompEvent.partOrders` (optional; segment id `fd`/`sp`/`lp` → entry ids) gives a
+free part that follows others its own order; without it the part follows `Entry.startOrder`. `domain/startOrder.ts`
+(`partOrderPositions`, `inSegmentOrder`) is how the scoring grid, judge sheets and skating-order PDF read it; the Entries
+tab's `PartOrderPanel` edits it (drag, randomise, "Set from results so far"). `.pod` files use format 4 only when an
+event has some (`ORDERS_FORMAT_VERSION`). Legacy files keep one start-order list per kind of part (`START_ORDER_AT`).
+
 **PDFs.** pdfmake is lazy-loaded (`src/pdf/pdfmake.ts`). `printJudgeSheets` / `printResults` /
 `printSkatingOrder` in `src/pdf/actions.ts` must be called directly from a click handler so the PDF tab opens
 before any `await`. An event's PDF button (beside its tabs) opens `EventPdfModal`, a launchpad that stays open
@@ -99,9 +105,7 @@ competitions and `convertLegacyCompetition` turns one into a `CompetitionFile` p
 Single and Pairs events convert.
 `src/legacy/write.ts` / `export.ts` go the other way (`exportLegacyEvents`, via `LegacyExportModal`) for dance events
 with compulsory dances or a free dance, writing every checksum and the results tables the application
-expects; `src/io/zip.ts` zips the files. Figures events export too, for any non-empty combination of figures, short and long (`figuresSupported` in `profiles.ts`; a single programme and figures + long are unverified against the real app; the six phases are in `docs/legacy-format.md`). Tests build files with `src/legacy/fixtures.ts`; the real sample files are
-not in the repo (they hold real names), so `src/legacy/samples.test.ts` runs only when `LEGACY_SAMPLES`
-points at the folder holding `comp1`, `comp2`.
+expects; `src/io/zip.ts` zips the files. Figures events export too, for any non-empty combination of figures, short and long (`figuresSupported` in `profiles.ts`; a single programme and figures + long are unverified against the real app; the six phases are in `docs/legacy-format.md`). Tests build files with `src/legacy/fixtures.ts`; the real sample files are not in the repo (they hold real names).
 
 **Offline.** `vite-plugin-pwa` precaches everything, including PDFs in `public/`
 (`workbox.globPatterns` in `vite.config.ts`); updates wait for the user to click Reload.

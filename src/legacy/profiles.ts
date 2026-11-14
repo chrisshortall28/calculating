@@ -64,6 +64,9 @@ export type PhaseCode = 1 | 2 | 3 | 4 | 5 | 6;
 /** What a phase adds up: the compulsory dances or figures (C), the short programme (S), the free dance or long programme (L). */
 export type Part = 'C' | 'S' | 'L';
 
+/** Where each kind of part's start-order list begins: a row number (1-based) for each entry, in skating order. */
+export const START_ORDER_AT: Record<Part, number> = { C: 2054, S: 2158, L: 2262 };
+
 export type DanceKind = 'compulsory' | 'free' | 'combined';
 
 export interface EventProfile {

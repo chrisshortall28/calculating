@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { effectiveRotate, firstSkaters, partStartIndexes, rotatedOrder } from './startOrder';
+import {
+  effectiveRotate,
+  firstSkaters,
+  inSegmentOrder,
+  ownOrderSegments,
+  partOrderPositions,
+  partStartIndexes,
+  resolvePartOrder,
+  rotatedOrder,
+} from './startOrder';
 import type { Segment } from './segments';
 
 // 1-based starters, as Calculators write them.
@@ -53,5 +62,36 @@ describe('firstSkaters', () => {
   it('is empty when rotation is off or there is only one compulsory part', () => {
     expect(firstSkaters(segments, 8, false).size).toBe(0);
     expect(firstSkaters([segments[0]!, segments[2]!], 8, true).size).toBe(0);
+  });
+});
+
+describe('own part orders', () => {
+  const seg = (id: string, kind: Segment['kind']): Segment => ({ id, kind, name: id, markKeys: [] });
+  const segments = [seg('cd:1', 'compulsory'), seg('cd:2', 'compulsory'), seg('fd', 'free')];
+  const ids = ['a', 'b', 'c', 'd'];
+
+  it('lets only a free part that follows another have its own order', () => {
+    expect(ownOrderSegments(segments).map((s) => s.id)).toEqual(['fd']);
+    expect(ownOrderSegments([seg('fd', 'free')])).toEqual([]);
+  });
+
+  it('drops entries that have gone and adds new ones at the end, in start order', () => {
+    expect(resolvePartOrder(ids, ['d', 'x', 'b', 'd'])).toEqual(['d', 'b', 'a', 'c']);
+  });
+
+  it('gives positions in start order, and nothing for a part with no order or the same order', () => {
+    expect(partOrderPositions({}, segments, ids).size).toBe(0);
+    expect(partOrderPositions({ partOrders: { fd: ids } }, segments, ids).size).toBe(0);
+    expect(partOrderPositions({ partOrders: { fd: ['c', 'a', 'd', 'b'] } }, segments, ids).get('fd')).toEqual(
+      [2, 0, 3, 1],
+    );
+    // An order saved for a part that is not a later part is ignored.
+    expect(partOrderPositions({ partOrders: { 'cd:2': ['b', 'a', 'c', 'd'] } }, segments, ids).size).toBe(0);
+  });
+
+  it('puts a part in its own order, else rotates it', () => {
+    const own = new Map([['fd', [2, 0, 3, 1]]]);
+    expect(inSegmentOrder(ids, 'fd', 0, own)).toEqual(['c', 'a', 'd', 'b']);
+    expect(inSegmentOrder(ids, 'cd:2', 2, own)).toEqual(['c', 'd', 'a', 'b']);
   });
 });

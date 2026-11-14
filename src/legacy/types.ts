@@ -55,6 +55,12 @@ export interface LegacyEvent {
   hasLong: boolean;
   factors: { compulsory: LegacyFraction; short: LegacyFraction; long: LegacyFraction };
   entries: LegacyEntry[];
+  /**
+   * The start-order lists the file holds, one for each kind of part (the compulsory dances or figures, the
+   * short programme, the free dance or long programme): the entry rows (0-based) in the order they skate.
+   * Only lists that are a complete order of the rows are kept.
+   */
+  startOrders: Partial<Record<'C' | 'S' | 'L', number[]>>;
   warnings: LegacyWarning[];
 }
 

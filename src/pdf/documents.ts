@@ -3,7 +3,7 @@ import { clubColors, onColor } from '../app/clubColors';
 import { entryHeading } from '../domain/entryName';
 import { factorSummary, markKeyLabel } from '../domain/segments';
 import { swapsText, type SeatSwap } from '../domain/panels';
-import { rotateFrom } from '../domain/startOrder';
+import { inSegmentOrder } from '../domain/startOrder';
 import { formatTenths } from '../marks/parseMark';
 import {
   bTotalsUsed,
@@ -151,9 +151,11 @@ function judgeSheetPage(
   // A sheet for one dance or figure of a rotating event lists the skaters from that part's first skater,
   // keeping their start numbers; a sheet with several parts keeps the start order and marks each first skater.
   const firstIndex = segments.length === 1 ? (d.firstSkaters.get(segments[0]!.id) ?? 0) : 0;
-  const ordered = rotateFrom(
+  const ordered = inSegmentOrder(
     d.rows.map((row, index) => ({ row, index })),
+    segments.length === 1 ? segments[0]!.id : '',
     firstIndex,
+    d.partOrders,
   );
   const entryRow = (r: EventData['rows'][number], i: number): TableCell[] => [
     {
@@ -447,8 +449,9 @@ function victoriesTable(d: EventData, newPage = false): Content[] {
     ];
   });
   const factors = factorSummary(d.event);
-  return [
-    { text: 'Table of Victories', style: 'h2', ...(newPage && { pageBreak: 'before' as const }) },
+  // Kept whole: moved to the next page rather than split (only a table taller than a page still breaks).
+  const parts: Content[] = [
+    { text: 'Table of Victories', style: 'h2' },
     ...(factors
       ? [
           {
@@ -473,6 +476,7 @@ function victoriesTable(d: EventData, newPage = false): Content[] {
       margin: [0, 3, 0, 0],
     },
   ];
+  return [{ stack: parts, unbreakable: true, ...(newPage && { pageBreak: 'before' as const }) }];
 }
 
 /** How each tie on majority victories was resolved, and any equal sums from one judge (rule 3). */
@@ -589,8 +593,9 @@ function withPageBreaks(pages: Content[][]): Content[] {
   }));
 }
 
-/** A single event's results are landscape (stapled to its landscape judge sheets), and with marks
- * the table of victories starts its own page. */
+/** Results with marks are landscape, to give the table of victories room, and so are a single event's
+ * results in any style (stapled to its landscape judge sheets); there the table of victories starts its
+ * own page. Other results for several events are portrait. */
 export function resultsDocument(
   events: EventData[],
   style: ResultsStyle,
@@ -599,7 +604,7 @@ export function resultsDocument(
   const first = events[0];
   return document(
     resultsPages(events, style, singleEvent),
-    singleEvent,
+    singleEvent || style === 'withMarks',
     sharesPages(style) && first ? compLine(first) : undefined,
   );
 }

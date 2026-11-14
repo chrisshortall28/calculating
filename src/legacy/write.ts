@@ -11,7 +11,7 @@ import {
   slotsFor,
   victoriesSectionSize,
 } from './format';
-import type { EventProfile, Part, PhaseCode } from './profiles';
+import { START_ORDER_AT, type EventProfile, type Part, type PhaseCode } from './profiles';
 import type { Tail } from './tail';
 
 export interface WriteEntry {
@@ -39,6 +39,11 @@ export interface WriteEvent {
   /** The side of each figure; none = unspecified. */
   sides?: ('L' | 'R' | undefined)[];
   entries: WriteEntry[];
+  /**
+   * The start-order list of a kind of part: the entries' positions in `entries` (0-based) in the order they
+   * skate it. A part with none follows the entries' own order.
+   */
+  startOrders?: Partial<Record<Part, number[]>>;
   /**
    * The free dance's weight in a combined event as a fraction: half the number of compulsory dances
    * (1/2 for one, 1/1 for two), which is the application's default and Podium's (`danceFreeFactor`).
@@ -94,7 +99,11 @@ export function writeDanceEvent(event: WriteEvent): Uint8Array {
     const side = event.sides?.[k];
     if (side) file[1806 + 4 * k + 1] = side === 'L' ? 0x6c : 0x72;
   });
-  for (const at of profile.startOrderAt) for (let i = 0; i < N; i++) file[at + i] = i + 1;
+  for (const at of profile.startOrderAt) {
+    const part = (Object.keys(START_ORDER_AT) as Part[]).find((p) => START_ORDER_AT[p] === at)!;
+    const order = event.startOrders?.[part];
+    for (let i = 0; i < N; i++) file[at + i] = (order?.[i] ?? i) + 1;
+  }
 
   const tailAt = HEADER_SIZE + BLOCK_SIZE * slots;
   const victoriesSize = victoriesSectionSize(slots);

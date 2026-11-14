@@ -83,7 +83,7 @@ describe('EntriesTab when the event is final', () => {
       expect(controls.length, label).toBeGreaterThan(0);
       for (const c of controls) expect(c.matches(':disabled'), label).toBe(true);
     }
-    for (const text of ['Randomise order', 'Reverse order by results', 'Paste list', 'Add']) {
+    for (const text of ['Randomise order', 'Paste list', 'Add']) {
       expect((screen.getByText(text).closest('button') as HTMLButtonElement).matches(':disabled'), text).toBe(
         true,
       );

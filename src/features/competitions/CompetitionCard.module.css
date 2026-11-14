@@ -10,9 +10,14 @@
 }
 
 .card:hover,
-.card:focus-visible {
+.card:focus-within {
   box-shadow: var(--mantine-shadow-lg);
   transform: translateY(-3px);
+}
+
+/* The band and figures link to the competition, as the Open button does. */
+.link {
+  display: block;
 }
 
 .band {

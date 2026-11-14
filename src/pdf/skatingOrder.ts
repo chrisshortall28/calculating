@@ -1,15 +1,17 @@
 import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { entryHeading } from '../domain/entryName';
-import { rotateFrom } from '../domain/startOrder';
+import { inSegmentOrder } from '../domain/startOrder';
 import { clubTable, compLine, document, ROWS_PER_COLUMN } from './documents';
 import type { EventData } from './loadEvent';
 
 /** The skaters of one dance, figure or programme in the order they skate it, starting from its first skater. */
 export function skatingOrderOf(d: EventData, segmentId: string) {
   const first = d.firstSkaters.get(segmentId) ?? 0;
-  return rotateFrom(
+  return inSegmentOrder(
     d.rows.map((row, index) => ({ row, number: index + 1 })),
+    segmentId,
     first,
+    d.partOrders,
   );
 }
 

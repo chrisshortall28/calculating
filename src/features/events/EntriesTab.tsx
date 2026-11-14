@@ -1,4 +1,15 @@
-import { ActionIcon, Button, Card, Group, Modal, Paper, Stack, Text, Tooltip } from '@mantine/core';
+import {
+  ActionIcon,
+  Button,
+  Card,
+  Group,
+  Modal,
+  Paper,
+  SegmentedControl,
+  Stack,
+  Text,
+  Tooltip,
+} from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import {
@@ -7,27 +18,24 @@ import {
   IconClipboardList,
   IconDice5,
   IconPencil,
-  IconSortDescending,
   IconTrash,
 } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
-import { useCompetition, useDances, useEntries, useMarks, useSkaters } from '../../app/data';
+import { useCompetition, useDances, useEntries, useSkaters } from '../../app/data';
 import { SortableList } from '../../app/SortableList';
 import { db } from '../../db/db';
 import { addEntry, deleteEntry, entryTypeLabel, reorderEntries, updateEntry } from '../../db/repo';
-import { indexMarks, markKey } from '../../domain/markIndex';
-import { seatMark } from '../../domain/panels';
-import { reverseOrderBySoFar } from '../../domain/reverseOrder';
-import { eventSegments, eventTieBreakMarks, segmentNoun } from '../../domain/segments';
+import { eventSegments } from '../../domain/segments';
 import { shuffled } from '../../domain/shuffle';
-import { effectiveRotate, firstSkaters } from '../../domain/startOrder';
+import { effectiveRotate, firstSkaters, ownOrderSegments } from '../../domain/startOrder';
 import { byId, entryClub, entryMembers, entryName } from '../../domain/entryName';
 import type { PastedRow } from '../../domain/pasteList';
 import type { CompEvent, Entry } from '../../domain/types';
 import { PasteListModal } from '../roster/PasteListModal';
 import { EditLock, isFinal } from './EditLock';
 import { draftFromEntry, draftToEntry, EntryForm } from './EntryForm';
+import { PartOrderPanel } from './PartOrderPanel';
 
 export function EntriesTab({ event }: { event: CompEvent }) {
   const entries = useEntries(event.id) ?? [];
@@ -46,33 +54,12 @@ export function EntriesTab({ event }: { event: CompEvent }) {
       .each((m) => counts.set(m.entryId, (counts.get(m.entryId) ?? 0) + 1));
     return counts;
   }, [event.id]);
-  const marks = useMarks(event.id);
   const [editing, setEditing] = useState<Entry | null>(null);
   const [pasting, setPasting] = useState(false);
-
-  // For a part that follows the others (the free dance after the compulsory dances): the lowest placed so far skates first.
-  const reverseByResults = () => {
-    const markMap = indexMarks(marks);
-    const reversed = reverseOrderBySoFar({
-      entryIds: entries.map((e) => e.id),
-      judgeIds: event.judgeIds,
-      segments,
-      mark: seatMark(event, (k, j, e) => markMap.get(markKey(k, j, e))),
-      tieBreakMarks: eventTieBreakMarks(event),
-    });
-    if (!reversed) {
-      notifications.show({
-        color: 'orange',
-        message: `No ${segmentNoun(event)} has all its marks entered yet, so there are no placings to reverse.`,
-      });
-      return;
-    }
-    void reorderEntries(reversed.order);
-    notifications.show({
-      color: 'green',
-      message: `Lowest placed now skates first, from the placings after ${reversed.basedOn.join(', ')}`,
-    });
-  };
+  // Later parts can have a skating order of their own; "all" is the start order every part follows by default.
+  const [orderView, setOrderView] = useState('all');
+  const laterParts = ownOrderSegments(segments);
+  const laterPart = laterParts.find((sg) => sg.id === orderView);
 
   // Entries are matched by team name, or by their set of skater names in any order.
   const nameKey = (teamName: string | undefined, names: string[]) =>
@@ -147,124 +134,143 @@ export function EntriesTab({ event }: { event: CompEvent }) {
           />
         </Card>
 
-        <Group justify="space-between">
-          <Text size="sm" c="dimmed">
-            {entries.length} entries in start order · drag, or use the arrows, to reorder
-          </Text>
-          <Group gap="xs">
-            <Button
-              variant="light"
-              size="xs"
-              leftSection={<IconDice5 size={16} />}
-              disabled={entries.length < 2}
-              onClick={() => void reorderEntries(shuffled(entries.map((e) => e.id)))}
-            >
-              Randomise order
-            </Button>
-            <Tooltip label="Lowest placed on the marks entered so far skates first, highest placed last">
-              <Button
-                variant="light"
-                size="xs"
-                leftSection={<IconSortDescending size={16} />}
-                disabled={entries.length < 2}
-                onClick={reverseByResults}
-              >
-                Reverse order by results
-              </Button>
-            </Tooltip>
-            <Button
-              variant="light"
-              size="xs"
-              leftSection={<IconClipboardList size={16} />}
-              onClick={() => setPasting(true)}
-            >
-              Paste list
-            </Button>
-          </Group>
-        </Group>
-
-        {firsts.size > 0 && (
-          <Paper withBorder px="sm" py={6}>
-            <Text size="sm" fw={500}>
-              Rotating start order — skates first
-            </Text>
-            {segments
-              .filter((sg) => firsts.has(sg.id))
-              .map((sg) => {
-                const at = firsts.get(sg.id)!;
-                return (
-                  <Text key={sg.id} size="sm" c="dimmed">
-                    {sg.name}: #{at + 1} {entries[at] ? entryName(entries[at], skaters) : ''}
-                  </Text>
-                );
-              })}
-          </Paper>
+        {laterParts.length > 0 && (
+          <SegmentedControl
+            value={laterPart ? orderView : 'all'}
+            onChange={setOrderView}
+            data={[
+              { value: 'all', label: 'Start order' },
+              ...laterParts.map((sg) => ({ value: sg.id, label: sg.name })),
+            ]}
+          />
         )}
 
-        <div>
-          <SortableList
-            items={entries}
-            onReorder={reorderEntries}
-            renderItem={(entry, index, handle) => (
-              <Paper withBorder px="sm" py={6} mb={4}>
-                <Group wrap="nowrap" gap="sm">
-                  {handle}
-                  <Text fw={700} w={28} ta="right" c="dimmed">
-                    {index + 1}
-                  </Text>
-                  <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
-                    <Text fw={500} truncate>
-                      {entryName(entry, skaters)}
-                    </Text>
-                    {event.entryType === 'team' && entry.skaterIds.length > 0 && (
-                      <Text size="xs" c="dimmed" truncate>
-                        {entryMembers(entry, skaters)}
+        {laterPart ? (
+          <PartOrderPanel
+            key={laterPart.id}
+            event={event}
+            entries={entries}
+            skaters={skaters}
+            segments={segments}
+            segment={laterPart}
+          />
+        ) : (
+          <>
+            <Group justify="space-between">
+              <Text size="sm" c="dimmed">
+                {entries.length} entries in start order
+                {laterParts.length > 0 ? ' (every part follows it unless given its own order)' : ''} · drag,
+                or use the arrows, to reorder
+              </Text>
+              <Group gap="xs">
+                <Button
+                  variant="light"
+                  size="xs"
+                  leftSection={<IconDice5 size={16} />}
+                  disabled={entries.length < 2}
+                  onClick={() => void reorderEntries(shuffled(entries.map((e) => e.id)))}
+                >
+                  Randomise order
+                </Button>
+                <Button
+                  variant="light"
+                  size="xs"
+                  leftSection={<IconClipboardList size={16} />}
+                  onClick={() => setPasting(true)}
+                >
+                  Paste list
+                </Button>
+              </Group>
+            </Group>
+
+            {firsts.size > 0 && (
+              <Paper withBorder px="sm" py={6}>
+                <Text size="sm" fw={500}>
+                  Rotating start order — skates first
+                </Text>
+                {segments
+                  .filter((sg) => firsts.has(sg.id))
+                  .map((sg) => {
+                    const at = firsts.get(sg.id)!;
+                    return (
+                      <Text key={sg.id} size="sm" c="dimmed">
+                        {sg.name}: #{at + 1} {entries[at] ? entryName(entries[at], skaters) : ''}
                       </Text>
-                    )}
-                  </Stack>
-                  <Text size="sm" c="dimmed" w={180} truncate>
-                    {entryClub(entry, skaters)}
-                  </Text>
-                  <Group gap={2} wrap="nowrap">
-                    <ActionIcon
-                      variant="subtle"
-                      color="gray"
-                      disabled={index === 0}
-                      onClick={() => move(index, -1)}
-                      aria-label="Move up"
-                    >
-                      <IconArrowUp size={16} />
-                    </ActionIcon>
-                    <ActionIcon
-                      variant="subtle"
-                      color="gray"
-                      disabled={index === entries.length - 1}
-                      onClick={() => move(index, 1)}
-                      aria-label="Move down"
-                    >
-                      <IconArrowDown size={16} />
-                    </ActionIcon>
-                    <Tooltip label="Edit">
-                      <ActionIcon variant="subtle" onClick={() => setEditing(entry)} aria-label="Edit entry">
-                        <IconPencil size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Remove">
-                      <ActionIcon
-                        variant="subtle"
-                        color="red"
-                        onClick={() => remove(entry)}
-                        aria-label="Remove entry"
-                      >
-                        <IconTrash size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                  </Group>
-                </Group>
+                    );
+                  })}
               </Paper>
             )}
-          />
-        </div>
+
+            <div>
+              <SortableList
+                items={entries}
+                onReorder={reorderEntries}
+                renderItem={(entry, index, handle) => (
+                  <Paper withBorder px="sm" py={6} mb={4}>
+                    <Group wrap="nowrap" gap="sm">
+                      {handle}
+                      <Text fw={700} w={28} ta="right" c="dimmed">
+                        {index + 1}
+                      </Text>
+                      <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
+                        <Text fw={500} truncate>
+                          {entryName(entry, skaters)}
+                        </Text>
+                        {event.entryType === 'team' && entry.skaterIds.length > 0 && (
+                          <Text size="xs" c="dimmed" truncate>
+                            {entryMembers(entry, skaters)}
+                          </Text>
+                        )}
+                      </Stack>
+                      <Text size="sm" c="dimmed" w={180} truncate>
+                        {entryClub(entry, skaters)}
+                      </Text>
+                      <Group gap={2} wrap="nowrap">
+                        <ActionIcon
+                          variant="subtle"
+                          color="gray"
+                          disabled={index === 0}
+                          onClick={() => move(index, -1)}
+                          aria-label="Move up"
+                        >
+                          <IconArrowUp size={16} />
+                        </ActionIcon>
+                        <ActionIcon
+                          variant="subtle"
+                          color="gray"
+                          disabled={index === entries.length - 1}
+                          onClick={() => move(index, 1)}
+                          aria-label="Move down"
+                        >
+                          <IconArrowDown size={16} />
+                        </ActionIcon>
+                        <Tooltip label="Edit">
+                          <ActionIcon
+                            variant="subtle"
+                            onClick={() => setEditing(entry)}
+                            aria-label="Edit entry"
+                          >
+                            <IconPencil size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+                        <Tooltip label="Remove">
+                          <ActionIcon
+                            variant="subtle"
+                            color="red"
+                            onClick={() => remove(entry)}
+                            aria-label="Remove entry"
+                          >
+                            <IconTrash size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+                      </Group>
+                    </Group>
+                  </Paper>
+                )}
+              />
+            </div>
+          </>
+        )}
 
         <PasteListModal
           opened={pasting}

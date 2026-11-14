@@ -3,6 +3,7 @@ import { cfKey, danceFreeFactor } from '../domain/segments';
 import type { EntryType, EventFigure, Id, SegmentKey } from '../domain/types';
 import type { CompetitionFile } from '../io/competitionFile';
 import { legacyDanceName } from './dances';
+import type { Part } from './profiles';
 import type { LegacyCompetition, LegacyEntry, LegacyEvent, LegacyFraction, LegacyWarning } from './types';
 
 type FileEvent = CompetitionFile['events'][number];
@@ -159,6 +160,8 @@ export function convertLegacyCompetition(
       name: legacy.name || 'Imported competition',
       date: date ?? new Date(now).toISOString().slice(0, 10),
       venue: legacy.venue,
+      // The legacy app rotates who starts each compulsory dance or figure, so imported competitions do the same.
+      rotateStartOrder: true,
       createdAt: now,
       updatedAt: now,
     },
@@ -315,8 +318,25 @@ export function convertLegacyCompetition(
 
     let skipped = 0;
     let marked = false;
-    let startOrder = 0;
-    for (const entry of ev.entries) {
+    // The file's start-order lists decide who skates first: the first list the event has gives the start order,
+    // and a later part whose list differs keeps its own order (see `CompEvent.partOrders`).
+    const parts: Part[] =
+      event.discipline === 'figures'
+        ? [
+            ...(event.figures.length > 0 ? (['C'] as const) : []),
+            ...(event.hasShort ? (['S'] as const) : []),
+            ...(event.hasLong ? (['L'] as const) : []),
+          ]
+        : [
+            ...(event.compulsoryDanceIds.length > 0 ? (['C'] as const) : []),
+            ...(event.hasFreeDance ? (['L'] as const) : []),
+          ];
+    const named = (row: number) => !!ev.entries[row]?.name;
+    const listed = (part: Part) => ev.startOrders[part]?.filter(named);
+    const startPart = parts.find((part) => listed(part));
+    const rankOf = new Map((startPart ? listed(startPart)! : []).map((row, i) => [row, i]));
+    const rowIds: Id[] = [];
+    for (const [row, entry] of ev.entries.entries()) {
       const names = entryNames(entryType, entry);
       if (!entry.name) {
         skipped++;
@@ -326,10 +346,11 @@ export function convertLegacyCompetition(
         note(`“${entry.name}” has only one name, so it was added as a single skater.`);
       }
       const entryId = newId();
+      rowIds[row] = entryId;
       file.entries.push({
         id: entryId,
         eventId,
-        startOrder: startOrder++,
+        startOrder: rankOf.get(row) ?? row,
         skaterIds: entryType === 'team' ? [] : names.map((n) => skaterId(n, entry.club)),
         ...(entryType === 'team'
           ? { teamName: entry.name, ...(entry.club ? { club: entry.club } : {}) }
@@ -355,6 +376,15 @@ export function convertLegacyCompetition(
         });
       });
     }
+    const own: Record<string, Id[]> = {};
+    for (const part of parts) {
+      const rows = listed(part);
+      if (!rows || part === startPart) continue;
+      if (rows.some((row, i) => row !== listed(startPart!)![i])) {
+        own[ownSegmentId(event.discipline, part)] = rows.map((row) => rowIds[row]!);
+      }
+    }
+    if (Object.keys(own).length > 0) event.partOrders = own;
     if (skipped > 0)
       note(`${skipped} blank ${skipped === 1 ? 'entry was' : 'entries were'} skipped.`, 'info');
     event.status = marked ? 'scoring' : 'setup';
@@ -363,6 +393,9 @@ export function convertLegacyCompetition(
 
   return { file, warnings, skippedEvents, issues };
 }
+
+const ownSegmentId = (discipline: 'dance' | 'figures', part: Part) =>
+  part === 'S' ? 'sp' : discipline === 'figures' ? 'lp' : 'fd';
 
 /** An entry's skater names for its type (teams have none: the team name is the entry's name). */
 function entryNames(type: EntryType, entry: LegacyEntry): string[] {
