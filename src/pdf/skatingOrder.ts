@@ -1,7 +1,8 @@
 import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { entryHeading } from '../domain/entryName';
 import { inSegmentOrder } from '../domain/startOrder';
-import { clubTable, compLine, document, ROWS_PER_COLUMN } from './documents';
+import { clubTable, document, eventHeader, ROWS_PER_COLUMN } from './documents';
+import { palette } from './theme';
 import type { EventData } from './loadEvent';
 
 /** The skaters of one dance, figure or programme in the order they skate it, starting from its first skater. */
@@ -18,17 +19,18 @@ export function skatingOrderOf(d: EventData, segmentId: string) {
 function orderTable(d: EventData, order: ReturnType<typeof skatingOrderOf>, firstNumber?: number): Content {
   const entry = d.event.entryType;
   const { th, layout } = clubTable(d);
+  const { ink } = palette(d.competition);
   const rows: TableCell[][] = order.map(({ row, number }) => {
     const first = number === firstNumber;
     return [
-      { text: String(number), alignment: 'center', bold: first },
+      { text: String(number), alignment: 'center', bold: true, color: ink },
       {
         stack: [
           { text: row.name, bold: true },
           { text: [row.club, row.members].filter(Boolean).join(' · '), style: 'small' },
         ],
       },
-      { text: first ? 'Skates first' : '', style: 'small', bold: true },
+      { text: first ? 'Skates first' : '', fontSize: 8, bold: true, color: ink },
     ];
   });
   return {
@@ -55,13 +57,11 @@ export function skatingOrderPages(events: EventData[], segmentIds?: ReadonlySet<
       const number = seg.kind === 'compulsory' ? ` (${noun} ${i + 1} of ${compulsory})` : '';
       const split = order.length > ROWS_PER_COLUMN * 2 ? Math.ceil(order.length / 2) : undefined;
       pages.push([
-        { text: compLine(d), style: 'comp' },
-        { text: `${d.event.name} — ${seg.name}${number}`, style: 'title' },
-        {
-          text: `Skating order · ${order.length} ${order.length === 1 ? 'entry' : 'entries'}`,
-          style: 'comp',
-          margin: [0, 0, 0, 8],
-        },
+        ...eventHeader(
+          d,
+          `${d.event.name} — ${seg.name}${number}`,
+          `Skating order · ${order.length} ${order.length === 1 ? 'entry' : 'entries'}`,
+        ),
         split === undefined
           ? orderTable(d, order, firstNumber)
           : {
@@ -85,5 +85,5 @@ export function skatingOrderDocument(
     stack: content,
     ...(i > 0 ? { pageBreak: 'before' as const } : {}),
   }));
-  return document(pages, false, undefined, false);
+  return document(pages, false, undefined, false, events[0]?.competition);
 }

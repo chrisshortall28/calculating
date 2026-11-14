@@ -18,6 +18,8 @@ export interface EventRow {
 export interface EventData {
   competition: Competition;
   event: CompEvent;
+  /** The event's number in the competition's running order, from 1. */
+  number: number;
   segments: Segment[];
   /** Rotating start order: segment id -> position in `rows` of the entry that skates it first. */
   firstSkaters: Map<string, number>;
@@ -39,7 +41,8 @@ export interface EventData {
 export async function loadEventData(eventId: Id): Promise<EventData> {
   const event = (await db.events.get(eventId))!;
   const competition = (await db.competitions.get(event.competitionId))!;
-  const [dances, skaterList, judgeList, entries, marks] = await Promise.all([
+  const [siblings, dances, skaterList, judgeList, entries, marks] = await Promise.all([
+    db.events.where({ competitionId: event.competitionId }).sortBy('order'),
     db.dances.where({ competitionId: event.competitionId }).toArray(),
     db.skaters.where({ competitionId: event.competitionId }).toArray(),
     db.judges.where({ competitionId: event.competitionId }).toArray(),
@@ -61,6 +64,7 @@ export async function loadEventData(eventId: Id): Promise<EventData> {
   return {
     competition,
     event,
+    number: siblings.findIndex((e) => e.id === eventId) + 1,
     segments,
     firstSkaters: firstSkaters(segments, entries.length, effectiveRotate(event, competition)),
     partOrders: partOrderPositions(

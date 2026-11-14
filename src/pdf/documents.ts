@@ -1,5 +1,4 @@
 import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces';
-import { clubColors, onColor } from '../app/clubColors';
 import { entryHeading } from '../domain/entryName';
 import { factorSummary, markKeyLabel } from '../domain/segments';
 import { swapsText, type SeatSwap } from '../domain/panels';
@@ -18,7 +17,9 @@ import {
   ruleLabel,
   type PlacementRule,
 } from '../scoring';
+import type { Competition } from '../domain/types';
 import type { EventData } from './loadEvent';
+import { colourBand, eventBand, palette, ruledTable, tableHeadingStyle } from './theme';
 
 const styles: TDocumentDefinitions['styles'] = {
   comp: { fontSize: 10, color: '#555' },
@@ -26,34 +27,12 @@ const styles: TDocumentDefinitions['styles'] = {
   h2: { fontSize: 12, bold: true, margin: [0, 10, 0, 4] },
   th: { bold: true, fontSize: 9, fillColor: '#eeeeee', alignment: 'center' },
   small: { fontSize: 8, color: '#555' },
+  progTh: tableHeadingStyle,
 };
 
-/**
- * Results tables in the competition's colours: header cells filled with the primary colour (with
- * readable text on it) and ruled off in the secondary colour; light rules between rows.
- */
+/** Results and skating order tables: the programme's lightly ruled tables, in the competition's colours. */
 export function clubTable(d: Pick<EventData, 'competition'>) {
-  const { primary, secondary } = clubColors(d.competition);
-  return {
-    th: (text: string, extra: Record<string, unknown> = {}): TableCell => ({
-      text,
-      style: 'th',
-      fillColor: primary,
-      color: onColor(primary),
-      ...extra,
-    }),
-    layout: {
-      hLineWidth: (i: number, node: { table: { headerRows?: number } }) =>
-        i === 0 ? 0 : i === node.table.headerRows ? 2 : 0.5,
-      hLineColor: (i: number, node: { table: { headerRows?: number } }) =>
-        i === node.table.headerRows ? secondary : '#cccccc',
-      vLineWidth: () => 0,
-      paddingLeft: () => 4,
-      paddingRight: () => 4,
-      paddingTop: () => 3,
-      paddingBottom: () => 3,
-    },
-  };
+  return ruledTable(d.competition);
 }
 
 export function compLine(d: Pick<EventData, 'competition'>) {
@@ -61,11 +40,27 @@ export function compLine(d: Pick<EventData, 'competition'>) {
   return [c.name, c.date && new Date(c.date).toLocaleDateString(), c.venue].filter(Boolean).join(' · ');
 }
 
-/** Competition line and event title; pages that share several events show the competition once, in the page header. */
-function header(d: EventData, subtitle?: string, withCompetition = true): Content[] {
+/** Competition line and event title, for the judge sheets. */
+function header(d: EventData, subtitle?: string): Content[] {
   return [
-    ...(withCompetition ? [{ text: compLine(d), style: 'comp' }] : []),
+    { text: compLine(d), style: 'comp' },
     { text: d.event.name + (subtitle ? ` — ${subtitle}` : ''), style: 'title' },
+  ];
+}
+
+/**
+ * Competition line, then the event's title bar (its number and title, with an optional line under the title);
+ * pages that share several events show the competition once, in the page header.
+ */
+export function eventHeader(
+  d: EventData,
+  title: string,
+  subtitle?: string,
+  withCompetition = true,
+): Content[] {
+  return [
+    ...(withCompetition ? [{ text: compLine(d), style: 'comp', margin: [0, 0, 0, 5] } as Content] : []),
+    { stack: [eventBand(d.competition, { number: d.number, title, subtitle })], margin: [0, 0, 0, 8] },
   ];
 }
 
@@ -332,6 +327,7 @@ function resultsTable(d: EventData, placingsOnly: boolean): Content {
   const name = new Map(d.rows.map((r) => [r.id, r]));
   const center = 'center' as const;
   const { th, layout } = clubTable(d);
+  const { ink } = palette(d.competition);
   // Place, Entry, Club, then Points, Majority victories, Rule and each judge's ranking (the
   // guest style has none of those).
   const body: TableCell[][] = [
@@ -346,7 +342,7 @@ function resultsTable(d: EventData, placingsOnly: boolean): Content {
     ...result.overall.map((o) => {
       const r = name.get(o.entryId)!;
       return [
-        { text: `${o.place}${o.tied ? '=' : ''}`, bold: true, alignment: center, fontSize: 12 },
+        { text: `${o.place}${o.tied ? '=' : ''}`, bold: true, alignment: center, fontSize: 12, color: ink },
         {
           stack: [{ text: r.name, bold: true }, ...(r.members ? [{ text: r.members, style: 'small' }] : [])],
         },
@@ -402,7 +398,10 @@ function victoriesTable(d: EventData, newPage = false): Content[] {
   const judgeCount = d.judges.length;
   const bTotals = bTotalsUsed(result.steps);
   const smv = smvUsed(result.steps);
-  const { th, layout } = clubTable(d);
+  const { th: spacedTh, layout } = clubTable(d);
+  // The columns are narrow, so their headings are not letter-spaced.
+  const th = (text: string, extra: Record<string, unknown> = {}) =>
+    spacedTh(text, { characterSpacing: 0, ...extra });
   const center = 'center' as const;
   // Rows and columns run in placing order; the # and v labels keep each entry's number (skating order).
   const numbered = d.rows.map((r, i) => ({ r, n: i + 1 }));
@@ -559,16 +558,12 @@ export function resultsPages(
   const pages = events
     .filter((d) => d.result.complete)
     .map((d): Content[] => [
-      ...header(d, d.scope?.label, !sharesPages(style)),
-      ...(d.scope
-        ? [
-            {
-              text: `Based on ${d.scope.basedOn.join(', ')}`,
-              style: 'comp',
-              margin: [0, -4, 0, 8],
-            } as Content,
-          ]
-        : []),
+      ...eventHeader(
+        d,
+        d.event.name + (d.scope ? ` — ${d.scope.label}` : ''),
+        d.scope && `Based on ${d.scope.basedOn.join(', ')}`,
+        !sharesPages(style),
+      ),
       resultsTable(d, style === 'guest'),
       ...(style === 'guest' ? [] : ruleKey(d)),
       officialsBlock(d),
@@ -606,6 +601,8 @@ export function resultsDocument(
     resultsPages(events, style, singleEvent),
     singleEvent || style === 'withMarks',
     sharesPages(style) && first ? compLine(first) : undefined,
+    true,
+    first?.competition,
   );
 }
 
@@ -617,17 +614,19 @@ export function judgeSheetsDocument(
   return document(judgeSheets(events, options), true, undefined, false);
 }
 
-/** `pageHeader` is repeated at the top of every page. */
+/** `pageHeader` is repeated at the top of every page; `colours` puts that competition's colours across the top of each. */
 export function document(
   content: Content[],
   landscape = false,
   pageHeader?: string,
   pageNumbers = true,
+  colours?: Competition,
 ): TDocumentDefinitions {
   return {
     pageSize: 'A4',
     pageOrientation: landscape ? 'landscape' : 'portrait',
     pageMargins: [36, pageHeader ? 52 : 36, 36, 40],
+    ...(colours && { background: (_page, pageSize) => colourBand(colours, pageSize.width) }),
     ...(pageHeader && {
       header: {
         text: pageHeader,

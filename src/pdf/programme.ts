@@ -1,11 +1,10 @@
-import { isLightColor, luminance } from '@mantine/core';
 import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces';
-import { clubColors, DEFAULT_PRIMARY, onColor } from '../app/clubColors';
 import { formatLongDate } from '../app/format';
 import { entryHeading, entryNoun } from '../domain/entryName';
 import type { Competition, EntryType } from '../domain/types';
 import type { EventData } from './loadEvent';
 import { coverSwooshes } from './coverSwooshes';
+import { colourBand, eventBand, palette, ruledTable, tableHeadingStyle } from './theme';
 
 // A spectators' programme: a club-coloured cover, a welcome page listing the events, then each
 // event's skaters in skating order with its dances. It never names the judges or shows marks.
@@ -34,19 +33,6 @@ const danceNames = (d: EventData) => d.segments.map((s) => s.name);
 
 /** Destination id of an event's section, for the page numbers and links in the list of events. */
 const anchor = (d: EventData) => `event-${d.event.id}`;
-
-function palette(c: Competition) {
-  const { primary, secondary } = clubColors(c);
-  return {
-    primary,
-    secondary,
-    onPrimary: onColor(primary),
-    /** Headings on white paper: the primary colour unless it is too pale to read. */
-    ink: isLightColor(primary) ? DEFAULT_PRIMARY : primary,
-    /** Accent rules on white paper: the secondary colour unless it is too pale to see. */
-    accent: luminance(secondary) > 0.75 ? (isLightColor(primary) ? DEFAULT_PRIMARY : primary) : secondary,
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Cover
@@ -165,42 +151,14 @@ function welcomePage(c: Competition, events: EventData[]): Content[] {
 // ---------------------------------------------------------------------------
 
 function eventSection(c: Competition, d: EventData, number: number): Content {
-  const { primary, onPrimary, ink, accent } = palette(c);
+  const { ink } = palette(c);
   const type = d.event.entryType;
-  const band: Content = {
-    table: {
-      widths: [44, '*'],
-      body: [
-        [
-          {
-            stack: [
-              { text: 'EVENT', fontSize: 7, bold: true, characterSpacing: 1 },
-              { text: String(number), fontSize: 20, bold: true },
-            ],
-            fillColor: accent,
-            color: onColor(accent),
-            alignment: 'center',
-            margin: [0, 3, 0, 0],
-          },
-          {
-            stack: [
-              { text: d.event.name, fontSize: 15, bold: true, id: anchor(d) },
-              { text: entryCount(type, d.rows.length), fontSize: 9, margin: [0, 2, 0, 0] },
-            ],
-            fillColor: primary,
-            color: onPrimary,
-            margin: [6, 5, 6, 5],
-          },
-        ],
-      ],
-    },
-    // A white gap between the number tile and the band, which may share a colour.
-    layout: {
-      hLineWidth: () => 0,
-      vLineWidth: (i: number) => (i === 1 ? 3 : 0),
-      vLineColor: () => '#ffffff',
-    },
-  };
+  const band = eventBand(c, {
+    number,
+    title: d.event.name,
+    subtitle: entryCount(type, d.rows.length),
+    id: anchor(d),
+  });
   const dances: Content = d.segments.length
     ? {
         text: [
@@ -256,15 +214,7 @@ function eventSection(c: Competition, d: EventData, number: number): Content {
               ]),
             ],
           },
-          layout: {
-            hLineWidth: (i: number) => (i === 1 ? 1.5 : i === 0 ? 0 : 0.5),
-            hLineColor: (i: number) => (i === 1 ? accent : '#dddddd'),
-            vLineWidth: () => 0,
-            paddingLeft: () => 4,
-            paddingRight: () => 4,
-            paddingTop: () => 4,
-            paddingBottom: () => 4,
-          },
+          layout: ruledTable(c).layout,
         };
   return { stack: [band, dances, order] };
 }
@@ -284,21 +234,12 @@ function eventPages(c: Competition, events: EventData[]): Content[] {
 // ---------------------------------------------------------------------------
 
 export function programmeDocument(c: Competition, events: EventData[]): TDocumentDefinitions {
-  const { primary, secondary, ink } = palette(c);
+  const { ink } = palette(c);
   return {
     pageSize: 'A4',
     pageMargins: [MARGIN, 56, MARGIN, 48],
     // Inner pages carry a thin band of the club colours across the top.
-    background: (page) =>
-      page === 1
-        ? coverBackground(c)
-        : {
-            absolutePosition: { x: 0, y: 0 },
-            canvas: [
-              { type: 'rect', x: 0, y: 0, w: PAGE.width, h: 8, color: primary },
-              { type: 'rect', x: 0, y: 8, w: PAGE.width, h: 3, color: secondary },
-            ],
-          },
+    background: (page) => (page === 1 ? coverBackground(c) : colourBand(c, PAGE.width)),
     header: (page) =>
       page <= 2
         ? null
@@ -320,7 +261,7 @@ export function programmeDocument(c: Competition, events: EventData[]): TDocumen
             margin: [MARGIN, 12, MARGIN, 0] as Margins,
           },
     defaultStyle: { fontSize: 10 },
-    styles: { progTh: { fontSize: 8, bold: true, color: '#666', characterSpacing: 0.5 } },
+    styles: { progTh: tableHeadingStyle },
     content: [...cover(c), { stack: welcomePage(c, events), pageBreak: 'before' }, ...eventPages(c, events)],
   };
 }

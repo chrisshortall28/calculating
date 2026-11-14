@@ -59,7 +59,8 @@ describe('skatingOrderPages', () => {
     const [dance1, dance2, free] = skatingOrderPages([event(2)]);
     expect(names(dance1)).toEqual(['Amy', 'Beth', 'Cat', 'Dee']);
     expect(names(dance2)).toEqual(['Cat', 'Dee', 'Amy', 'Beth']);
-    expect(texts(dance2).filter((t) => /^[1-4]$/.test(t))).toEqual(['3', '4', '1', '2']);
+    // The event's number in the title bar, then the start numbers.
+    expect(texts(dance2).filter((t) => /^[1-4]$/.test(t))).toEqual(['1', '3', '4', '1', '2']);
     expect(names(free)).toEqual(['Amy', 'Beth', 'Cat', 'Dee']);
     expect(texts(dance2).filter((t) => t === 'Skates first')).toHaveLength(1);
   });
