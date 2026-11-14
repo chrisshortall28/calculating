@@ -1,5 +1,6 @@
 import { db } from '../db/db';
 import { byId, entryClub, entryMembers, entryName } from '../domain/entryName';
+import { eventNumberLabel } from '../domain/eventTitle';
 import { seatMark, seatSwaps, type SeatSwap } from '../domain/panels';
 import { effectiveRotate, firstSkaters, partOrderPositions } from '../domain/startOrder';
 import { eventSegments, eventTieBreakMarks, type Segment } from '../domain/segments';
@@ -18,8 +19,8 @@ export interface EventRow {
 export interface EventData {
   competition: Competition;
   event: CompEvent;
-  /** The event's number in the competition's running order, from 1. */
-  number: number;
+  /** The number the PDFs show for the event: its own, or without one its place in the competition's running order. */
+  number: string;
   segments: Segment[];
   /** Rotating start order: segment id -> position in `rows` of the entry that skates it first. */
   firstSkaters: Map<string, number>;
@@ -64,7 +65,7 @@ export async function loadEventData(eventId: Id): Promise<EventData> {
   return {
     competition,
     event,
-    number: siblings.findIndex((e) => e.id === eventId) + 1,
+    number: eventNumberLabel(event, siblings.findIndex((e) => e.id === eventId) + 1),
     segments,
     firstSkaters: firstSkaters(segments, entries.length, effectiveRotate(event, competition)),
     partOrders: partOrderPositions(

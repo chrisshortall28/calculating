@@ -15,6 +15,18 @@ function texts(node: unknown): string[] {
   return [];
 }
 
+describe('event numbers in PDFs', () => {
+  it('judge sheets are headed with the full title; results put the number in the title bar', () => {
+    const base = sampleEvent();
+    const d = { ...base, number: '2A', event: { ...base.event, number: '2A' } };
+    expect(texts(judgeSheets([d]))).toContain('2A • Event');
+    const results = texts(resultsPages([d], 'standard'));
+    expect(results).toContain('2A');
+    expect(results).toContain('Event');
+    expect(results).not.toContain('2A • Event');
+  });
+});
+
 describe('resultsPages', () => {
   it('standard results include points, majority victories, the rule and judge rankings, in that order', () => {
     const t = texts(resultsPages([sampleEvent()], 'standard'));

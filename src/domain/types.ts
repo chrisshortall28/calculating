@@ -34,6 +34,11 @@ export interface CompEvent {
   id: Id;
   competitionId: Id;
   name: string;
+  /**
+   * The event's number in the competition's schedule, as the organisers give it ("2A", "13"). Optional; an event
+   * with one is titled "2A • Name" (see `domain/eventTitle.ts`).
+   */
+  number?: string;
   order: number;
   entryType: EntryType;
   /** Ordered list of compulsory dance ids (0–10; usually 1–2 for solo, 3–4 for team). */

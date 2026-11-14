@@ -32,7 +32,7 @@ export function sampleEvent(): EventData {
       refereeId: 'r',
       status: 'final',
     },
-    number: 1,
+    number: '1',
     segments,
     firstSkaters: new Map<string, number>(),
     rows,

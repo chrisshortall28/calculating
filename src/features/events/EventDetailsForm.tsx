@@ -18,6 +18,7 @@ import { useRef, type ComponentProps } from 'react';
 import { IconPlus, IconX } from '@tabler/icons-react';
 import { useDances, useEvents } from '../../app/data';
 import { FIGURES, figureLabel } from '../../domain/figures';
+import { MAX_EVENT_NUMBER_LENGTH, sameEventTitle } from '../../domain/eventTitle';
 import { cfKey, danceEventDefaults, defaultFactors, NO_FACTORS } from '../../domain/segments';
 import {
   MAX_COMPULSORY_DANCES,
@@ -31,6 +32,7 @@ import {
 export type EventDetails = Pick<
   CompEvent,
   | 'name'
+  | 'number'
   | 'entryType'
   | 'discipline'
   | 'compulsoryDanceIds'
@@ -44,7 +46,9 @@ export type EventDetails = Pick<
 
 /** Factors as the Calculator types them (1.5), rather than as stored (150 hundredths). */
 type Factor = number | string; // NumberInput gives a string while a number is part-typed ("1.")
-type FormValues = Omit<EventDetails, 'discipline' | 'factors'> & {
+type FormValues = Omit<EventDetails, 'discipline' | 'factors' | 'number'> & {
+  /** Blank for an event without a number. */
+  number: string;
   /** Blank until the Calculator chooses, when creating an event. */
   discipline: EventDiscipline | '';
   factors: { figures: Factor; short: Factor; long: Factor };
@@ -88,6 +92,7 @@ const positive = (f: Factor) => (Number(f) >= 0.01 ? null : 'At least 0.01');
 
 const emptyEvent: FormValues = {
   name: '',
+  number: '',
   entryType: 'solo',
   compulsoryDanceIds: [],
   hasFreeDance: false,
@@ -117,7 +122,7 @@ export function EventDetailsForm({
    * the same settings and a blank name, ready for the next event.
    */
   keepAdding?: { checked: boolean; onChange: (checked: boolean) => void };
-  /** Everything but the name is disabled (an event marked final). */
+  /** Everything but the number and name is disabled (an event marked final). */
   lockedExceptName?: boolean;
 }) {
   const nameRef = useRef<HTMLInputElement>(null);
@@ -127,6 +132,7 @@ export function EventDetailsForm({
     initialValues: initial
       ? {
           ...initial,
+          number: initial.number ?? '',
           rotateStartOrder: initial.rotateStartOrder ?? 'default',
           factors: toDecimal(initial.factors),
         }
@@ -158,10 +164,9 @@ export function EventDetailsForm({
     },
   });
   const v = form.values;
-  const typedName = v.name.trim().toLowerCase();
+  // Events are told apart by their full title, so the same name is fine under another number.
   const duplicateName =
-    typedName !== '' &&
-    (events ?? []).some((e) => e.id !== eventId && e.name.trim().toLowerCase() === typedName);
+    v.name.trim() !== '' && (events ?? []).some((e) => e.id !== eventId && sameEventTitle(e, v));
 
   /** Changes the figures or programmes, and puts the factors back to the defaults for the new mix. */
   const setParts = (next: Partial<Pick<FormValues, 'figures' | 'hasShort' | 'hasLong'>>) => {
@@ -181,7 +186,12 @@ export function EventDetailsForm({
   const partTypes = (v.figures.length > 0 ? 1 : 0) + (v.hasShort ? 1 : 0) + (v.hasLong ? 1 : 0);
 
   const submit = form.onSubmit(async (values) => {
-    const base = { ...values, discipline: values.discipline as EventDiscipline, name: values.name.trim() };
+    const base = {
+      ...values,
+      discipline: values.discipline as EventDiscipline,
+      name: values.name.trim(),
+      number: values.number.trim() || undefined,
+    };
     await onSubmit(
       values.discipline === 'figures'
         ? {
@@ -194,7 +204,7 @@ export function EventDetailsForm({
         : { ...base, figures: [], hasShort: false, hasLong: false, factors: { ...NO_FACTORS } },
     );
     if (keepAdding?.checked) {
-      form.setFieldValue('name', '');
+      form.setValues({ name: '', number: '' });
       form.clearErrors();
       nameRef.current?.focus();
     }
@@ -203,19 +213,33 @@ export function EventDetailsForm({
   return (
     <form onSubmit={submit}>
       <Stack>
-        <TextInput
-          label="Event name"
-          placeholder={
-            v.discipline === 'figures' ? 'e.g. Novice Ladies Figures & Free' : 'e.g. Novice Ladies Solo Dance'
-          }
-          data-autofocus
-          ref={nameRef}
-          required
-          {...form.getInputProps('name')}
-        />
+        <Group align="flex-start" gap="sm" wrap="nowrap">
+          <TextInput
+            label="Number"
+            placeholder="e.g. 2A"
+            w={90}
+            maxLength={MAX_EVENT_NUMBER_LENGTH}
+            {...form.getInputProps('number')}
+          />
+          <TextInput
+            label="Event name"
+            placeholder={
+              v.discipline === 'figures'
+                ? 'e.g. Novice Ladies Figures & Free'
+                : 'e.g. Novice Ladies Solo Dance'
+            }
+            data-autofocus
+            ref={nameRef}
+            required
+            style={{ flex: 1 }}
+            {...form.getInputProps('name')}
+          />
+        </Group>
         {duplicateName && (
           <Text size="xs" c="orange.8" mt={-8}>
-            Another event in this competition already has this name.
+            {v.number.trim()
+              ? 'Another event in this competition already has this number and name.'
+              : 'Another event in this competition already has this name.'}
           </Text>
         )}
         <Box

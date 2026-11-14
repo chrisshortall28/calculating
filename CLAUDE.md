@@ -43,6 +43,12 @@ which cascades deletes and touches the competition's `updatedAt`. Components rea
 `useLiveQuery` hooks in `src/app/data.ts`, so writes re-render automatically — there is no other
 state store.
 
+**Event numbers.** `CompEvent.number` (optional text such as "2A"; blank on older data) gives an event the full title
+`{number} • {name}` (`domain/eventTitle.ts`: `eventTitle`, and `sameEventTitle` for the duplicate warning). The UI and judge sheets
+show the full title; the programme, skating order and results PDFs put the number in the title bar's tile, falling back to the
+event's place in the running order (`EventData.number`). `.pod` files use format 5 only when an event has one
+(`NUMBERS_FORMAT_VERSION`). The legacy export still writes the name alone.
+
 **Judges by section.** `CompEvent.judgeIds` are *seats* (J1…Jn); `judgeSwaps` (segment id → seat → substitute,
 optional) puts another judge in a seat for one dance/figure/programme (`src/domain/panels.ts`). Marks stay keyed
 by the judge who gave them. The scoring engine works in seats and is unchanged: **always read marks through

@@ -131,6 +131,7 @@ export async function createEvent(
   data: Pick<
     CompEvent,
     | 'name'
+    | 'number'
     | 'entryType'
     | 'discipline'
     | 'compulsoryDanceIds'

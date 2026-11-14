@@ -1,3 +1,4 @@
+import { eventNumberLabel, eventTitle } from '../../domain/eventTitle';
 import {
   Alert,
   Anchor,
@@ -147,7 +148,7 @@ export function CompetitionPdfModal({
           {events.map((e) => (
             <Checkbox
               key={e.id}
-              label={e.name}
+              label={eventTitle(e)}
               checked={!off.has(e.id)}
               onChange={(ev) => {
                 const next = new Set(off);
@@ -240,7 +241,7 @@ export function CompetitionPdfModal({
             </Stack>
             <ProgrammePreview
               title={competition.name}
-              events={events.map((e) => e.name)}
+              events={events.map((e, i) => ({ number: eventNumberLabel(e, i + 1), name: e.name }))}
               colors={clubColors(competition)}
             />
           </SimpleGrid>

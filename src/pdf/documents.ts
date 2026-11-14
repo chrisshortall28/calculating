@@ -1,5 +1,6 @@
 import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { entryHeading } from '../domain/entryName';
+import { eventTitle } from '../domain/eventTitle';
 import { factorSummary, markKeyLabel } from '../domain/segments';
 import { swapsText, type SeatSwap } from '../domain/panels';
 import { inSegmentOrder } from '../domain/startOrder';
@@ -44,7 +45,7 @@ export function compLine(d: Pick<EventData, 'competition'>) {
 function header(d: EventData, subtitle?: string): Content[] {
   return [
     { text: compLine(d), style: 'comp' },
-    { text: d.event.name + (subtitle ? ` — ${subtitle}` : ''), style: 'title' },
+    { text: eventTitle(d.event) + (subtitle ? ` — ${subtitle}` : ''), style: 'title' },
   ];
 }
 

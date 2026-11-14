@@ -234,7 +234,8 @@ export function ProgrammePreview({
   colors,
 }: {
   title: string;
-  events: string[];
+  /** Each event's number as the programme shows it (its own, or its place in the running order) and name. */
+  events: { number: string; name: string }[];
   colors: { primary: string; secondary: string };
 }) {
   return (
@@ -263,10 +264,10 @@ export function ProgrammePreview({
           ))}
           <div style={{ marginTop: 4 }}>
             {events.slice(0, 4).map((e, i) => (
-              <div key={i} className={classes.row} style={{ gridTemplateColumns: '10px 1fr' }}>
-                <span className={classes.num}>{i + 1}</span>
+              <div key={i} className={classes.row} style={{ gridTemplateColumns: '14px 1fr' }}>
+                <span className={classes.num}>{e.number}</span>
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {e}
+                  {e.name}
                 </span>
               </div>
             ))}

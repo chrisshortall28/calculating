@@ -106,7 +106,7 @@ function welcomePage(c: Competition, events: EventData[]): Content[] {
       : {
           table: {
             headerRows: 1,
-            widths: [22, '*', 'auto', 34],
+            widths: ['auto', '*', 'auto', 34],
             body: [
               [
                 { text: '', fillColor: primary },
@@ -114,8 +114,8 @@ function welcomePage(c: Competition, events: EventData[]): Content[] {
                 { text: 'Entries', bold: true, color: onPrimary, fillColor: primary },
                 { text: 'Page', bold: true, color: onPrimary, fillColor: primary, alignment: 'right' },
               ],
-              ...events.map((d, i): TableCell[] => [
-                { text: String(i + 1), bold: true, color: ink, alignment: 'right' },
+              ...events.map((d): TableCell[] => [
+                { text: d.number, bold: true, color: ink, alignment: 'right' },
                 {
                   stack: [
                     { text: d.event.name, bold: true, linkToDestination: anchor(d) },
@@ -150,11 +150,11 @@ function welcomePage(c: Competition, events: EventData[]): Content[] {
 // Events: the skating order
 // ---------------------------------------------------------------------------
 
-function eventSection(c: Competition, d: EventData, number: number): Content {
+function eventSection(c: Competition, d: EventData): Content {
   const { ink } = palette(c);
   const type = d.event.entryType;
   const band = eventBand(c, {
-    number,
+    number: d.number,
     title: d.event.name,
     subtitle: entryCount(type, d.rows.length),
     id: anchor(d),
@@ -222,7 +222,7 @@ function eventSection(c: Competition, d: EventData, number: number): Content {
 /** Events follow on down the page, each kept whole where it fits (moved to the next page rather than split). */
 function eventPages(c: Competition, events: EventData[]): Content[] {
   return events.map((d, i) => ({
-    stack: [eventSection(c, d, i + 1)],
+    stack: [eventSection(c, d)],
     unbreakable: true,
     margin: [0, i === 0 ? 0 : 26, 0, 0] as Margins,
     ...(i === 0 ? { pageBreak: 'before' as const } : {}),

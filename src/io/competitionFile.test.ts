@@ -9,6 +9,7 @@ import {
   importCompetition,
   importEventsInto,
   parseCompetitionFile,
+  NUMBERS_FORMAT_VERSION,
   ORDERS_FORMAT_VERSION,
   SWAPS_FORMAT_VERSION,
 } from './competitionFile';
@@ -323,6 +324,31 @@ describe('figures & free events in files', () => {
       expect(event!.judgeIds).toContain(seat);
       expect(merged.judges.some((j) => j.id === substitute && j.name === 'Sub Judge')).toBe(true);
     });
+  });
+});
+
+describe('event numbers', () => {
+  beforeEach(async () => {
+    await db.delete();
+    await db.open();
+  });
+
+  it('are written as format 5 only when an event has one, and survive copying', async () => {
+    const { compId, eventId } = await seed();
+    const plain = await exportCompetition(compId);
+    expect(plain.formatVersion).toBe(FORMAT_VERSION);
+    expect(parseCompetitionFile(JSON.parse(JSON.stringify(plain))).events[0]!.number).toBeUndefined();
+
+    await repo.updateEvent(eventId, { number: '13A' });
+    const file = await exportCompetition(compId);
+    expect(file.formatVersion).toBe(NUMBERS_FORMAT_VERSION);
+    const copyId = await importCompetition(parseCompetitionFile(JSON.parse(JSON.stringify(file))), 'copy');
+    expect((await exportCompetition(copyId)).events[0]!.number).toBe('13A');
+
+    await repo.updateEvent(eventId, { number: undefined });
+    const cleared = await exportCompetition(compId);
+    expect(cleared.formatVersion).toBe(FORMAT_VERSION);
+    expect(JSON.stringify(cleared)).not.toContain('"number"');
   });
 });
 

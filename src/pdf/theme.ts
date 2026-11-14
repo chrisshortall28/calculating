@@ -34,9 +34,12 @@ export function colourBand(c: Competition, pageWidth: number): Content {
 /** An event's title bar: its number in a tile of the accent colour, then the title on the primary colour. */
 export function eventBand(
   c: Competition,
-  band: { number: number; title: string; subtitle?: string; /** Link destination */ id?: string },
+  band: { number: string; title: string; subtitle?: string; /** Link destination */ id?: string },
 ): Content {
   const { primary, onPrimary, accent } = palette(c);
+  // A longer number ("13A") is set smaller so it still fits the tile, and moved down to stay centred.
+  const size = [20, 20, 20, 16, 13][band.number.length] ?? 10.5;
+  const shift = (20 - size) * 0.6;
   return {
     table: {
       widths: [44, '*'],
@@ -45,7 +48,7 @@ export function eventBand(
           {
             stack: [
               { text: 'EVENT', fontSize: 7, bold: true, characterSpacing: 1 },
-              { text: String(band.number), fontSize: 20, bold: true },
+              { text: band.number, fontSize: size, bold: true, margin: [0, shift, 0, shift] },
             ],
             fillColor: accent,
             color: onColor(accent),
