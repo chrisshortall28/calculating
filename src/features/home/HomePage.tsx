@@ -161,7 +161,7 @@ export function HomePage() {
                 )
               )}
               <Card withBorder className={classes.startCard}>
-                <Stack gap="sm" h="100%" justify="space-between">
+                <div className={classes.startInner}>
                   <div>
                     <Text className="display" fz={24}>
                       Calculating an event?
@@ -171,7 +171,7 @@ export function HomePage() {
                       file.
                     </Text>
                   </div>
-                  <SimpleGrid cols={{ base: 1, xs: 2, sm: 1, md: 2 }} spacing="xs" verticalSpacing="xs">
+                  <Stack gap="xs">
                     <NewCompetitionButton fullWidth />
                     <FileButton onChange={onFile} accept=".pod,.json">
                       {(props) => (
@@ -197,8 +197,8 @@ export function HomePage() {
                     >
                       All competitions{count ? ` (${count})` : ''}
                     </Button>
-                  </SimpleGrid>
-                </Stack>
+                  </Stack>
+                </div>
               </Card>
             </SimpleGrid>
           </Stack>

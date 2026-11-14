@@ -80,10 +80,25 @@
   flex-direction: column;
 }
 
-/* Wide and short, so the competition card beside it keeps its natural height. */
+.startInner {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--mantine-spacing-sm);
+  height: 100%;
+}
+
+/* Wide and short, text beside the buttons, so the competition card beside it keeps its natural height. */
 @media (min-width: $mantine-breakpoint-md) {
   .startCard {
     grid-column: span 2;
+  }
+
+  .startInner {
+    display: grid;
+    grid-template-columns: 1fr minmax(280px, 1fr);
+    align-items: center;
+    gap: var(--mantine-spacing-xl);
   }
 }
 
