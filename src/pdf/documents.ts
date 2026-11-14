@@ -449,8 +449,9 @@ function victoriesTable(d: EventData, newPage = false): Content[] {
     ];
   });
   const factors = factorSummary(d.event);
-  return [
-    { text: 'Table of Victories', style: 'h2', ...(newPage && { pageBreak: 'before' as const }) },
+  // Kept whole: moved to the next page rather than split (only a table taller than a page still breaks).
+  const parts: Content[] = [
+    { text: 'Table of Victories', style: 'h2' },
     ...(factors
       ? [
           {
@@ -475,6 +476,7 @@ function victoriesTable(d: EventData, newPage = false): Content[] {
       margin: [0, 3, 0, 0],
     },
   ];
+  return [{ stack: parts, unbreakable: true, ...(newPage && { pageBreak: 'before' as const }) }];
 }
 
 /** How each tie on majority victories was resolved, and any equal sums from one judge (rule 3). */
