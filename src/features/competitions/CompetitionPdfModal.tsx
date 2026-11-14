@@ -130,7 +130,16 @@ export function CompetitionPdfModal({
         </Group>
       </Group>
       {/* Scrolls on its own, so a long list of events doesn't make the modal taller. */}
-      <ScrollArea.Autosize mah={168} type="auto" offsetScrollbars>
+      <ScrollArea.Autosize
+        mah={168}
+        type="auto"
+        offsetScrollbars
+        p={8}
+        style={{
+          border: '1px solid var(--mantine-color-default-border)',
+          borderRadius: 'var(--mantine-radius-sm)',
+        }}
+      >
         <Stack gap={6}>
           {events.map((e) => (
             <Checkbox
