@@ -591,8 +591,9 @@ function withPageBreaks(pages: Content[][]): Content[] {
   }));
 }
 
-/** A single event's results are landscape (stapled to its landscape judge sheets), and with marks
- * the table of victories starts its own page. */
+/** Results with marks are landscape, to give the table of victories room, and so are a single event's
+ * results in any style (stapled to its landscape judge sheets); there the table of victories starts its
+ * own page. Other results for several events are portrait. */
 export function resultsDocument(
   events: EventData[],
   style: ResultsStyle,
@@ -601,7 +602,7 @@ export function resultsDocument(
   const first = events[0];
   return document(
     resultsPages(events, style, singleEvent),
-    singleEvent,
+    singleEvent || style === 'withMarks',
     sharesPages(style) && first ? compLine(first) : undefined,
   );
 }

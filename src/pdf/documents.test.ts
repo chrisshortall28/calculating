@@ -291,9 +291,13 @@ describe('judgeSheets', () => {
     expect(victoriesBreaks(false)).toBe(false);
   });
 
-  it('prints results portrait unless asked for landscape (a single event, stapled to its judge sheets)', () => {
+  it('prints results portrait unless with marks or for a single event (stapled to its judge sheets)', () => {
     expect(resultsDocument([sampleEvent()], 'standard').pageOrientation).toBe('portrait');
     expect(resultsDocument([sampleEvent()], 'standard', true).pageOrientation).toBe('landscape');
+    expect(resultsDocument([sampleEvent()], 'guest').pageOrientation).toBe('portrait');
+    // With marks is always landscape, for the table of victories.
+    expect(resultsDocument([sampleEvent()], 'withMarks').pageOrientation).toBe('landscape');
+    expect(resultsDocument([sampleEvent()], 'withMarks', true).pageOrientation).toBe('landscape');
     expect(judgeSheetsDocument([sampleEvent()]).pageOrientation).toBe('landscape');
   });
 });
