@@ -38,6 +38,7 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 
 // The previews are illustrations, so they assume a typical field rather than counting skaters.
 const SAMPLE_ENTRIES = 6;
+const NONE_OFF: ReadonlySet<string> = new Set();
 
 /**
  * Launchpad for a competition's PDFs: the spectators' programme, and skating order, judge sheets and results
@@ -55,8 +56,10 @@ export function CompetitionPdfModal({
   const events = useEvents(competition.id) ?? [];
   const dances = useDances(competition.id);
   const [section, setSection] = useState<Section>('programme');
-  /** The unticked events, so events added later start ticked. */
-  const [off, setOff] = useState<ReadonlySet<string>>(new Set());
+  /** Each tab's unticked events (so events added later start ticked); the tabs are ticked separately. */
+  const [offBySection, setOffBySection] = useState<Partial<Record<Section, ReadonlySet<string>>>>({});
+  const off = offBySection[section] ?? NONE_OFF;
+  const setOff = (next: ReadonlySet<string>) => setOffBySection((prev) => ({ ...prev, [section]: next }));
   const [layout, setLayout] = useState<Layout>('combined');
   const [style, setStyle] = useState<ResultsStyle>('standard');
   const [busy, setBusy] = useState(false);

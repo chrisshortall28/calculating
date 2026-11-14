@@ -143,6 +143,19 @@ describe('CompetitionPdfModal', () => {
     expect([...target.eventIds]).toEqual([ids[0]]);
   });
 
+  it('keeps a separate event selection on each tab', async () => {
+    const { competition } = await seed();
+    renderModal(competition);
+    fireEvent.click(await screen.findByText('Skating order'));
+    await waitFor(() => expect(screen.getByLabelText('Junior')).toBeTruthy());
+    fireEvent.click(screen.getByLabelText('Junior'));
+    expect(screen.getByText('Which events (1/2)')).toBeTruthy();
+    fireEvent.click(screen.getByText('Judge sheets'));
+    expect(screen.getByText('Which events (2/2)')).toBeTruthy();
+    fireEvent.click(screen.getByText('Skating order'));
+    expect(screen.getByText('Which events (1/2)')).toBeTruthy();
+  });
+
   it('cannot create anything for no events, and passes the layout to the judge sheets', async () => {
     const { competition } = await seed();
     renderModal(competition);
