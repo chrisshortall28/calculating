@@ -87,6 +87,7 @@ export function JudgeGrid(props: Props) {
   if (rows.length === 0) return <Text c="dimmed">Add entries to this event to start entering marks.</Text>;
 
   const multi = segments.some((s) => s.markKeys.length > 1);
+  const activeColumn = active ? columns[active.col] : undefined;
 
   return (
     <div className={classes.wrap}>
@@ -104,7 +105,7 @@ export function JudgeGrid(props: Props) {
                 key={s.id}
                 colSpan={s.markKeys.length}
                 rowSpan={multi && s.markKeys.length === 1 ? 2 : 1}
-                className={classes.judgeStart}
+                className={`${classes.judgeStart} ${activeColumn?.segment.id === s.id ? classes.activeCol : ''}`}
                 title={s.name}
               >
                 {s.name}
@@ -124,7 +125,10 @@ export function JudgeGrid(props: Props) {
                 .map((s) => (
                   <Fragment key={s.id}>
                     {s.markKeys.map((k, ki) => (
-                      <th key={k} className={ki === 0 ? classes.judgeStart : undefined}>
+                      <th
+                        key={k}
+                        className={`${ki === 0 ? classes.judgeStart : ''} ${activeColumn?.key === k ? classes.activeCol : ''}`}
+                      >
                         {markKeyLabel(k)}
                       </th>
                     ))}
