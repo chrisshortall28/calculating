@@ -113,7 +113,7 @@ export function CompetitionPdfModal({
     <Stack gap={6}>
       <Group justify="space-between">
         <Text size="sm" fw={600}>
-          Which events
+          Which events ({chosen.length}/{events.length})
         </Text>
         <Group gap="sm">
           <Anchor component="button" type="button" size="xs" onClick={() => setOff(new Set())}>

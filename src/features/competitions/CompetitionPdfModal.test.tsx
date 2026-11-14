@@ -131,7 +131,9 @@ describe('CompetitionPdfModal', () => {
     ]);
 
     await waitFor(() => expect(screen.getByLabelText('Junior')).toBeTruthy());
+    expect(screen.getByText('Which events (2/2)')).toBeTruthy();
     fireEvent.click(screen.getByLabelText('Junior'));
+    expect(screen.getByText('Which events (1/2)')).toBeTruthy();
     fireEvent.click(screen.getByText('Create skating order'));
     await waitFor(() => expect(actions.printSkatingOrder).toHaveBeenCalledTimes(2));
     const [target] = actions.printSkatingOrder.mock.calls[1] as unknown as [
@@ -154,6 +156,7 @@ describe('CompetitionPdfModal', () => {
       { layout: 'perPart' },
     ]);
     fireEvent.click(screen.getByText('None'));
+    expect(screen.getByText('Which events (0/2)')).toBeTruthy();
     expect((screen.getByText('Create judge sheets').closest('button') as HTMLButtonElement).disabled).toBe(
       true,
     );
