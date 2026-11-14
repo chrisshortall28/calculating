@@ -171,7 +171,7 @@ export function HomePage() {
                       file.
                     </Text>
                   </div>
-                  <Stack gap="xs">
+                  <SimpleGrid cols={{ base: 1, xs: 2, sm: 1, md: 2 }} spacing="xs" verticalSpacing="xs">
                     <NewCompetitionButton fullWidth />
                     <FileButton onChange={onFile} accept=".pod,.json">
                       {(props) => (
@@ -197,7 +197,7 @@ export function HomePage() {
                     >
                       All competitions{count ? ` (${count})` : ''}
                     </Button>
-                  </Stack>
+                  </SimpleGrid>
                 </Stack>
               </Card>
             </SimpleGrid>

@@ -80,6 +80,13 @@
   flex-direction: column;
 }
 
+/* Wide and short, so the competition card beside it keeps its natural height. */
+@media (min-width: $mantine-breakpoint-md) {
+  .startCard {
+    grid-column: span 2;
+  }
+}
+
 .emptyCard {
   align-items: center;
   justify-content: center;
