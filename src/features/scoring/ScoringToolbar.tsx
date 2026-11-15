@@ -75,7 +75,8 @@ export function ScoringToolbar(props: {
   autoAdvance: boolean;
   onAutoAdvance: (v: boolean) => void;
   numberPad: boolean;
-  onNumberPad: (v: boolean) => void;
+  /** Left out where the number pad is not offered (phones), which hides its switch. */
+  onNumberPad?: (v: boolean) => void;
   locked: boolean;
   canClear: boolean;
   onClear: () => void;
@@ -121,7 +122,14 @@ export function ScoringToolbar(props: {
             onChange={props.onAutoAdvance}
             disabled={locked}
           />
-          <Chip label="Number pad" checked={props.numberPad} onChange={props.onNumberPad} disabled={locked} />
+          {props.onNumberPad && (
+            <Chip
+              label="Number pad"
+              checked={props.numberPad}
+              onChange={props.onNumberPad}
+              disabled={locked}
+            />
+          )}
         </div>
       </div>
       <div className={classes.actions}>

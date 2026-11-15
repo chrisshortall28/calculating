@@ -1,5 +1,5 @@
 import { Alert, Box, Card, Group, Kbd, Stack, Text } from '@mantine/core';
-import { useLocalStorage } from '@mantine/hooks';
+import { useLocalStorage, useMediaQuery } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useCompetition, useJudges, useSkaters } from '../../app/data';
@@ -35,7 +35,10 @@ export function ScoringTab({ event }: { event: CompEvent }) {
     defaultValue: 'across',
   });
   const [autoAdvance, setAutoAdvance] = useLocalStorage({ key: 'podium.autoAdvance', defaultValue: true });
-  const [numberPad, setNumberPad] = useLocalStorage({ key: 'podium.numberPad', defaultValue: false });
+  const [padWanted, setNumberPad] = useLocalStorage({ key: 'podium.numberPad', defaultValue: false });
+  // The pad is for tablets and laptops: a phone has no room for it beside the grid, and has its own keyboard.
+  const padFits = useMediaQuery('(min-width: 48em)', true, { getInitialValueInEffect: false });
+  const numberPad = padWanted && padFits;
   const focusedInput = useRef<HTMLInputElement | null>(null);
   const [segmentId, setSegmentId] = useState<string | null>(null);
   const [view, setView] = useLocalStorage<'dance' | 'judge'>({
@@ -209,7 +212,7 @@ export function ScoringTab({ event }: { event: CompEvent }) {
         autoAdvance={autoAdvance}
         onAutoAdvance={setAutoAdvance}
         numberPad={numberPad}
-        onNumberPad={setNumberPad}
+        onNumberPad={padFits ? setNumberPad : undefined}
         locked={locked}
         canClear={entered > 0}
         onClear={confirmClear}
