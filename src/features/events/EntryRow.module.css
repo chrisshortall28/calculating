@@ -75,9 +75,3 @@
     overflow-wrap: anywhere;
   }
 }
-
-/* The start order / later parts switch scrolls sideways when its labels don't fit. */
-.orderSwitch {
-  max-width: 100%;
-  overflow-x: auto;
-}

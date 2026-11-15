@@ -137,8 +137,7 @@ export function EntriesTab({ event }: { event: CompEvent }) {
 
         {laterParts.length > 0 && (
           <SegmentedControl
-            className={rowClasses.orderSwitch}
-            w="fit-content"
+            className="toggle-fit"
             value={laterPart ? orderView : 'all'}
             onChange={setOrderView}
             data={[

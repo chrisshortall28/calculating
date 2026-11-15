@@ -196,6 +196,7 @@ export function CompetitionPdfModal({
       <Stack>
         <SegmentedControl
           fullWidth
+          className="toggle-fit"
           value={section}
           onChange={(v) => setSection(v as Section)}
           data={[

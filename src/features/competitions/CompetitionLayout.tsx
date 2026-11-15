@@ -52,6 +52,41 @@ export function CompetitionLayout() {
   if (competition === null) return <Text>Competition not found.</Text>;
 
   const colors = clubColors(competition);
+  // Beside the tabs, or in the band's top corner on phones.
+  const buttons = (
+    <Group gap="xs" wrap="nowrap">
+      <Button
+        variant="white"
+        color="navy.9"
+        aria-label="PDFs"
+        className={`${buttonClasses.button} ${buttonClasses.pair}`}
+        classNames={{ label: buttonClasses.label, section: buttonClasses.section }}
+        leftSection={<IconFileTypePdf size={16} />}
+        onClick={openPdfs}
+      >
+        PDFs
+      </Button>
+      <Menu position="bottom-end">
+        <Menu.Target>
+          <Button
+            color={colors.secondary}
+            autoContrast
+            aria-label="Export"
+            className={`${buttonClasses.button} ${buttonClasses.pair}`}
+            classNames={{ label: buttonClasses.label, section: buttonClasses.section }}
+            leftSection={<IconDownload size={16} />}
+            rightSection={<IconChevronDown size={14} />}
+          >
+            Export
+          </Button>
+        </Menu.Target>
+        <Menu.Dropdown>
+          <Menu.Item onClick={() => exportCompetition(competition.id)}>Podium file (.pod)</Menu.Item>
+          <Menu.Item onClick={openLegacyExport}>Calculating For Windows files (.zip)…</Menu.Item>
+        </Menu.Dropdown>
+      </Menu>
+    </Group>
+  );
 
   return (
     <>
@@ -59,6 +94,7 @@ export function CompetitionLayout() {
         colors={colors}
         crumbs={[{ label: 'Competitions', to: '/competitions' }, { label: competition.name }]}
         title={competition.name}
+        tools={buttons}
         titleAddon={
           <Tooltip label="Edit competition details">
             <ActionIcon
@@ -84,40 +120,7 @@ export function CompetitionLayout() {
           tabs={TABS}
           value={current}
           onChange={(v) => navigate(`/c/${compId}/${v === 'events' ? '' : v}`)}
-          end={
-            <Group gap="xs" wrap="nowrap">
-              <Button
-                variant="white"
-                color="navy.9"
-                aria-label="PDFs"
-                className={`${buttonClasses.button} ${buttonClasses.pair}`}
-                classNames={{ label: buttonClasses.label, section: buttonClasses.section }}
-                leftSection={<IconFileTypePdf size={16} />}
-                onClick={openPdfs}
-              >
-                PDFs
-              </Button>
-              <Menu position="bottom-end">
-                <Menu.Target>
-                  <Button
-                    color={colors.secondary}
-                    autoContrast
-                    aria-label="Export"
-                    className={`${buttonClasses.button} ${buttonClasses.pair}`}
-                    classNames={{ label: buttonClasses.label, section: buttonClasses.section }}
-                    leftSection={<IconDownload size={16} />}
-                    rightSection={<IconChevronDown size={14} />}
-                  >
-                    Export
-                  </Button>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  <Menu.Item onClick={() => exportCompetition(competition.id)}>Podium file (.pod)</Menu.Item>
-                  <Menu.Item onClick={openLegacyExport}>Calculating For Windows files (.zip)…</Menu.Item>
-                </Menu.Dropdown>
-              </Menu>
-            </Group>
-          }
+          end={buttons}
         />
       </PageHero>
       <Container size="lg">
