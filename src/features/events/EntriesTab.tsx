@@ -219,7 +219,7 @@ export function EntriesTab({ event }: { event: CompEvent }) {
                         )}
                       </div>
                       <div className={rowClasses.club}>{entryClub(entry, skaters)}</div>
-                      <Group gap={2} wrap="nowrap" className={rowClasses.end}>
+                      <Group gap={2} wrap="nowrap" className={`${rowClasses.end}`}>
                         <ActionIcon
                           variant="subtle"
                           color="gray"

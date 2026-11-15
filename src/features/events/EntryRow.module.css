@@ -1,10 +1,21 @@
-/* One entry in a skating-order list: grip, number, name, club and whatever ends the row (buttons or a note). */
+/* One row of a draggable list (an entry in a skating order, a judge on the panel): grip, number, name, club and
+   whatever ends the row (buttons or a note). */
 .row {
   display: grid;
   grid-template-columns: auto 28px minmax(0, 1fr) 180px auto;
   grid-template-areas: 'handle number who club end';
   align-items: center;
   column-gap: var(--mantine-spacing-sm);
+}
+
+/* A row with no club (a judge). */
+.plain {
+  grid-template-columns: auto 32px minmax(0, 1fr) auto;
+  grid-template-areas: 'handle number who end';
+}
+
+.plain .number {
+  text-align: left;
 }
 
 .handle {
@@ -58,20 +69,36 @@
   color: var(--mantine-color-dimmed);
 }
 
-/* Phones: the name gets the row's full width and wraps rather than being cut short; the club goes under it,
-   beside whatever ends the row. */
+/* Phones: the name, the club and whatever ends the row each get a line of their own, the full width of the
+   row, and wrap rather than being cut short. */
 @media (max-width: 36em) {
   .row {
-    grid-template-columns: auto 22px minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(22px, auto) minmax(0, 1fr);
     grid-template-areas:
-      'handle number who who'
-      'handle number club end';
-    column-gap: 6px;
+      'handle number who'
+      'handle number club'
+      'handle number end';
+    align-items: start;
+    column-gap: 8px;
+  }
+
+  .handle {
+    align-self: center;
   }
 
   .name,
-  .members {
+  .members,
+  .club {
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+
+  .end {
+    justify-self: start;
+  }
+
+  .note {
+    width: auto;
+    text-align: left;
   }
 }
