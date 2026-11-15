@@ -154,7 +154,8 @@
     flex-shrink: 0;
   }
 
-  /* The last detail (a venue, a list of dances) is the one that gives way. */
+  /* The last detail (a venue, a list of dances, a line of plain text) is the one that gives way. */
+  .hero .meta > :last-child,
   .hero .metaItem:last-child {
     flex-shrink: 1;
     min-width: 0;
