@@ -81,10 +81,12 @@ export function ScoringToolbar(props: {
   canClear: boolean;
   onClear: () => void;
   onToggleLock: () => void;
+  /** Phones: stacked inside the options sheet, without Mark final (which sits with the marks). */
+  sheet?: boolean;
 }) {
-  const { view, locked } = props;
+  const { view, locked, sheet } = props;
   return (
-    <div className={classes.toolbar}>
+    <div className={classes.toolbar} data-sheet={sheet || undefined}>
       <div className={classes.group}>
         <span className={classes.label}>View by</span>
         <Segmented
@@ -142,17 +144,33 @@ export function ScoringToolbar(props: {
         >
           Clear marks
         </Button>
-        <Button
-          size="md"
-          color="green"
-          variant={locked ? 'transparent' : 'filled'}
-          className={locked ? classes.unlock : undefined}
-          leftSection={locked ? <IconLockOpen size={16} /> : <IconLock size={16} />}
-          onClick={props.onToggleLock}
-        >
-          {locked ? 'Unlock' : 'Mark final'}
-        </Button>
+        {!sheet && <LockButton locked={locked} onToggle={props.onToggleLock} />}
       </div>
     </div>
+  );
+}
+
+/** Mark final, or Unlock once the event is final. */
+export function LockButton({
+  locked,
+  onToggle,
+  fullWidth,
+}: {
+  locked: boolean;
+  onToggle: () => void;
+  fullWidth?: boolean;
+}) {
+  return (
+    <Button
+      size="md"
+      color="green"
+      fullWidth={fullWidth}
+      variant={locked ? 'transparent' : 'filled'}
+      className={locked ? classes.unlock : undefined}
+      leftSection={locked ? <IconLockOpen size={16} /> : <IconLock size={16} />}
+      onClick={onToggle}
+    >
+      {locked ? 'Unlock' : 'Mark final'}
+    </Button>
   );
 }

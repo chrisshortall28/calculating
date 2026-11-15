@@ -1,0 +1,35 @@
+/* Phones: the picker and the options button stay in view under the app header while the marks scroll. */
+.compact {
+  --scoring-bar: 56px;
+  --scoring-sticky-top: calc(var(--app-shell-header-offset, 0px) + var(--scoring-bar));
+}
+
+.topBar {
+  position: sticky;
+  top: var(--app-shell-header-offset, 0px);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  height: var(--scoring-bar);
+  background: var(--mantine-color-body);
+  /* Edge to edge across the screen (the margins are measured in ScoringTab), its chips in line with the
+     marks below. */
+  margin-left: calc(-1 * var(--bleed-left, 0px));
+  margin-right: calc(-1 * var(--bleed-right, 0px));
+  padding-left: var(--bleed-left, 0px);
+  padding-right: var(--bleed-right, 0px);
+  border-bottom: 1px solid var(--mantine-color-default-border);
+}
+
+/* The marks: a plain surface rather than a Card, whose clipping would stop the headings sticking. */
+.surface {
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-body);
+}
+
+.note {
+  padding: var(--mantine-spacing-xs);
+  border-bottom: 1px solid var(--mantine-color-default-border);
+}

@@ -97,6 +97,41 @@
   margin-left: auto;
 }
 
+/* Phones: the options stack inside a bottom sheet, each control the sheet's full width. */
+.toolbar[data-sheet] {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background: none;
+}
+
+.toolbar[data-sheet] .group {
+  padding-inline: 0;
+  border-left: none;
+}
+
+.toolbar[data-sheet] .segmented {
+  display: flex;
+}
+
+.toolbar[data-sheet] .segment {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-inline: 4px;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+.toolbar[data-sheet] .actions {
+  margin-left: 0;
+}
+
+.toolbar[data-sheet] .actions > * {
+  flex: 1;
+}
+
 /* Unlock: the Mark final button faded once the event is final. */
 .unlock {
   background: light-dark(#e3f2e7, rgba(47, 158, 68, 0.18));

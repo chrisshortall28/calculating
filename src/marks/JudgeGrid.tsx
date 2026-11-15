@@ -30,6 +30,8 @@ interface Props {
   focusKey?: string;
   /** segmentId -> the entry that skates it first, when the start order rotates; marked in that cell. */
   firstEntryIds?: Map<string, Id>;
+  /** Phone layout: a block per entry, its name, total and rank on one line and the marks beneath. */
+  compact?: boolean;
 }
 
 /**
@@ -54,6 +56,7 @@ export function JudgeGrid(props: Props) {
     focusedInputRef,
     focusKey,
     firstEntryIds,
+    compact,
   } = props;
   const columns = segments.flatMap((s) => s.markKeys.map((key) => ({ key, segment: s })));
   const cols = columns.length;
@@ -88,6 +91,81 @@ export function JudgeGrid(props: Props) {
 
   const multi = segments.some((s) => s.markKeys.length > 1);
   const activeColumn = active ? columns[active.col] : undefined;
+
+  const markCell = (row: GridRow, r: number, col: number) => {
+    const { key, segment } = columns[col]!;
+    const cell = { row: r, col };
+    const part = markKeyLabel(key);
+    return (
+      <>
+        {firstEntryIds?.get(segment.id) === row.id && segment.markKeys[0] === key && (
+          <span className={classes.firstMark} title="Skates first in this part" />
+        )}
+        <MarkCell
+          value={getValue(key, judgeId, row.id)}
+          readOnly={readOnly}
+          autoAdvance={autoAdvance}
+          inputMode={numberPad ? 'none' : 'decimal'}
+          label={`${row.label}, judge ${judgeNo}, ${segment.name}${part ? ` ${part}` : ''}`}
+          inputRef={(el) => {
+            const id = `${r}:${col}`;
+            if (el) refs.current.set(id, el);
+            else refs.current.delete(id);
+          }}
+          onCommit={(t) => onCommit(key, judgeId, row.id, t)}
+          onNavigate={(intent) => navigate(cell, intent)}
+          onFocus={() => {
+            setActive(cell);
+            if (focusedInputRef) focusedInputRef.current = refs.current.get(`${r}:${col}`) ?? null;
+          }}
+        />
+      </>
+    );
+  };
+
+  if (compact) {
+    // Up to seven boxes fit across a phone; more (figures plus both programmes) wrap onto two lines.
+    const perLine = cols <= 7 ? cols : Math.ceil(cols / 2);
+    return (
+      <div className={classes.blocks} style={{ '--cols': perLine } as React.CSSProperties}>
+        <div className={`${classes.blockRow} ${classes.blockHead}`}>
+          {columns.map(({ key, segment }, col) => (
+            <span key={key} className={active?.col === col ? classes.activeCol : undefined}>
+              {segment.name} {markKeyLabel(key)}
+            </span>
+          ))}
+        </div>
+        {rows.map((row, r) => (
+          <div key={row.id} className={classes.block} data-active={active?.row === r || undefined}>
+            <div className={classes.blockName}>
+              <span className={classes.blockNo}>{r + 1}</span>
+              <Text span size="sm" fw={500} truncate>
+                {row.label}
+              </Text>
+              {row.sub && (
+                <Text span size="xs" c="dimmed" truncate>
+                  {row.sub}
+                </Text>
+              )}
+              {sums.has(row.id) && (
+                <span className={classes.blockTotal}>
+                  Total {formatSum(sums.get(row.id)!)}
+                  {ranks?.has(row.id) && ` · Rank ${ranks.get(row.id)}`}
+                </span>
+              )}
+            </div>
+            <div className={classes.blockRow}>
+              {columns.map(({ key }, col) => (
+                <span key={key} className={classes.blockCell}>
+                  {markCell(row, r, col)}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className={classes.wrap}>
@@ -152,35 +230,12 @@ export function JudgeGrid(props: Props) {
                 )}
               </td>
               {columns.map(({ key, segment }, col) => {
-                const cell = { row: r, col };
-                const part = markKeyLabel(key);
                 return (
                   <td
                     key={key}
                     className={`${segment.markKeys[0] === key ? classes.judgeStart : ''} ${classes.markTd}`}
                   >
-                    {firstEntryIds?.get(segment.id) === row.id && segment.markKeys[0] === key && (
-                      <span className={classes.firstMark} title="Skates first in this part" />
-                    )}
-                    <MarkCell
-                      value={getValue(key, judgeId, row.id)}
-                      readOnly={readOnly}
-                      autoAdvance={autoAdvance}
-                      inputMode={numberPad ? 'none' : 'decimal'}
-                      label={`${row.label}, judge ${judgeNo}, ${segment.name}${part ? ` ${part}` : ''}`}
-                      inputRef={(el) => {
-                        const id = `${r}:${col}`;
-                        if (el) refs.current.set(id, el);
-                        else refs.current.delete(id);
-                      }}
-                      onCommit={(t) => onCommit(key, judgeId, row.id, t)}
-                      onNavigate={(intent) => navigate(cell, intent)}
-                      onFocus={() => {
-                        setActive(cell);
-                        if (focusedInputRef)
-                          focusedInputRef.current = refs.current.get(`${r}:${col}`) ?? null;
-                      }}
-                    />
+                    {markCell(row, r, col)}
                   </td>
                 );
               })}
