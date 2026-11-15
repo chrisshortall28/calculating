@@ -196,6 +196,7 @@ export function CompetitionPdfModal({
       <Stack>
         <SegmentedControl
           fullWidth
+          className="toggle-fit"
           value={section}
           onChange={(v) => setSection(v as Section)}
           data={[
@@ -211,7 +212,8 @@ export function CompetitionPdfModal({
             <Stack>
               <Text size="sm">
                 A programme for spectators: a cover in the club colours, a welcome page listing the events,
-                then the skaters in each event in skating order with its dances.
+                then the skaters in each event in skating order with its dances. Its pages are A5, half the
+                size of the other PDFs.
               </Text>
               <Textarea
                 label="Welcome message"

@@ -7,10 +7,13 @@ import { coverSwooshes } from './coverSwooshes';
 import { colourBand, eventBand, palette, ruledTable, tableHeadingStyle } from './theme';
 
 // A spectators' programme: a club-coloured cover, a welcome page listing the events, then each
-// event's skaters in skating order with its dances. It never names the judges or shows marks.
+// event's skaters in skating order with its dances. It never names the judges or shows marks. It is an A5
+// booklet (the other PDFs are A4), so its type and spacing are set for the smaller page.
 
-const PAGE = { width: 595.28, height: 841.89 }; // A4 in points
-const MARGIN = 48;
+const PAGE = { width: 419.53, height: 595.28 }; // A5 in points
+/** The cover artwork is drawn on an A4 page and scaled to fit: the two sizes have the same shape. */
+const ART = { width: 595.28, height: 841.89 };
+const MARGIN = 32;
 
 type Margins = [number, number, number, number];
 
@@ -41,7 +44,7 @@ const anchor = (d: EventData) => `event-${d.event.id}`;
 function coverBackground(c: Competition): Content {
   const { primary, secondary, onPrimary } = palette(c);
   return {
-    svg: coverSwooshes(PAGE.width, PAGE.height, {
+    svg: coverSwooshes(ART.width, ART.height, {
       background: primary,
       accent: secondary,
       contrast: onPrimary,
@@ -57,21 +60,21 @@ function cover(c: Competition): Content[] {
   return [
     {
       stack: [
-        { text: 'PROGRAMME', fontSize: 13, bold: true, characterSpacing: 6, color: secondary },
+        { text: 'PROGRAMME', fontSize: 10, bold: true, characterSpacing: 4.5, color: secondary },
         {
           text: c.name,
-          fontSize: c.name.length > 40 ? 28 : 36,
+          fontSize: c.name.length > 40 ? 20 : 26,
           bold: true,
           color: onPrimary,
           lineHeight: 1.05,
-          margin: [0, 8, 0, 14],
+          margin: [0, 6, 0, 10],
         },
-        ...(date ? [{ text: date, fontSize: 15, color: onPrimary }] : []),
+        ...(date ? [{ text: date, fontSize: 11, color: onPrimary }] : []),
         ...(c.venue
-          ? [{ text: c.venue, fontSize: 15, color: onPrimary, margin: [0, 2, 0, 0] as Margins }]
+          ? [{ text: c.venue, fontSize: 11, color: onPrimary, margin: [0, 2, 0, 0] as Margins }]
           : []),
       ],
-      absolutePosition: { x: MARGIN, y: 560 },
+      absolutePosition: { x: MARGIN, y: 396 },
     },
   ];
 }
@@ -81,8 +84,8 @@ function cover(c: Competition): Content[] {
 // ---------------------------------------------------------------------------
 
 /** A short, thick rule in the accent colour under a heading. */
-const accentRule = (color: string, margin: Margins = [0, 6, 0, 16]): Content => ({
-  canvas: [{ type: 'line', x1: 0, y1: 0, x2: 56, y2: 0, lineWidth: 3, lineColor: color }],
+const accentRule = (color: string, margin: Margins = [0, 5, 0, 12]): Content => ({
+  canvas: [{ type: 'line', x1: 0, y1: 0, x2: 44, y2: 0, lineWidth: 2.5, lineColor: color }],
   margin,
 });
 
@@ -91,22 +94,24 @@ function welcomePage(c: Competition, events: EventData[]): Content[] {
   const message = (c.welcome?.trim() || defaultWelcome(c)).split(/\n\s*\n/);
   const cellPad = (i: number) => (i === 0 ? 0 : 4);
   return [
-    { text: 'Welcome', fontSize: 30, bold: true, color: ink },
+    { text: 'Welcome', fontSize: 24, bold: true, color: ink },
     accentRule(accent),
     ...message.map((p) => ({
       text: p.trim(),
-      fontSize: 12,
+      fontSize: 10.5,
       lineHeight: 1.35,
-      margin: [0, 0, 0, 10] as Margins,
+      margin: [0, 0, 0, 8] as Margins,
     })),
-    { text: 'Events', fontSize: 20, bold: true, color: ink, margin: [0, 18, 0, 0] },
-    accentRule(accent, [0, 6, 0, 10]),
+    { text: 'Events', fontSize: 16, bold: true, color: ink, margin: [0, 12, 0, 0] },
+    accentRule(accent, [0, 5, 0, 8]),
     events.length === 0
       ? { text: 'The events will be announced on the day.', italics: true, color: '#555' }
       : {
           table: {
             headerRows: 1,
-            widths: ['auto', '*', 'auto', 34],
+            // An event's name and its dances stay together when the list runs on to another page.
+            dontBreakRows: true,
+            widths: ['auto', '*', 50, 26],
             body: [
               [
                 { text: '', fillColor: primary },
@@ -120,11 +125,11 @@ function welcomePage(c: Competition, events: EventData[]): Content[] {
                   stack: [
                     { text: d.event.name, bold: true, linkToDestination: anchor(d) },
                     ...(d.segments.length
-                      ? [{ text: danceNames(d).join(' · '), fontSize: 9, color: '#555' }]
+                      ? [{ text: danceNames(d).join(' · '), fontSize: 8, color: '#555' }]
                       : []),
                   ],
                 },
-                { text: entryCount(d.event.entryType, d.rows.length), color: '#555' },
+                { text: entryCount(d.event.entryType, d.rows.length), color: '#555', noWrap: true },
                 {
                   pageReference: anchor(d),
                   alignment: 'right',
@@ -191,7 +196,7 @@ function eventSection(c: Competition, d: EventData): Content {
       : {
           table: {
             headerRows: 1,
-            widths: [30, '*', '*', ...(rotating ? [110] : [])],
+            widths: [28, '*', '*', ...(rotating ? [78] : [])],
             body: [
               [
                 { text: 'Order', style: 'progTh', alignment: 'center' },
@@ -200,16 +205,16 @@ function eventSection(c: Competition, d: EventData): Content {
                 ...(rotating ? [{ text: 'Skates first', style: 'progTh' }] : []),
               ],
               ...d.rows.map((r, i): TableCell[] => [
-                { text: String(i + 1), bold: true, color: ink, alignment: 'center', fontSize: 12 },
+                { text: String(i + 1), bold: true, color: ink, alignment: 'center', fontSize: 11 },
                 {
                   stack: [
-                    { text: r.name, bold: true, fontSize: 11 },
-                    ...(r.members ? [{ text: r.members, fontSize: 8.5, color: '#555' }] : []),
+                    { text: r.name, bold: true, fontSize: 10 },
+                    ...(r.members ? [{ text: r.members, fontSize: 8, color: '#555' }] : []),
                   ],
                 },
                 { text: r.club, color: '#444' },
                 ...(rotating
-                  ? [{ text: (startsBy.get(i) ?? []).join(', '), bold: true, color: ink, fontSize: 9 }]
+                  ? [{ text: (startsBy.get(i) ?? []).join(', '), bold: true, color: ink, fontSize: 8 }]
                   : []),
               ]),
             ],
@@ -224,7 +229,7 @@ function eventPages(c: Competition, events: EventData[]): Content[] {
   return events.map((d, i) => ({
     stack: [eventSection(c, d)],
     unbreakable: true,
-    margin: [0, i === 0 ? 0 : 26, 0, 0] as Margins,
+    margin: [0, i === 0 ? 0 : 18, 0, 0] as Margins,
     ...(i === 0 ? { pageBreak: 'before' as const } : {}),
   }));
 }
@@ -236,8 +241,8 @@ function eventPages(c: Competition, events: EventData[]): Content[] {
 export function programmeDocument(c: Competition, events: EventData[]): TDocumentDefinitions {
   const { ink } = palette(c);
   return {
-    pageSize: 'A4',
-    pageMargins: [MARGIN, 56, MARGIN, 48],
+    pageSize: 'A5',
+    pageMargins: [MARGIN, 44, MARGIN, 40],
     // Inner pages carry a thin band of the club colours across the top.
     background: (page) => (page === 1 ? coverBackground(c) : colourBand(c, PAGE.width)),
     header: (page) =>
@@ -248,19 +253,19 @@ export function programmeDocument(c: Competition, events: EventData[]): TDocumen
             fontSize: 8,
             color: ink,
             bold: true,
-            margin: [MARGIN, 24, MARGIN, 0] as Margins,
+            margin: [MARGIN, 20, MARGIN, 0] as Margins,
           },
     footer: (page) =>
       page === 1
         ? null
         : {
             columns: [
-              { text: 'Created with Podium', fontSize: 8, color: '#888' },
-              { text: String(page), fontSize: 9, color: ink, bold: true, alignment: 'right' },
+              { text: 'Created with Podium', fontSize: 7, color: '#888' },
+              { text: String(page), fontSize: 8, color: ink, bold: true, alignment: 'right' },
             ],
-            margin: [MARGIN, 12, MARGIN, 0] as Margins,
+            margin: [MARGIN, 10, MARGIN, 0] as Margins,
           },
-    defaultStyle: { fontSize: 10 },
+    defaultStyle: { fontSize: 9 },
     styles: { progTh: tableHeadingStyle },
     content: [...cover(c), { stack: welcomePage(c, events), pageBreak: 'before' }, ...eventPages(c, events)],
   };

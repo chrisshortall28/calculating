@@ -4,6 +4,7 @@ import { IconTrash } from '@tabler/icons-react';
 import { useState, type ReactNode } from 'react';
 import { InlineEdit } from './InlineEdit';
 import { RosterNote } from './RosterNote';
+import tableClasses from './RosterTable.module.css';
 
 interface Item {
   id: string;
@@ -65,12 +66,12 @@ export function NameListTab({
             <Button type="submit">Add {noun}</Button>
           </Group>
         </form>
-        <Table striped highlightOnHover>
+        <Table striped highlightOnHover className={tableClasses.table}>
           <Table.Thead>
             <Table.Tr>
               <Table.Th>Name</Table.Th>
-              <Table.Th w={80}>{usageLabel}</Table.Th>
-              <Table.Th w={50} />
+              <Table.Th className={tableClasses.count}>{usageLabel}</Table.Th>
+              <Table.Th className={tableClasses.remove} />
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>

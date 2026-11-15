@@ -133,6 +133,10 @@ describe('programmeDocument', () => {
     );
   });
 
+  it('is an A5 booklet, unlike the A4 judge sheets and results', () => {
+    expect(programmeDocument(competition, events).pageSize).toBe('A5');
+  });
+
   it('renders to a PDF', async () => {
     const blob = await pdfBlob(
       programmeDocument({ ...competition, secondaryColor: '#ffffff' }, [...events, rotating]),

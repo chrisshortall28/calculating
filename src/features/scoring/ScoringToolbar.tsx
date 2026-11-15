@@ -75,15 +75,18 @@ export function ScoringToolbar(props: {
   autoAdvance: boolean;
   onAutoAdvance: (v: boolean) => void;
   numberPad: boolean;
-  onNumberPad: (v: boolean) => void;
+  /** Left out where the number pad is not offered (phones), which hides its switch. */
+  onNumberPad?: (v: boolean) => void;
   locked: boolean;
   canClear: boolean;
   onClear: () => void;
   onToggleLock: () => void;
+  /** Phones: stacked inside the options sheet, without Mark final (which sits with the marks). */
+  sheet?: boolean;
 }) {
-  const { view, locked } = props;
+  const { view, locked, sheet } = props;
   return (
-    <div className={classes.toolbar}>
+    <div className={classes.toolbar} data-sheet={sheet || undefined}>
       <div className={classes.group}>
         <span className={classes.label}>View by</span>
         <Segmented
@@ -121,7 +124,14 @@ export function ScoringToolbar(props: {
             onChange={props.onAutoAdvance}
             disabled={locked}
           />
-          <Chip label="Number pad" checked={props.numberPad} onChange={props.onNumberPad} disabled={locked} />
+          {props.onNumberPad && (
+            <Chip
+              label="Number pad"
+              checked={props.numberPad}
+              onChange={props.onNumberPad}
+              disabled={locked}
+            />
+          )}
         </div>
       </div>
       <div className={classes.actions}>
@@ -134,17 +144,33 @@ export function ScoringToolbar(props: {
         >
           Clear marks
         </Button>
-        <Button
-          size="md"
-          color="green"
-          variant={locked ? 'transparent' : 'filled'}
-          className={locked ? classes.unlock : undefined}
-          leftSection={locked ? <IconLockOpen size={16} /> : <IconLock size={16} />}
-          onClick={props.onToggleLock}
-        >
-          {locked ? 'Unlock' : 'Mark final'}
-        </Button>
+        {!sheet && <LockButton locked={locked} onToggle={props.onToggleLock} />}
       </div>
     </div>
+  );
+}
+
+/** Mark final, or Unlock once the event is final. */
+export function LockButton({
+  locked,
+  onToggle,
+  fullWidth,
+}: {
+  locked: boolean;
+  onToggle: () => void;
+  fullWidth?: boolean;
+}) {
+  return (
+    <Button
+      size="md"
+      color="green"
+      fullWidth={fullWidth}
+      variant={locked ? 'transparent' : 'filled'}
+      className={locked ? classes.unlock : undefined}
+      leftSection={locked ? <IconLockOpen size={16} /> : <IconLock size={16} />}
+      onClick={onToggle}
+    >
+      {locked ? 'Unlock' : 'Mark final'}
+    </Button>
   );
 }

@@ -105,6 +105,122 @@
   text-align: center;
 }
 
+/* Phone layout: a block per entry — its name on one line, then a row of mark boxes (one per judge, or per
+   part in the by-judge view) sharing the width. No sideways scrolling. */
+.blocks {
+  --cols: var(--judges);
+  font-variant-numeric: tabular-nums;
+}
+
+.blockRow {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  gap: 4px;
+  align-items: center;
+  padding-inline: var(--mantine-spacing-xs);
+}
+
+.blockRow + .blockRow {
+  margin-top: 4px;
+}
+
+/* Rows are labelled (A, B) only where a judge gives more than one mark. */
+.blockKey {
+  display: none;
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 600;
+  text-align: center;
+}
+
+.blocks[data-multi] .blockRow {
+  grid-template-columns: 16px repeat(var(--cols), minmax(0, 1fr));
+}
+
+.blocks[data-multi] .blockKey {
+  display: block;
+}
+
+/* The column headings stay in view under the picker while the list scrolls. */
+.blockHead {
+  position: sticky;
+  top: var(--scoring-sticky-top, 0px);
+  z-index: 2;
+  padding-block: 6px;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+  background: var(--mantine-color-body);
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+}
+
+/* Follow the rounded top corners of the surface it sits in, rather than squaring them off. */
+.blockHead {
+  border-radius: calc(var(--mantine-radius-md) - 1px) calc(var(--mantine-radius-md) - 1px) 0 0;
+}
+
+.blockHead > span {
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.block {
+  padding-block: 8px;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+}
+
+.block:last-child {
+  border-bottom: none;
+}
+
+.block[data-active] {
+  background: light-dark(var(--mantine-color-blue-0), rgba(34, 139, 230, 0.12));
+}
+
+.blockName {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  padding-inline: var(--mantine-spacing-xs);
+  margin-bottom: 4px;
+}
+
+.blockNo {
+  flex: none;
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 700;
+}
+
+.block[data-active] .blockNo {
+  color: var(--mantine-color-blue-filled);
+}
+
+/* The by-judge view's total and rank, at the end of the name line. */
+.blockTotal {
+  flex: none;
+  margin-left: auto;
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-xs);
+  white-space: nowrap;
+}
+
+.blocks .cell {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0;
+  /* Clear of the sticky picker and headings when the browser scrolls a focused box into view. */
+  scroll-margin-top: calc(var(--scoring-sticky-top, 0px) + 80px);
+}
+
+.blockCell {
+  position: relative;
+  display: block;
+}
+
 /* The judge-sheet view's Rank column, as the results tables show a judge's ranking. */
 .rank {
   color: var(--mantine-color-dimmed);

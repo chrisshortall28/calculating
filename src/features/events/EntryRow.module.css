@@ -1,0 +1,105 @@
+/* One row of a draggable list (an entry in a skating order, a judge on the panel): grip, number, name, club and
+   whatever ends the row (buttons or a note). */
+.row {
+  display: grid;
+  grid-template-columns: auto 28px minmax(0, 1fr) 180px auto;
+  grid-template-areas: 'handle number who club end';
+  align-items: center;
+  column-gap: var(--mantine-spacing-sm);
+}
+
+/* A row with no club (a judge). */
+.plain {
+  grid-template-columns: auto 32px minmax(0, 1fr) auto;
+  grid-template-areas: 'handle number who end';
+}
+
+.plain .number {
+  text-align: left;
+}
+
+.handle {
+  grid-area: handle;
+  display: flex;
+}
+
+.number {
+  grid-area: number;
+  text-align: right;
+  font-weight: 700;
+  color: var(--mantine-color-dimmed);
+}
+
+.who {
+  grid-area: who;
+  min-width: 0;
+}
+
+.name {
+  font-weight: 500;
+}
+
+.members {
+  font-size: var(--mantine-font-size-xs);
+  color: var(--mantine-color-dimmed);
+}
+
+.club {
+  grid-area: club;
+  font-size: var(--mantine-font-size-sm);
+  color: var(--mantine-color-dimmed);
+}
+
+.name,
+.members,
+.club {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.end {
+  grid-area: end;
+}
+
+.note {
+  width: 110px;
+  text-align: right;
+  font-size: var(--mantine-font-size-xs);
+  color: var(--mantine-color-dimmed);
+}
+
+/* Phones: the name, the club and whatever ends the row each get a line of their own, the full width of the
+   row, and wrap rather than being cut short. */
+@media (max-width: 36em) {
+  .row {
+    grid-template-columns: auto minmax(22px, auto) minmax(0, 1fr);
+    grid-template-areas:
+      'handle number who'
+      'handle number club'
+      'handle number end';
+    align-items: start;
+    column-gap: 8px;
+  }
+
+  .handle {
+    align-self: center;
+  }
+
+  .name,
+  .members,
+  .club {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .end {
+    justify-self: start;
+    margin-top: 6px;
+  }
+
+  .note {
+    width: auto;
+    text-align: left;
+  }
+}

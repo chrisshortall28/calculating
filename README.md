@@ -25,7 +25,7 @@ and results PDFs ready to print.
 - 🔍 **Every tie explained.** The Results tab shows which rule decided each tied place and the
   numbers behind it, with a link to the CIPA manual.
 - 🖨️ **PDFs in one click.** Judge sheets; standard, with-marks and guest-judges results; and a
-  programme for spectators with a club-coloured cover and each event's skating order.
+  programme for spectators (an A5 booklet) with a club-coloured cover and each event's skating order.
 - 📴 **Works offline.** Podium is an installable app that runs entirely in the browser, with no
   server and no sign-in. Your data stays on your device.
 - 💾 **Backup and transfer.** Export a competition to a `.pod` file and import it on another

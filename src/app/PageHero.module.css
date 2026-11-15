@@ -17,10 +17,41 @@
   padding-bottom: var(--mantine-spacing-lg);
 }
 
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mantine-spacing-xs);
+  margin-bottom: 6px;
+}
+
 .crumbs {
   font-size: var(--mantine-font-size-xs);
-  margin-bottom: 6px;
+  flex: 1;
   min-width: 0;
+}
+
+/* A long crumb (the competition's name) is cut short rather than wrapping. */
+.crumb {
+  min-width: 0;
+}
+
+.crumb:first-child {
+  flex: none;
+}
+
+.crumbLink {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Only on phones, where the tabs fill their row and leave no room for buttons beside them. */
+.tools {
+  display: none;
+  flex: none;
+  gap: 6px;
 }
 
 /* On phones the current page's crumb is dropped: it repeats the title just below and overflows the banner. */
@@ -66,20 +97,6 @@
   flex: 1;
 }
 
-@media (max-width: 48em) {
-  .titleRow {
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-
-  /* Whatever sits beside the title drops underneath it. */
-  .titleRow > .title {
-    order: -1;
-    flex-basis: 100%;
-    margin-bottom: 4px;
-  }
-}
-
 .title {
   min-width: 0;
   margin: 0;
@@ -100,6 +117,59 @@
 
 .metaItem svg {
   color: var(--club-secondary);
+}
+
+/* Phones: a compact band, so the page's content starts near the top of the screen. */
+@media (max-width: 48em) {
+  .inner {
+    padding-top: var(--mantine-spacing-xs);
+    padding-bottom: var(--mantine-spacing-xs);
+  }
+
+  .top {
+    margin-bottom: 2px;
+    min-height: 36px;
+  }
+
+  .tools {
+    display: flex;
+  }
+
+  .titleRow {
+    gap: 2px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  /* Badges and details share one line; details that don't fit are cut short. */
+  .hero .meta {
+    flex-wrap: nowrap;
+    gap: var(--mantine-spacing-xs);
+    font-size: var(--mantine-font-size-xs);
+  }
+
+  .hero .meta > * {
+    flex-shrink: 0;
+  }
+
+  /* The last detail (a venue, a list of dances, a line of plain text) is the one that gives way. */
+  .hero .meta > :last-child,
+  .hero .metaItem:last-child {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .metaItem svg {
+    flex: none;
+  }
+
+  .metaItem span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 /* Tabs along the bottom of the band */
@@ -160,4 +230,39 @@
 .tabsEnd {
   flex: none;
   padding-bottom: 8px;
+}
+
+/* Phones: every tab is on screen at once, sharing the row equally, each with its icon above its name. */
+@media (max-width: 48em) {
+  .tabsList {
+    gap: 0;
+    overflow: visible;
+  }
+
+  .tab {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 50px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    padding: 6px 1px 4px;
+    font-size: clamp(10px, 2.7vw, 12px);
+    letter-spacing: 0;
+    border-bottom-width: 3px;
+  }
+
+  .tabSection {
+    margin: 0;
+  }
+
+  .tabLabel {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tabsEnd {
+    display: none;
+  }
 }

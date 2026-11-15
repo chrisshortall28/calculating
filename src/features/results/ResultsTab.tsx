@@ -52,56 +52,58 @@ export function ResultsTab({ event }: { event: CompEvent; competition: Competiti
               swaps,
             })}
           </Text>
-          <Table striped>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th w={60}>Place</Table.Th>
-                <Table.Th>{entryHeading[event.entryType]}</Table.Th>
-                <Table.Th>Club</Table.Th>
-                <Table.Th ta="center" title="The CIPA rule that decided a tied place">
-                  Rule
-                </Table.Th>
-                <Table.Th ta="center">Majority victories</Table.Th>
-                <Table.Th ta="right">Total sums</Table.Th>
-                {event.judgeIds.map((j, ji) => (
-                  <Table.Th
-                    key={j}
-                    ta="center"
-                    title={`${judgeMap.get(j)?.name ?? ''}${swapsText(swaps, ji + 1) ? ` (${swapsText(swaps, ji + 1)})` : ''} — ranking by sum`}
-                  >
-                    J{ji + 1}
+          <Table.ScrollContainer minWidth={620}>
+            <Table striped>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th w={60}>Place</Table.Th>
+                  <Table.Th>{entryHeading[event.entryType]}</Table.Th>
+                  <Table.Th>Club</Table.Th>
+                  <Table.Th ta="center" title="The CIPA rule that decided a tied place">
+                    Rule
                   </Table.Th>
-                ))}
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {result.overall.map((o) => {
-                const entry = entryMap.get(o.entryId)!;
-                return (
-                  <Table.Tr key={o.entryId}>
-                    <Table.Td fw={700} fz="lg">
-                      {o.place}
-                      {o.tied && '='}
-                    </Table.Td>
-                    <Table.Td fw={500}>{entryName(entry, skaters)}</Table.Td>
-                    <Table.Td c="dimmed">{entryClub(entry, skaters)}</Table.Td>
-                    <Table.Td ta="center">
-                      <RuleBadge rule={o.rule} />
-                    </Table.Td>
-                    <Table.Td ta="center" fw={600}>
-                      {formatVictories(o.majorityVictories)}
-                    </Table.Td>
-                    <Table.Td ta="right">{formatSum(o.totalSum)}</Table.Td>
-                    {o.judgeRanks.map((rank, i) => (
-                      <Table.Td key={i} ta="center" c="dimmed">
-                        {rank}
+                  <Table.Th ta="center">Majority victories</Table.Th>
+                  <Table.Th ta="right">Total sums</Table.Th>
+                  {event.judgeIds.map((j, ji) => (
+                    <Table.Th
+                      key={j}
+                      ta="center"
+                      title={`${judgeMap.get(j)?.name ?? ''}${swapsText(swaps, ji + 1) ? ` (${swapsText(swaps, ji + 1)})` : ''} — ranking by sum`}
+                    >
+                      J{ji + 1}
+                    </Table.Th>
+                  ))}
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {result.overall.map((o) => {
+                  const entry = entryMap.get(o.entryId)!;
+                  return (
+                    <Table.Tr key={o.entryId}>
+                      <Table.Td fw={700} fz="lg">
+                        {o.place}
+                        {o.tied && '='}
                       </Table.Td>
-                    ))}
-                  </Table.Tr>
-                );
-              })}
-            </Table.Tbody>
-          </Table>
+                      <Table.Td fw={500}>{entryName(entry, skaters)}</Table.Td>
+                      <Table.Td c="dimmed">{entryClub(entry, skaters)}</Table.Td>
+                      <Table.Td ta="center">
+                        <RuleBadge rule={o.rule} />
+                      </Table.Td>
+                      <Table.Td ta="center" fw={600}>
+                        {formatVictories(o.majorityVictories)}
+                      </Table.Td>
+                      <Table.Td ta="right">{formatSum(o.totalSum)}</Table.Td>
+                      {o.judgeRanks.map((rank, i) => (
+                        <Table.Td key={i} ta="center" c="dimmed">
+                          {rank}
+                        </Table.Td>
+                      ))}
+                    </Table.Tr>
+                  );
+                })}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
           <TieExplanations steps={result.steps} label={label} />
           {result.judgeTies.length > 0 && (
             <Stack gap={2} mt="md">

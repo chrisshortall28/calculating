@@ -15,13 +15,16 @@ export function SegmentPicker({
   segments,
   value,
   onChange,
+  compact,
 }: {
   segments: PickerSegment[];
   value: string;
   onChange: (id: string) => void;
+  /** Phones: one line of chips that scrolls sideways. */
+  compact?: boolean;
 }) {
   return (
-    <div className={classes.row} role="tablist">
+    <div className={classes.row} role="tablist" data-compact={compact || undefined}>
       {segments.map((s) => (
         <button
           key={s.id}
@@ -30,6 +33,12 @@ export function SegmentPicker({
           aria-selected={s.id === value}
           data-active={s.id === value || undefined}
           className={classes.tab}
+          // Keep the chosen chip on screen when the line of chips scrolls.
+          ref={
+            compact && s.id === value
+              ? (el) => el?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+              : undefined
+          }
           onClick={() => onChange(s.id)}
         >
           <span className={classes.name}>{s.name}</span>

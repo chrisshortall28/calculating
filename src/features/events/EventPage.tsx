@@ -90,6 +90,7 @@ export function EventPage() {
         title={eventTitle(event)}
         titleStart={<NeighbourLink event={prev} direction="previous" compId={compId} tab={tab} />}
         titleEnd={<NeighbourLink event={next} direction="next" compId={compId} tab={tab} />}
+        tools={<EventPdfButton event={event} />}
         badges={
           <>
             <Badge variant="filled" color={entryTypeColor[event.entryType]}>

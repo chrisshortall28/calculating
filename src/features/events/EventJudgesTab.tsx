@@ -30,6 +30,7 @@ import { byId } from '../../domain/entryName';
 import type { CompEvent, Judge } from '../../domain/types';
 import { confirmMarkLoss } from './confirmMarkLoss';
 import { EditLock, isFinal } from './EditLock';
+import rowClasses from './EntryRow.module.css';
 import { ChangeJudgeModal, RenameJudgeModal, resolveJudge } from './PanelJudgeModals';
 import { SectionJudges } from './SectionJudges';
 
@@ -107,55 +108,57 @@ export function EventJudgesTab({ event }: { event: CompEvent }) {
               const isReferee = judge.id === event.refereeId;
               return (
                 <Paper withBorder px="sm" py={6} mb={4}>
-                  <Group wrap="nowrap">
-                    {handle}
-                    <Text fw={700} w={32} c="dimmed">
-                      J{index + 1}
-                    </Text>
-                    <Text style={{ flex: 1 }}>{judge.name}</Text>
-                    {isReferee && (
-                      <Badge variant="light" color="grape">
-                        Referee
-                      </Badge>
-                    )}
-                    <Tooltip label={isReferee ? 'Referee' : 'Make referee'}>
+                  <div className={`${rowClasses.row} ${rowClasses.plain}`}>
+                    <span className={rowClasses.handle}>{handle}</span>
+                    <span className={rowClasses.number}>J{index + 1}</span>
+                    <Group gap="xs" className={rowClasses.who}>
+                      <Text>{judge.name}</Text>
+                      {isReferee && (
+                        <Badge variant="light" color="grape">
+                          Referee
+                        </Badge>
+                      )}
+                    </Group>
+                    <Group gap="xs" wrap="nowrap" className={`${rowClasses.end}`}>
+                      <Tooltip label={isReferee ? 'Referee' : 'Make referee'}>
+                        <ActionIcon
+                          variant="subtle"
+                          color="grape"
+                          onClick={() => setReferee(judge.id)}
+                          disabled={isReferee}
+                          aria-label={`Make ${judge.name} referee`}
+                        >
+                          {isReferee ? <IconFlagFilled size={16} /> : <IconFlag size={16} />}
+                        </ActionIcon>
+                      </Tooltip>
+                      <Tooltip label="Rename">
+                        <ActionIcon
+                          variant="subtle"
+                          onClick={() => setRenaming(judge.id)}
+                          aria-label={`Rename ${judge.name}`}
+                        >
+                          <IconPencil size={16} />
+                        </ActionIcon>
+                      </Tooltip>
+                      <Tooltip label="Change judge">
+                        <ActionIcon
+                          variant="subtle"
+                          onClick={() => setChanging(judge.id)}
+                          aria-label={`Change ${judge.name} to another judge`}
+                        >
+                          <IconArrowsExchange size={16} />
+                        </ActionIcon>
+                      </Tooltip>
                       <ActionIcon
                         variant="subtle"
-                        color="grape"
-                        onClick={() => setReferee(judge.id)}
-                        disabled={isReferee}
-                        aria-label={`Make ${judge.name} referee`}
+                        color="red"
+                        onClick={() => remove(judge.id)}
+                        aria-label="Remove judge from panel"
                       >
-                        {isReferee ? <IconFlagFilled size={16} /> : <IconFlag size={16} />}
+                        <IconTrash size={16} />
                       </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Rename">
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() => setRenaming(judge.id)}
-                        aria-label={`Rename ${judge.name}`}
-                      >
-                        <IconPencil size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Change judge">
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() => setChanging(judge.id)}
-                        aria-label={`Change ${judge.name} to another judge`}
-                      >
-                        <IconArrowsExchange size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                    <ActionIcon
-                      variant="subtle"
-                      color="red"
-                      onClick={() => remove(judge.id)}
-                      aria-label="Remove judge from panel"
-                    >
-                      <IconTrash size={16} />
-                    </ActionIcon>
-                  </Group>
+                    </Group>
+                  </div>
                 </Paper>
               );
             }}

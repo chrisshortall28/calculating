@@ -93,7 +93,7 @@ event has some (`ORDERS_FORMAT_VERSION`). Legacy files keep one start-order list
 before any `await`. An event's PDF button (beside its tabs) opens `EventPdfModal`, a launchpad that stays open
 and offers skating order (`skatingOrder.ts`), judge sheets (`JudgeSheetOptions`: combined or a sheet per part,
 any subset of parts) and the three results styles (for the whole event, or from one kind of part alone once those parts are marked: `domain/resultScopes.ts`, `pdf/scopedResults.ts`), each with a conceptual preview (`PdfPreviews.tsx`, drawn
-CSS, not the PDF). The competition's PDFs button opens the matching `CompetitionPdfModal`: the spectators' programme, plus
+CSS, not the PDF). The competition's PDFs button opens the matching `CompetitionPdfModal`: the spectators' programme (`programme.ts`; A5, where every other PDF is A4), plus
 skating order, judge sheets and results for all events or the ticked ones (`eventIds` on the actions' target). The programme's welcome message is edited and saved there too (not on the Settings tab). Document builders in `documents.ts` are pure and tested by flattening the content tree
 to text (`src/pdf/documents.test.ts`).
 

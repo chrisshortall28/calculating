@@ -1,5 +1,6 @@
-import { Alert, Box, Card, Group, Kbd, Stack, Text } from '@mantine/core';
-import { useLocalStorage } from '@mantine/hooks';
+import { ActionIcon, Alert, Box, Card, Drawer, Group, Kbd, Stack, Text } from '@mantine/core';
+import { useDisclosure, useLocalStorage, useMediaQuery, useViewportSize } from '@mantine/hooks';
+import { IconAdjustmentsHorizontal } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useCompetition, useJudges, useSkaters } from '../../app/data';
@@ -14,7 +15,8 @@ import type { Direction } from '../../marks/gridNav';
 import { JudgeGrid } from '../../marks/JudgeGrid';
 import { MarkGrid } from '../../marks/MarkGrid';
 import { NumberPad } from '../../marks/NumberPad';
-import { ScoringToolbar } from './ScoringToolbar';
+import classes from './ScoringTab.module.css';
+import { LockButton, ScoringToolbar } from './ScoringToolbar';
 import { SegmentPicker } from './SegmentPicker';
 import { markKey, useEventResult } from './useEventResult';
 
@@ -35,7 +37,13 @@ export function ScoringTab({ event }: { event: CompEvent }) {
     defaultValue: 'across',
   });
   const [autoAdvance, setAutoAdvance] = useLocalStorage({ key: 'podium.autoAdvance', defaultValue: true });
-  const [numberPad, setNumberPad] = useLocalStorage({ key: 'podium.numberPad', defaultValue: false });
+  const [padWanted, setNumberPad] = useLocalStorage({ key: 'podium.numberPad', defaultValue: false });
+  // Phones get their own layout: a block per entry instead of a table, the options in a sheet, and no
+  // number pad (no room for it, and a phone has its own keyboard).
+  const padFits = useMediaQuery('(min-width: 48em)', true, { getInitialValueInEffect: false });
+  const compact = !padFits;
+  const numberPad = padWanted && padFits;
+  const [optionsOpen, options] = useDisclosure(false);
   const focusedInput = useRef<HTMLInputElement | null>(null);
   const [segmentId, setSegmentId] = useState<string | null>(null);
   const [view, setView] = useLocalStorage<'dance' | 'judge'>({
@@ -136,6 +144,18 @@ export function ScoringTab({ event }: { event: CompEvent }) {
   }, [judgeId, segments, entries, seatRaw, event]);
 
   // The tabs start after the grid's # and entry columns.
+  // Phones: the picker bar runs the full width of the screen, so it needs the page's side margins.
+  const compactBox = useRef<HTMLDivElement>(null);
+  const [bleed, setBleed] = useState({ left: 0, right: 0 });
+  const { width: viewportWidth } = useViewportSize();
+  useLayoutEffect(() => {
+    const box = compactBox.current?.getBoundingClientRect();
+    if (!box) return;
+    const left = Math.round(box.left);
+    const right = Math.round(document.documentElement.clientWidth - box.right);
+    if (left !== bleed.left || right !== bleed.right) setBleed({ left, right });
+  }, [viewportWidth, compact, loading, bleed]);
+
   const gridBox = useRef<HTMLDivElement>(null);
   const [tabOffset, setTabOffset] = useState(0);
   useLayoutEffect(() => {
@@ -195,133 +215,186 @@ export function ScoringTab({ event }: { event: CompEvent }) {
       onConfirm: () => clearMarks(event.id),
     });
 
+  const toolbar = (
+    <ScoringToolbar
+      noun={segmentNoun(event)}
+      entryNoun={entryNoun[event.entryType][0]}
+      view={view}
+      onView={setView}
+      direction={direction}
+      onDirection={setDirection}
+      autoAdvance={autoAdvance}
+      onAutoAdvance={setAutoAdvance}
+      numberPad={numberPad}
+      onNumberPad={padFits ? setNumberPad : undefined}
+      locked={locked}
+      canClear={entered > 0}
+      onClear={confirmClear}
+      onToggleLock={toggleLock}
+      sheet={compact}
+    />
+  );
+
+  const swapNote = byJudge && judgeId && others.length > 0 && (
+    <Text size="sm" c="dimmed">
+      J{judgeNo}: {judgeMap.get(judgeId)?.name}, with {others.join(', ')}.
+    </Text>
+  );
+
+  const hint = (
+    // Wraps to the grid's width rather than widening the page to fit on one line.
+    <Text size="xs" c="dimmed" style={{ contain: 'inline-size' }}>
+      Type <Kbd>57</Kbd> for 5.7, <Kbd>05</Kbd> for 0.5, <Kbd>10</Kbd> for 1.0, <Kbd>5</Kbd> <Kbd>Enter</Kbd>{' '}
+      for 5.0; for 10.0 turn off auto-advance and type <Kbd>100</Kbd>.
+    </Text>
+  );
+
+  const picker = byJudge ? (
+    <SegmentPicker
+      compact={compact}
+      value={judgeId ?? ''}
+      onChange={setJudgeSel}
+      segments={event.judgeIds.map((seatId, i) => {
+        const total = segments.reduce((n, s) => n + s.markKeys.length, 0) * entries.length;
+        let missing = 0;
+        for (const s of segments)
+          for (const k of s.markKeys)
+            for (const e of entries) if (seatRaw(k, seatId, e.id) === undefined) missing++;
+        return {
+          id: seatId,
+          // A seat that more than one judge sits in over the event has no single name to show.
+          name: `J${i + 1} ${
+            segments.some((s) => occupant(event, s.id, seatId) !== seatId)
+              ? 'Multiple Judges'
+              : (judgeMap.get(seatId)?.name ?? '?')
+          }`,
+          done: total - missing,
+          total,
+          complete: total > 0 && missing === 0,
+        };
+      })}
+    />
+  ) : (
+    <SegmentPicker
+      compact={compact}
+      value={segment.id}
+      onChange={setSegmentId}
+      segments={segments.map((s) => {
+        const r = result.segments.find((x) => x.segmentId === s.id)!;
+        const total = s.markKeys.length * judges.length * entries.length;
+        return {
+          id: s.id,
+          name: s.name,
+          done: total - r.missingMarks,
+          total,
+          complete: r.complete,
+        };
+      })}
+    />
+  );
+
+  const grid =
+    byJudge && judgeId ? (
+      <JudgeGrid
+        focusKey={`${event.id}:${judgeId}`}
+        rows={rows}
+        entryLabel={entryHeading[event.entryType]}
+        judgeId={judgeId}
+        judgeNo={judgeNo}
+        segments={segments}
+        getValue={seatRaw}
+        onCommit={(segmentKey, seatId, entryId, tenths) => {
+          // A seat's marks belong to whoever sits in it for that part.
+          const judgeId = occupant(event, segmentIdOfKey(segmentKey), seatId);
+          void setMark({ eventId: event.id, segmentKey, judgeId, entryId }, tenths);
+          if (event.status === 'setup' || event.status === 'ready') void setEventStatus(event.id, 'scoring');
+        }}
+        sums={sheet?.sums ?? new Map()}
+        ranks={sheet?.ranks}
+        firstEntryIds={firstEntryIds}
+        direction={direction}
+        autoAdvance={autoAdvance}
+        readOnly={locked}
+        numberPad={numberPad}
+        focusedInputRef={focusedInput}
+        compact={compact}
+      />
+    ) : byJudge ? (
+      <Text c="dimmed">Add judges to this event’s panel to start entering marks.</Text>
+    ) : (
+      <MarkGrid
+        focusKey={`${event.id}:${segment.id}`}
+        rows={segmentRows}
+        entryLabel={entryHeading[event.entryType]}
+        judges={judges}
+        markKeys={segment.markKeys}
+        getValue={(k, j, e) => markMap.get(markKey(k, j, e))}
+        onCommit={(segmentKey, judgeId, entryId, tenths) => {
+          void setMark({ eventId: event.id, segmentKey, judgeId, entryId }, tenths);
+          if (event.status === 'setup' || event.status === 'ready') void setEventStatus(event.id, 'scoring');
+        }}
+        ordinals={ordinals}
+        firstRowId={firstRowId}
+        direction={direction}
+        autoAdvance={autoAdvance}
+        readOnly={locked}
+        numberPad={numberPad}
+        focusedInputRef={focusedInput}
+        compact={compact}
+      />
+    );
+
+  if (compact)
+    return (
+      <Stack
+        ref={compactBox}
+        gap="sm"
+        className={classes.compact}
+        style={{ '--bleed-left': `${bleed.left}px`, '--bleed-right': `${bleed.right}px` }}
+      >
+        <div className={classes.topBar}>
+          {picker}
+          <ActionIcon variant="default" size="lg" aria-label="Scoring options" onClick={options.open}>
+            <IconAdjustmentsHorizontal size={20} />
+          </ActionIcon>
+        </div>
+        {/* A final event opens with Unlock in reach; Mark final waits at the end of the marks. */}
+        {locked && <LockButton locked onToggle={toggleLock} fullWidth />}
+        <div className={classes.surface}>
+          {swapNote && <div className={classes.note}>{swapNote}</div>}
+          {grid}
+        </div>
+        {!locked && <LockButton locked={false} onToggle={toggleLock} fullWidth />}
+        <Drawer
+          opened={optionsOpen}
+          onClose={options.close}
+          position="bottom"
+          // As tall as its content, at the foot of the screen.
+          styles={{ content: { height: 'auto', maxHeight: '90dvh' } }}
+          title="Scoring options"
+        >
+          <Stack gap="md" pb="md">
+            {toolbar}
+            {hint}
+          </Stack>
+        </Drawer>
+      </Stack>
+    );
+
   return (
     // Centred and as wide as the mark grid needs: the usual page width for a typical panel,
     // growing towards the window edges (then scrolling) as judges are added.
     <Stack style={fitWidth} gap={28}>
-      <ScoringToolbar
-        noun={segmentNoun(event)}
-        entryNoun={entryNoun[event.entryType][0]}
-        view={view}
-        onView={setView}
-        direction={direction}
-        onDirection={setDirection}
-        autoAdvance={autoAdvance}
-        onAutoAdvance={setAutoAdvance}
-        numberPad={numberPad}
-        onNumberPad={setNumberPad}
-        locked={locked}
-        canClear={entered > 0}
-        onClear={confirmClear}
-        onToggleLock={toggleLock}
-      />
+      {toolbar}
 
       {/* The mark grid's card fits its columns, scrolling once it runs out of room. */}
       <Group wrap="nowrap" align="flex-start" justify="space-between" gap="md">
         <Box ref={gridBox} w="fit-content" maw="100%" miw={0}>
-          <div style={{ paddingLeft: tabOffset }}>
-            {byJudge ? (
-              <SegmentPicker
-                value={judgeId ?? ''}
-                onChange={setJudgeSel}
-                segments={event.judgeIds.map((seatId, i) => {
-                  const total = segments.reduce((n, s) => n + s.markKeys.length, 0) * entries.length;
-                  let missing = 0;
-                  for (const s of segments)
-                    for (const k of s.markKeys)
-                      for (const e of entries) if (seatRaw(k, seatId, e.id) === undefined) missing++;
-                  return {
-                    id: seatId,
-                    // A seat that more than one judge sits in over the event has no single name to show.
-                    name: `J${i + 1} ${
-                      segments.some((s) => occupant(event, s.id, seatId) !== seatId)
-                        ? 'Multiple Judges'
-                        : (judgeMap.get(seatId)?.name ?? '?')
-                    }`,
-                    done: total - missing,
-                    total,
-                    complete: total > 0 && missing === 0,
-                  };
-                })}
-              />
-            ) : (
-              <SegmentPicker
-                value={segment.id}
-                onChange={setSegmentId}
-                segments={segments.map((s) => {
-                  const r = result.segments.find((x) => x.segmentId === s.id)!;
-                  const total = s.markKeys.length * judges.length * entries.length;
-                  return {
-                    id: s.id,
-                    name: s.name,
-                    done: total - r.missingMarks,
-                    total,
-                    complete: r.complete,
-                  };
-                })}
-              />
-            )}
-          </div>
+          <div style={{ paddingLeft: tabOffset }}>{picker}</div>
           <Card withBorder p="sm" radius="md">
-            {byJudge && judgeId && others.length > 0 && (
-              <Text size="sm" c="dimmed" mb="xs">
-                J{judgeNo}: {judgeMap.get(judgeId)?.name}, with {others.join(', ')}.
-              </Text>
-            )}
-            {byJudge && judgeId ? (
-              <JudgeGrid
-                focusKey={`${event.id}:${judgeId}`}
-                rows={rows}
-                entryLabel={entryHeading[event.entryType]}
-                judgeId={judgeId}
-                judgeNo={judgeNo}
-                segments={segments}
-                getValue={seatRaw}
-                onCommit={(segmentKey, seatId, entryId, tenths) => {
-                  // A seat's marks belong to whoever sits in it for that part.
-                  const judgeId = occupant(event, segmentIdOfKey(segmentKey), seatId);
-                  void setMark({ eventId: event.id, segmentKey, judgeId, entryId }, tenths);
-                  if (event.status === 'setup' || event.status === 'ready')
-                    void setEventStatus(event.id, 'scoring');
-                }}
-                sums={sheet?.sums ?? new Map()}
-                ranks={sheet?.ranks}
-                firstEntryIds={firstEntryIds}
-                direction={direction}
-                autoAdvance={autoAdvance}
-                readOnly={locked}
-                numberPad={numberPad}
-                focusedInputRef={focusedInput}
-              />
-            ) : byJudge ? (
-              <Text c="dimmed">Add judges to this event’s panel to start entering marks.</Text>
-            ) : (
-              <MarkGrid
-                focusKey={`${event.id}:${segment.id}`}
-                rows={segmentRows}
-                entryLabel={entryHeading[event.entryType]}
-                judges={judges}
-                markKeys={segment.markKeys}
-                getValue={(k, j, e) => markMap.get(markKey(k, j, e))}
-                onCommit={(segmentKey, judgeId, entryId, tenths) => {
-                  void setMark({ eventId: event.id, segmentKey, judgeId, entryId }, tenths);
-                  if (event.status === 'setup' || event.status === 'ready')
-                    void setEventStatus(event.id, 'scoring');
-                }}
-                ordinals={ordinals}
-                firstRowId={firstRowId}
-                direction={direction}
-                autoAdvance={autoAdvance}
-                readOnly={locked}
-                numberPad={numberPad}
-                focusedInputRef={focusedInput}
-              />
-            )}
-            {/* Wraps to the grid's width rather than widening the page to fit on one line. */}
-            <Text size="xs" c="dimmed" mt="sm" style={{ contain: 'inline-size' }}>
-              Type <Kbd>57</Kbd> for 5.7, <Kbd>05</Kbd> for 0.5, <Kbd>10</Kbd> for 1.0, <Kbd>5</Kbd>{' '}
-              <Kbd>Enter</Kbd> for 5.0; for 10.0 turn off auto-advance and type <Kbd>100</Kbd>.
-            </Text>
+            {swapNote && <Box mb="xs">{swapNote}</Box>}
+            {grid}
+            <Box mt="sm">{hint}</Box>
           </Card>
         </Box>
         {numberPad && <NumberPad targetRef={focusedInput} disabled={locked} />}

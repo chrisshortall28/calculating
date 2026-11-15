@@ -78,14 +78,14 @@ export function StatsTab() {
       )}
 
       <Section title="Entries per club" icon={<IconClipboardList size={26} />}>
-        <Table.ScrollContainer minWidth={420}>
-          <Table verticalSpacing="sm">
+        <Table.ScrollContainer minWidth={260}>
+          <Table verticalSpacing="sm" className={classes.compact}>
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>Club</Table.Th>
                 <Table.Th ta="right">Entries</Table.Th>
                 <Table.Th ta="right">Skaters</Table.Th>
-                <Table.Th w="35%" />
+                <Table.Th w="35%" visibleFrom="xs" />
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -96,7 +96,7 @@ export function StatsTab() {
                     {c.entries}
                   </Table.Td>
                   <Table.Td ta="right">{c.skaters}</Table.Td>
-                  <Table.Td>
+                  <Table.Td visibleFrom="xs">
                     <Progress value={(100 * c.entries) / maxEntries} size="lg" color="medal.5" />
                   </Table.Td>
                 </Table.Tr>
@@ -108,8 +108,8 @@ export function StatsTab() {
 
       {busiest.length > 0 && (
         <Section title="Busiest skaters" icon={<IconFlame size={26} />}>
-          <Table.ScrollContainer minWidth={420}>
-            <Table verticalSpacing="sm">
+          <Table.ScrollContainer minWidth={260}>
+            <Table verticalSpacing="sm" className={classes.compact}>
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>Skater</Table.Th>
@@ -170,8 +170,16 @@ const MEDALS = [
 ] as const;
 
 /** Medal icon in its metal colour. */
-function Medal({ kind, size = 20 }: { kind: (typeof MEDALS)[number]; size?: number }) {
-  return <IconMedal size={size} className={kind.className} aria-label={kind.label} />;
+function Medal({
+  kind,
+  size = 20,
+  className = '',
+}: {
+  kind: (typeof MEDALS)[number];
+  size?: number;
+  className?: string;
+}) {
+  return <IconMedal size={size} className={`${kind.className} ${className}`} aria-label={kind.label} />;
 }
 
 /** Rank of each row, which must already be sorted by gold, then silver, then bronze; equal records share a rank. */
@@ -232,18 +240,20 @@ function MedalTable({
   const ranks = medalRanks(rows);
 
   return (
-    <Table.ScrollContainer minWidth={440}>
-      <Table verticalSpacing="sm">
+    <Table.ScrollContainer minWidth={260}>
+      <Table verticalSpacing="sm" className={classes.compact}>
         <Table.Thead>
           <Table.Tr>
-            <Table.Th w={44} />
+            <Table.Th className={classes.rankCol} />
             <Table.Th>{nameHeader}</Table.Th>
             {MEDALS.map((m) => (
               <Table.Th key={m.key} ta="right">
-                <Medal kind={m} size={30} />
+                <Medal kind={m} size={30} className={classes.medalHead} />
               </Table.Th>
             ))}
-            <Table.Th ta="right">Total</Table.Th>
+            <Table.Th ta="right" visibleFrom="xs">
+              Total
+            </Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
@@ -265,7 +275,7 @@ function MedalTable({
                     </span>
                   </Table.Td>
                 ))}
-                <Table.Td ta="right" className={classes.total}>
+                <Table.Td ta="right" className={classes.total} visibleFrom="xs">
                   {r.gold + r.silver + r.bronze}
                 </Table.Td>
               </Table.Tr>

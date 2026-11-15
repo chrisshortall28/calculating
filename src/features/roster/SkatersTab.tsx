@@ -12,6 +12,7 @@ import type { PastedRow } from '../../domain/pasteList';
 import { InlineEdit } from './InlineEdit';
 import { PasteListModal } from './PasteListModal';
 import { RosterNote } from './RosterNote';
+import tableClasses from './RosterTable.module.css';
 
 export function SkatersTab() {
   const { compId } = useParams() as { compId: string };
@@ -103,30 +104,30 @@ export function SkatersTab() {
             </Button>
           </Group>
         </form>
-        <Table striped highlightOnHover>
+        <Table striped highlightOnHover className={`${tableClasses.table} ${tableClasses.stacked}`}>
           <Table.Thead>
             <Table.Tr>
               <Table.Th>Name</Table.Th>
-              <Table.Th>Club</Table.Th>
-              <Table.Th w={80}>Entries</Table.Th>
-              <Table.Th w={50} />
+              <Table.Th className={tableClasses.club}>Club</Table.Th>
+              <Table.Th className={tableClasses.count}>Entries</Table.Th>
+              <Table.Th className={tableClasses.remove} />
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {skaters?.map((s) => (
               <Table.Tr key={s.id}>
-                <Table.Td>
+                <Table.Td className={tableClasses.name}>
                   <InlineEdit value={s.name} onSave={(v) => updateSkater(s.id, { name: v })} required />
                 </Table.Td>
-                <Table.Td>
+                <Table.Td className={tableClasses.club}>
                   <InlineEdit
                     value={s.club}
                     onSave={(v) => updateSkater(s.id, { club: v })}
                     placeholder="—"
                   />
                 </Table.Td>
-                <Table.Td>{usage?.get(s.id) ?? 0}</Table.Td>
-                <Table.Td>
+                <Table.Td className={tableClasses.count}>{usage?.get(s.id) ?? 0}</Table.Td>
+                <Table.Td className={tableClasses.remove}>
                   <ActionIcon
                     variant="subtle"
                     color="red"

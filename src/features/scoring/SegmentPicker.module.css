@@ -57,3 +57,32 @@
   background: light-dark(#e3f2e7, rgba(47, 158, 68, 0.2));
   color: light-dark(#1b5e2f, var(--mantine-color-green-3));
 }
+
+/* Phones: chips on one line, scrolling sideways, in place of folder tabs. */
+.row[data-compact] {
+  flex: 1;
+  flex-wrap: nowrap;
+  align-items: center;
+  min-width: 0;
+  margin-bottom: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.row[data-compact] .tab {
+  flex: none;
+  height: 40px;
+  padding: 0 var(--mantine-spacing-sm);
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: 999px;
+  background: var(--mantine-color-body);
+  font-size: var(--mantine-font-size-sm);
+  white-space: nowrap;
+}
+
+.row[data-compact] .tab[data-active] {
+  height: 40px;
+  padding-bottom: 0;
+  border-color: var(--mantine-primary-color-filled);
+  background: var(--mantine-primary-color-light);
+}

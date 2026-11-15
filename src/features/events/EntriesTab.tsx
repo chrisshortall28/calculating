@@ -22,6 +22,7 @@ import {
 } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
+import rowClasses from './EntryRow.module.css';
 import { useCompetition, useDances, useEntries, useSkaters } from '../../app/data';
 import { SortableList } from '../../app/SortableList';
 import { db } from '../../db/db';
@@ -136,6 +137,7 @@ export function EntriesTab({ event }: { event: CompEvent }) {
 
         {laterParts.length > 0 && (
           <SegmentedControl
+            className="toggle-fit"
             value={laterPart ? orderView : 'all'}
             onChange={setOrderView}
             data={[
@@ -207,25 +209,17 @@ export function EntriesTab({ event }: { event: CompEvent }) {
                 onReorder={reorderEntries}
                 renderItem={(entry, index, handle) => (
                   <Paper withBorder px="sm" py={6} mb={4}>
-                    <Group wrap="nowrap" gap="sm">
-                      {handle}
-                      <Text fw={700} w={28} ta="right" c="dimmed">
-                        {index + 1}
-                      </Text>
-                      <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
-                        <Text fw={500} truncate>
-                          {entryName(entry, skaters)}
-                        </Text>
+                    <div className={rowClasses.row}>
+                      <span className={rowClasses.handle}>{handle}</span>
+                      <span className={rowClasses.number}>{index + 1}</span>
+                      <div className={rowClasses.who}>
+                        <div className={rowClasses.name}>{entryName(entry, skaters)}</div>
                         {event.entryType === 'team' && entry.skaterIds.length > 0 && (
-                          <Text size="xs" c="dimmed" truncate>
-                            {entryMembers(entry, skaters)}
-                          </Text>
+                          <div className={rowClasses.members}>{entryMembers(entry, skaters)}</div>
                         )}
-                      </Stack>
-                      <Text size="sm" c="dimmed" w={180} truncate>
-                        {entryClub(entry, skaters)}
-                      </Text>
-                      <Group gap={2} wrap="nowrap">
+                      </div>
+                      <div className={rowClasses.club}>{entryClub(entry, skaters)}</div>
+                      <Group gap={2} wrap="nowrap" className={`${rowClasses.end}`}>
                         <ActionIcon
                           variant="subtle"
                           color="gray"
@@ -264,7 +258,7 @@ export function EntriesTab({ event }: { event: CompEvent }) {
                           </ActionIcon>
                         </Tooltip>
                       </Group>
-                    </Group>
+                    </div>
                   </Paper>
                 )}
               />

@@ -19,6 +19,7 @@ export function PageHero({
   meta,
   badges,
   actions,
+  tools,
   children,
   size = 'lg',
   colors = clubColors(),
@@ -32,6 +33,8 @@ export function PageHero({
   meta?: ReactNode;
   badges?: ReactNode;
   actions?: ReactNode;
+  /** Buttons for the top right corner on phones, where the tabs take the whole row (see HeroTabs `end`). */
+  tools?: ReactNode;
   /** Rendered along the bottom edge of the band (e.g. HeroTabs). */
   children?: ReactNode;
   /** Match the page Container size so the band content lines up with the page. */
@@ -43,28 +46,31 @@ export function PageHero({
   return (
     <div className={classes.hero} style={clubVars(colors)}>
       <Container size={size} className={classes.inner}>
-        {crumbs.length > 0 && (
-          <Group gap={6} className={classes.crumbs} wrap="nowrap">
-            {crumbs.map((c, i) => (
-              <Group
-                key={i}
-                gap={6}
-                wrap="nowrap"
-                className={i > 0 && i === crumbs.length - 1 && !c.to ? classes.crumbCurrentItem : undefined}
-              >
-                {i > 0 && <span className={classes.sep}>/</span>}
-                {c.to ? (
-                  <Anchor component={Link} to={c.to} className={classes.crumbLink}>
-                    {c.label}
-                  </Anchor>
-                ) : (
-                  <Text span className={classes.crumbCurrent} truncate>
-                    {c.label}
-                  </Text>
-                )}
-              </Group>
-            ))}
-          </Group>
+        {(crumbs.length > 0 || tools) && (
+          <div className={classes.top}>
+            <Group gap={6} className={classes.crumbs} wrap="nowrap">
+              {crumbs.map((c, i) => (
+                <Group
+                  key={i}
+                  gap={6}
+                  wrap="nowrap"
+                  className={`${classes.crumb} ${i > 0 && i === crumbs.length - 1 && !c.to ? classes.crumbCurrentItem : ''}`}
+                >
+                  {i > 0 && <span className={classes.sep}>/</span>}
+                  {c.to ? (
+                    <Anchor component={Link} to={c.to} className={classes.crumbLink}>
+                      {c.label}
+                    </Anchor>
+                  ) : (
+                    <Text span className={classes.crumbCurrent} truncate>
+                      {c.label}
+                    </Text>
+                  )}
+                </Group>
+              ))}
+            </Group>
+            {tools && <div className={classes.tools}>{tools}</div>}
+          </div>
         )}
         <Group justify="space-between" align="flex-end" wrap="wrap" gap="md">
           <Stack gap={6} style={{ minWidth: 0, flexGrow: hasTitleNav ? 1 : undefined }}>
@@ -115,14 +121,19 @@ export function HeroTabs({
   tabs: HeroTab[];
   value: string;
   onChange: (value: string) => void;
-  /** Right-aligned beside the tabs, e.g. a button. */
+  /** Right-aligned beside the tabs, e.g. a button. Not shown on phones: pass it to PageHero as `tools` too. */
   end?: ReactNode;
 }) {
   const list = (
     <Tabs
       value={value}
       onChange={(v) => v && onChange(v)}
-      classNames={{ list: classes.tabsList, tab: classes.tab }}
+      classNames={{
+        list: classes.tabsList,
+        tab: classes.tab,
+        tabSection: classes.tabSection,
+        tabLabel: classes.tabLabel,
+      }}
     >
       <Tabs.List>
         {tabs.map((t) => (

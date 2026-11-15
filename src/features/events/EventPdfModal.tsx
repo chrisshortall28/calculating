@@ -186,6 +186,7 @@ export function EventPdfModal({
       <Stack>
         <SegmentedControl
           fullWidth
+          className="toggle-fit"
           value={section}
           onChange={(v) => setSection(v as Section)}
           data={[
