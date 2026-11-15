@@ -15,7 +15,7 @@ function ribbon(from: Point, c1: Point, c2: Point, to: Point, thickness: number,
 /**
  * The programme cover's artwork, a page-sized SVG: flowing ribbons in the club colours sweeping
  * across the top of the page, and a lower one along the foot, leaving a clear band for the title
- * between them (from about 540 to 740 points down).
+ * between them (from about 540 to 740 points down on an A4 page; the programme scales it to A5).
  */
 export function coverSwooshes(
   width: number,
