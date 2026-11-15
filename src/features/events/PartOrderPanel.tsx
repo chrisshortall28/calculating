@@ -12,6 +12,7 @@ import { eventTieBreakMarks, type Segment } from '../../domain/segments';
 import { shuffled } from '../../domain/shuffle';
 import { resolvePartOrder } from '../../domain/startOrder';
 import type { CompEvent, Entry, Skater } from '../../domain/types';
+import rowClasses from './EntryRow.module.css';
 
 /**
  * The skating order of one later part (the free dance, short or free programme). It follows the event's start
@@ -113,21 +114,15 @@ export function PartOrderPanel({
           onReorder={save}
           renderItem={(entry, index, handle) => (
             <Paper withBorder px="sm" py={6} mb={4} opacity={saved ? 1 : 0.65}>
-              <Group wrap="nowrap" gap="sm">
-                {handle}
-                <Text fw={700} w={28} ta="right" c="dimmed">
-                  {index + 1}
-                </Text>
-                <Text fw={500} truncate style={{ flex: 1, minWidth: 0 }}>
-                  {entryName(entry, skaters)}
-                </Text>
-                <Text size="sm" c="dimmed" w={180} truncate>
-                  {entryClub(entry, skaters)}
-                </Text>
-                <Text size="xs" c="dimmed" w={110} ta="right">
+              <div className={rowClasses.row}>
+                <span className={rowClasses.handle}>{handle}</span>
+                <span className={rowClasses.number}>{index + 1}</span>
+                <div className={`${rowClasses.who} ${rowClasses.name}`}>{entryName(entry, skaters)}</div>
+                <div className={rowClasses.club}>{entryClub(entry, skaters)}</div>
+                <div className={`${rowClasses.end} ${rowClasses.note}`}>
                   #{startNumber.get(entry.id)} in start order
-                </Text>
-              </Group>
+                </div>
+              </div>
             </Paper>
           )}
         />

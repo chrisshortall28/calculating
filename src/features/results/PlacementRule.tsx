@@ -15,7 +15,13 @@ export function RuleBadge({ rule }: { rule: PlacementRule }) {
   if (rule === '5') return null;
   return (
     <Tooltip label={`Rule ${ruleLabel(rule)} — ${RULES[rule].description}`} multiline w={280} withArrow>
-      <Badge size="sm" variant="light" color={rule === '8' ? 'orange' : 'blue'} style={{ cursor: 'help' }}>
+      <Badge
+        size="sm"
+        variant="light"
+        color={rule === '8' ? 'orange' : 'blue'}
+        miw="max-content"
+        style={{ cursor: 'help' }}
+      >
         {ruleLabel(rule)}
       </Badge>
     </Tooltip>

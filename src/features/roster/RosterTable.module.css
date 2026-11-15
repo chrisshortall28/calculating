@@ -1,0 +1,54 @@
+/* The competition's lists of skaters, judges and dances: name (and club), a count, a delete button. */
+.count {
+  width: 80px;
+}
+
+.remove {
+  width: 50px;
+}
+
+/* Phones: narrower fixed columns and gutters, so the names get the room. */
+@media (max-width: 36em) {
+  .table {
+    --table-horizontal-spacing: 4px;
+  }
+
+  .count {
+    width: 60px;
+  }
+
+  .remove {
+    width: 36px;
+  }
+
+  /* With a club column too, each row stacks the club under the name. */
+  .stacked :where(thead, tbody) tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 60px 36px;
+    align-items: center;
+  }
+
+  .stacked th.club {
+    display: none;
+  }
+
+  .stacked td.name {
+    padding-bottom: 0;
+  }
+
+  .stacked td.club {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding-top: 0;
+  }
+
+  .stacked td.club input {
+    color: var(--mantine-color-dimmed);
+  }
+
+  .stacked td.count,
+  .stacked td.remove {
+    width: auto;
+    padding-bottom: 0;
+  }
+}

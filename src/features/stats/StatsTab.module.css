@@ -221,3 +221,23 @@
   padding: 0 4px 4px;
   color: var(--mantine-color-dimmed);
 }
+
+.rankCol {
+  width: 44px;
+}
+
+/* Phones: tighter gutters and smaller medal icons, so a medal table fits without scrolling sideways. */
+@media (max-width: 36em) {
+  .compact {
+    --table-horizontal-spacing: 5px;
+  }
+
+  .rankCol {
+    width: 34px;
+  }
+
+  .medalHead {
+    width: 22px;
+    height: 22px;
+  }
+}
