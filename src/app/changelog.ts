@@ -8,6 +8,15 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.8.0',
+    date: '2026-11-15',
+    changes: [
+      'Podium on a phone: every page now fits a phone screen without scrolling sideways. Page headers are shorter so the content starts near the top, all of an event’s tabs stay on screen, buttons are big enough to tap, and skater, judge, roster and results lists give each detail its own line.',
+      'Entering marks on a phone: the Scoring tab now shows each skater as a block, with their name on one line and a box for each judge’s mark in a row beneath (two rows where judges give A and B marks), so a whole panel of up to seven judges fits across the screen. The dances, figures or programmes are a row of buttons that stays at the top as you scroll, with the options (view by, fill order, auto-advance and Clear marks) behind the button beside them. Mark final is at the end of the marks. Marks are typed with the phone’s own keyboard; the number pad is for tablets and laptops only. Larger screens are unchanged.',
+      'Programme PDF: the spectators’ programme is now an A5 booklet.',
+    ],
+  },
+  {
     version: '1.7.1',
     date: '2026-11-09',
     changes: [
