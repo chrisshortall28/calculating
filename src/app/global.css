@@ -71,3 +71,15 @@ body {
     text-align: center;
   }
 }
+
+/* Phones: panels reach closer to the screen edges and are padded less, so their content gets the room. */
+@media (max-width: 36em) {
+  .mantine-AppShell-main > .mantine-Container-root {
+    margin-inline: -8px;
+    padding-inline: 0;
+  }
+
+  .mantine-Card-root {
+    --card-padding: var(--mantine-spacing-sm) !important;
+  }
+}
